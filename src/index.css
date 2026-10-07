@@ -1,0 +1,163 @@
+@import '@fontsource-variable/newsreader/opsz.css';
+@import '@fontsource-variable/newsreader/opsz-italic.css';
+@import '@fontsource-variable/inter/index.css';
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens. Warm paper, ink, and three creative states that are always
+   paired with a symbol + label so colour is never the only signal. */
+:root {
+  --paper: #f6f1e9;
+  --paper-2: #efe8dc;
+  --card: #fbf8f3;
+  --ink: #2a2521;
+  --ink-2: #5d544c;
+  --muted: #8a7f74;
+  --line: #e2d8ca;
+  --accent: #9c5b3b;
+  --accent-ink: #ffffff;
+  --seed: #b4513c;
+  --seed-bg: #f6e1da;
+  --developing: #a87a12;
+  --developing-bg: #f5ebcf;
+  --polished: #3f7550;
+  --polished-bg: #dcebdd;
+  --ai: #5b6aa8;
+  --ai-bg: #e7e9f5;
+  --focus: #9c5b3b;
+  color-scheme: light;
+}
+
+.dark {
+  --paper: #1a1816;
+  --paper-2: #23201d;
+  --card: #211e1b;
+  --ink: #ece5da;
+  --ink-2: #c3b9ac;
+  --muted: #958a7e;
+  --line: #3a342e;
+  --accent: #d9926b;
+  --accent-ink: #1a1816;
+  --seed: #e7856f;
+  --seed-bg: #3d2520;
+  --developing: #e2b647;
+  --developing-bg: #3a3020;
+  --polished: #84bf93;
+  --polished-bg: #1f3326;
+  --ai: #a3afe6;
+  --ai-bg: #262a40;
+  --focus: #d9926b;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-seed: var(--seed);
+  --color-seed-bg: var(--seed-bg);
+  --color-developing: var(--developing);
+  --color-developing-bg: var(--developing-bg);
+  --color-polished: var(--polished);
+  --color-polished-bg: var(--polished-bg);
+  --color-ai: var(--ai);
+  --color-ai-bg: var(--ai-bg);
+  --font-serif: 'Newsreader Variable', 'Iowan Old Style', Georgia, serif;
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+@layer base {
+  html,
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* The writing itself: preserve every space and line break. */
+  .writing {
+    font-family: var(--font-serif);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-paper-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-accent px-5 py-2 text-sm font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-3 py-1.5 text-sm text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink disabled:opacity-50;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-seed px-4 py-2 text-sm font-semibold text-white hover:opacity-90;
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-card px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none;
+  }
+  .label {
+    @apply mb-1 block text-xs font-semibold tracking-wide text-muted uppercase;
+  }
+  .panel {
+    @apply rounded-2xl border border-line bg-card;
+  }
+  .page-title {
+    @apply font-serif text-3xl font-medium tracking-tight text-ink md:text-4xl;
+  }
+  .eyebrow {
+    @apply text-xs font-semibold tracking-[0.14em] text-muted uppercase;
+  }
+}
+
+/* Manuscript / print */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  html,
+  body {
+    background: white;
+    color: black;
+  }
+  .print-break {
+    break-before: page;
+  }
+  .manuscript-piece {
+    break-inside: avoid;
+  }
+}
