@@ -15,6 +15,7 @@ export type ContentType =
   | 'story'
   | 'research'
   | 'note'
+  | 'image'
   | 'other';
 
 export type SourceKind = 'capture' | 'import' | 'sample' | 'ai-variant';
@@ -48,6 +49,23 @@ export interface ContentItem extends Syncable {
   archived: boolean;
   /** Soft delete — item sits in Trash until permanently removed. */
   deletedAt: number | null;
+  /** For type 'image': the stored picture. The body holds an optional caption. */
+  assetId?: string;
+  /** For type 'image': how it sits on the page in print. */
+  imageLayout?: ImageLayout;
+}
+
+export type ImageLayout = 'full-bleed' | 'full-page' | 'inline';
+
+/** An image stored on the device (already shrunk). Synced and backed up like everything else. */
+export interface Asset extends Syncable {
+  name: string;
+  mime: string;
+  /** The image itself as a data: URL. */
+  dataUrl: string;
+  width: number;
+  height: number;
+  bytes: number;
 }
 
 export interface TagFamily extends Syncable {
@@ -79,6 +97,38 @@ export interface Book extends Syncable {
   cover: string;
   notes: string;
   archived: boolean;
+  /** Cover artwork (asset id). */
+  coverAssetId?: string;
+  /** Page design for print/PDF. Missing fields fall back to defaults for the book type. */
+  design?: Partial<BookDesign>;
+}
+
+export type TrimSize = '5x8' | '5.5x8.5' | '6x9' | '7x10' | '8x8' | '8.5x11' | 'a5' | 'a4';
+
+export interface BookDesign {
+  trim: TrimSize;
+  margins: 'snug' | 'standard' | 'generous';
+  bodyFont: 'newsreader' | 'garamond' | 'cormorant';
+  headingFont: 'body' | 'cinzel';
+  fontSize: number;
+  lineHeight: number;
+  poemAlign: 'left' | 'center';
+  titleAlign: 'left' | 'center';
+  pieceOnNewPage: boolean;
+  sectionOnRightPage: boolean;
+  sectionStyle: 'classic' | 'ornamental' | 'minimal';
+  ornament: string;
+  pageNumbers: 'bottom-center' | 'bottom-outside' | 'none';
+  runningHeads: boolean;
+  titlePage: boolean;
+  author: string;
+  copyright: string;
+  dedication: string;
+  toc: boolean;
+  /** Ruled writing lines after each prompt (guided journals). 0 = none, -1 = rest of the page. */
+  promptLines: number;
+  /** Add 0.125in bleed for print-on-demand services. */
+  bleed: boolean;
 }
 
 export interface Section extends Syncable {
@@ -86,6 +136,8 @@ export interface Section extends Syncable {
   title: string;
   order: number;
   notes: string;
+  /** Optional artwork shown on the section's opening page (asset id). */
+  imageAssetId?: string;
 }
 
 /** A reference from a book (and optionally a section) to a content item.

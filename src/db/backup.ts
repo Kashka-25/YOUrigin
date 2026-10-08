@@ -15,6 +15,7 @@ const TABLES = [
   'relationships',
   'suggestions',
   'revisions',
+  'assets',
   'settings',
 ] as const;
 type TableName = (typeof TABLES)[number];

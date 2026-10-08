@@ -14,6 +14,7 @@ export const SYNC_TABLES = [
   'relationships',
   'suggestions',
   'revisions',
+  'assets',
 ] as const;
 export type SyncTable = (typeof SYNC_TABLES)[number];
 const SYNCED = new Set<string>(SYNC_TABLES);

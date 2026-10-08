@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { HashRouter, Route, Routes } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { HashRouter, Route, Routes, useParams } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { LibraryProvider } from './hooks/useLibrary';
 import { ToastProvider } from './components/Toast';
@@ -19,7 +19,20 @@ import { Orphans } from './pages/Orphans';
 import { Collections, CollectionPage } from './pages/Collections';
 import { Trash } from './pages/Trash';
 import { Settings } from './pages/Settings';
-import { EmptyState } from './components/ui';
+import { EmptyState, Spinner } from './components/ui';
+
+// The print designer (and its page-layout engine) only loads when opened.
+const PrintLayout = lazy(() => import('./pages/PrintLayout').then((m) => ({ default: m.PrintLayout })));
+
+/** A fresh print view per book, so one book's pages never linger while another lays out. */
+function PrintRoute() {
+  const { id } = useParams();
+  return (
+    <Suspense fallback={<Spinner />}>
+      <PrintLayout key={id} />
+    </Suspense>
+  );
+}
 
 function useTheme(theme: 'system' | 'light' | 'dark' | undefined) {
   useEffect(() => {
@@ -67,6 +80,10 @@ export default function App() {
             <Routes>
               {/* Manuscript mode is deliberately outside the app chrome: it should feel like a book. */}
               <Route path="/books/:id/read" element={<Manuscript />} />
+              <Route
+                path="/books/:id/print"
+                element={<PrintRoute />}
+              />
               <Route
                 path="*"
                 element={

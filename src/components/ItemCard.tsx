@@ -5,6 +5,7 @@ import { bodyAfterTitle, displayTitle, excerpt } from '../domain/text';
 import { TYPE_LABEL } from '../domain/constants';
 import { StatusBadge } from './ui';
 import { useLibrary } from '../hooks/useLibrary';
+import { AssetImage } from './AssetImage';
 
 export function ItemCard({
   item,
@@ -68,6 +69,9 @@ export function ItemCard({
         </div>
         {extra}
       </div>
+      {item.type === 'image' && item.assetId && (
+        <AssetImage id={item.assetId} className="h-20 w-20 shrink-0 rounded-lg border border-line object-cover" />
+      )}
     </article>
   );
 }

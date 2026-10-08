@@ -46,7 +46,7 @@ export async function createMany(inputs: NewContent[]): Promise<string[]> {
 }
 
 export type ContentPatch = Partial<
-  Pick<ContentItem, 'title' | 'body' | 'type' | 'status' | 'notes' | 'tagIds' | 'keepUnassigned' | 'archived'>
+  Pick<ContentItem, 'title' | 'body' | 'type' | 'status' | 'notes' | 'tagIds' | 'keepUnassigned' | 'archived' | 'imageLayout'>
 >;
 
 export async function updateContent(id: string, patch: ContentPatch): Promise<void> {
@@ -125,8 +125,9 @@ export async function restoreFromTrash(ids: string[]): Promise<void> {
 export async function purgeContent(ids: string[]): Promise<void> {
   await db.transaction(
     'rw',
-    [db.content, db.entries, db.relationships, db.suggestions, db.revisions, db.collections],
+    [db.content, db.entries, db.relationships, db.suggestions, db.revisions, db.collections, db.assets, db.books, db.sections],
     async () => {
+      const assetIds = (await db.content.bulkGet(ids)).map((c) => c?.assetId).filter((a): a is string => !!a);
       await db.content.bulkDelete(ids);
       await db.entries.where('contentId').anyOf(ids).delete();
       await db.relationships.where('fromId').anyOf(ids).delete();
@@ -140,6 +141,14 @@ export async function purgeContent(ids: string[]): Promise<void> {
           contentIds: c.contentIds.filter((x) => !gone.has(x)),
           updatedAt: Date.now(),
         });
+      }
+      // Drop stored pictures that nothing uses any more.
+      for (const assetId of new Set(assetIds)) {
+        const used =
+          (await db.content.filter((c) => c.assetId === assetId).count()) +
+          (await db.books.filter((b) => b.coverAssetId === assetId).count()) +
+          (await db.sections.filter((x) => x.imageAssetId === assetId).count());
+        if (!used) await db.assets.delete(assetId);
       }
     },
   );

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { BookOpenText, Download, Settings2, Sparkles, ArrowLeft } from 'lucide-react';
+import { BookOpenText, Download, Settings2, Sparkles, ArrowLeft, LayoutTemplate } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { computeBookProgress } from '../domain/progress';
 import { BOOK_TYPE_LABEL, COVER_COLOURS } from '../domain/constants';
@@ -62,8 +62,11 @@ export function BookBuilder() {
           {book.description && <p className="mt-2 max-w-2xl text-sm text-ink-2">{book.description}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link to={`/books/${book.id}/read`} className="btn-primary">
-            <BookOpenText size={16} /> Manuscript
+          <Link to={`/books/${book.id}/print`} className="btn-primary">
+            <LayoutTemplate size={16} /> Design & print
+          </Link>
+          <Link to={`/books/${book.id}/read`} className="btn">
+            <BookOpenText size={16} /> Read
           </Link>
           <ExportMenu book={book} />
           <button type="button" className="btn" onClick={() => setEditOpen(true)} aria-label="Book settings">
@@ -131,8 +134,11 @@ function ExportMenu({ book }: { book: Book }) {
           >
             Structured data (.json)
           </button>
+          <Link to={`/books/${book.id}/print`} className="btn w-full justify-start">
+            Print-ready PDF — designed pages (Design & print)
+          </Link>
           <Link to={`/books/${book.id}/read?print=1`} className="btn w-full justify-start">
-            Print / save as PDF (from Manuscript)
+            Simple reading copy (print from Read view)
           </Link>
         </div>
       </Modal>

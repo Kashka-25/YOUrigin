@@ -28,6 +28,7 @@ export interface SyncCursor {
 }
 
 const PUSH_BATCH = 200;
+const PUSH_MAX_CHARS = 3_000_000;
 const PULL_PAGE = 500;
 
 type Rec = Record<string, unknown> & { id: string };
@@ -73,7 +74,20 @@ export class SyncEngine {
     for (let i = 0; i < pending.length; i += PUSH_BATCH) {
       const batch = pending.slice(i, i + PUSH_BATCH);
       const rows = await this.buildRows(batch);
-      await this.transport.push(rows);
+      // Images make rows large: send in requests of at most ~3 MB.
+      let chunk: PushRow[] = [];
+      let size = 0;
+      for (const r of rows) {
+        const n = (r.payload?.length ?? 0) + 200;
+        if (chunk.length && size + n > PUSH_MAX_CHARS) {
+          await this.transport.push(chunk);
+          chunk = [];
+          size = 0;
+        }
+        chunk.push(r);
+        size += n;
+      }
+      if (chunk.length) await this.transport.push(chunk);
       this.outbox.settle(batch);
       count += rows.length;
     }

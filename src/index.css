@@ -159,8 +159,50 @@
   }
 }
 
+/* Print layout: on screen, pages sit on a soft background with a shadow. */
+.print-stage .pagedjs_page {
+  background: #fff;
+  margin: 0 auto 28px;
+  box-shadow: 0 2px 18px rgb(0 0 0 / 0.28);
+}
+.print-stage .pagedjs_pages {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 18px;
+  max-width: calc(var(--pagedjs-width, 6in) * 2 + 18px);
+}
+/* Books open on a right-hand page: show page 1 on the right, then spreads. */
+.print-stage .pagedjs_first_page {
+  margin-left: calc(var(--pagedjs-width, 6in) + 18px);
+}
+
 /* Manuscript / print */
 @media print {
+  /* Only the laid-out pages print, at true size. */
+  .print-layout {
+    background: #fff !important;
+  }
+  .print-layout main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .print-stage {
+    zoom: 1 !important;
+    width: auto !important;
+  }
+  .print-stage .pagedjs_page {
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+  .print-stage .pagedjs_pages {
+    display: block !important;
+    max-width: none !important;
+  }
+  .print-stage .pagedjs_first_page {
+    margin-left: 0 !important;
+  }
+
   .no-print {
     display: none !important;
   }

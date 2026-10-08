@@ -47,7 +47,7 @@ export async function createBook(input: NewBook): Promise<string> {
 
 export async function updateBook(
   id: string,
-  patch: Partial<Pick<Book, 'title' | 'subtitle' | 'description' | 'cover' | 'notes' | 'type' | 'archived'>>,
+  patch: Partial<Pick<Book, 'title' | 'subtitle' | 'description' | 'cover' | 'notes' | 'type' | 'archived' | 'coverAssetId' | 'design'>>,
 ): Promise<void> {
   await db.books.update(id, { ...patch, updatedAt: Date.now() });
 }

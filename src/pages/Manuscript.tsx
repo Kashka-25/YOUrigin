@@ -4,6 +4,7 @@ import { ArrowLeft, Printer, Type } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { orderedBook } from '../io/export';
 import { EmptyState, Spinner, StatusBadge } from '../components/ui';
+import { AssetImage } from '../components/AssetImage';
 
 const SIZES = ['text-[1.05rem]', 'text-[1.2rem]', 'text-[1.35rem]'];
 
@@ -100,7 +101,8 @@ export function Manuscript() {
                     </Link>
                   </p>
                 )}
-                <div className={`writing ${item.type === 'prompt' ? 'italic' : ''}`}>{item.body}</div>
+                {item.type === 'image' && item.assetId && <AssetImage id={item.assetId} alt={item.title} className="mx-auto my-4 max-h-[80dvh] max-w-full" />}
+                <div className={`writing ${item.type === 'prompt' ? 'italic' : ''} ${item.type === 'image' ? 'text-center text-[0.85em] italic' : ''}`}>{item.body}</div>
               </div>
             ))}
           </section>

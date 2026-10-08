@@ -12,12 +12,13 @@ import type {
   Tag,
   TagFamily,
   Template,
+  Asset,
 } from '../domain/types';
 import { BUILT_IN_FAMILIES, BUILT_IN_TEMPLATES } from '../domain/constants';
 import { installChangeTracking } from '../sync/tracking';
 import { appOutbox, isSyncEnabled } from '../sync/runtime';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /**
  * Local-first store in IndexedDB. Schema changes go through `this.version(n)`
@@ -36,6 +37,7 @@ export class YOUriginDB extends Dexie {
   suggestions!: Table<AISuggestion, string>;
   revisions!: Table<Revision, string>;
   settings!: Table<Setting, string>;
+  assets!: Table<Asset, string>;
 
   constructor(name = 'yourigin') {
     super(name);
@@ -53,6 +55,8 @@ export class YOUriginDB extends Dexie {
       revisions: 'id, contentId, createdAt',
       settings: 'key',
     });
+    // v2: stored images (book artwork, image pieces).
+    this.version(2).stores({ assets: 'id, updatedAt' });
   }
 }
 

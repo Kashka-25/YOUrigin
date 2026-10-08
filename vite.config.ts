@@ -3,6 +3,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { ViteImageOptimizer } from 'vite-plugin-image-optimizer';
 import pkg from './package.json' with { type: 'json' };
 
 export default defineConfig({
@@ -12,6 +13,14 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    // Automatic file shrinker for the app's own images at build time.
+    ViteImageOptimizer({
+      test: /.(png|jpe?g|webp)$/i,
+      png: { quality: 90 },
+      jpeg: { quality: 82, mozjpeg: true },
+      webp: { quality: 85 },
+      logStats: true,
+    }),
     VitePWA({
       registerType: 'prompt',
       includeAssets: ['favicon-*.png', 'apple-touch-icon.png'],

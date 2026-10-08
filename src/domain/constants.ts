@@ -38,6 +38,7 @@ export const CONTENT_TYPES: ContentType[] = [
   'story',
   'research',
   'note',
+  'image',
   'other',
 ];
 
@@ -53,6 +54,7 @@ export const TYPE_LABEL: Record<ContentType, string> = {
   story: 'Story',
   research: 'Research',
   note: 'Note',
+  image: 'Image',
   other: 'Other',
 };
 

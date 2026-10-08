@@ -1,6 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Plus } from 'lucide-react';
+import { ImagePlus, Loader2, Plus } from 'lucide-react';
+import { IMAGE_ACCEPT, addImagePieces } from '../../db/assets';
+import { formatBytes } from '../../io/images';
+import { useToast } from '../Toast';
 import type { ContentItem } from '../../domain/types';
 import { displayTitle, excerpt } from '../../domain/text';
 import { isOrphan, matchesQuery, parseQuery, type LibraryContext } from '../../domain/query';
@@ -53,6 +56,9 @@ export function MaterialShelf({
 }) {
   const [mode, setMode] = useState<ShelfMode>('relevant');
   const [q, setQ] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [adding, setAdding] = useState(false);
+  const toast = useToast();
 
   const list = useMemo(() => {
     const parsed = parseQuery(q);
@@ -68,8 +74,36 @@ export function MaterialShelf({
 
   return (
     <aside className="panel p-4 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto" aria-label="Material shelf">
-      <h2 className="font-serif text-xl">Material</h2>
-      <p className="text-xs text-muted">Drag into a section, or tap + to put it in the tray.</p>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-serif text-xl">Material</h2>
+        <button type="button" className="btn-ghost px-2 py-1 text-xs" onClick={() => fileRef.current?.click()} disabled={adding}>
+          {adding ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />} Add images
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          multiple
+          accept={IMAGE_ACCEPT}
+          className="hidden"
+          onChange={async (e) => {
+            const files = [...(e.target.files ?? [])];
+            e.target.value = '';
+            if (!files.length) return;
+            setAdding(true);
+            try {
+              const r = await addImagePieces(files, bookId);
+              toast(
+                `Added ${r.ids.length} image${r.ids.length === 1 ? '' : 's'} to the tray${r.before > r.after ? ` — shrunk ${formatBytes(r.before)} → ${formatBytes(r.after)}` : ''}`,
+              );
+            } catch (err) {
+              toast(err instanceof Error ? err.message : 'Could not add that image');
+            } finally {
+              setAdding(false);
+            }
+          }}
+        />
+      </div>
+      <p className="text-xs text-muted">Drag into a section, or tap + to put it in the tray. Images are shrunk automatically.</p>
       <div className="mt-3 flex gap-1" role="tablist" aria-label="Shelf filter">
         {(
           [

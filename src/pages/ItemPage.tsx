@@ -24,6 +24,8 @@ import { AssistantPanel } from '../components/AssistantPanel';
 import { RelationsPanel } from '../components/RelationsPanel';
 import { HistoryPanel } from '../components/HistoryPanel';
 import { wordCount } from '../domain/text';
+import { AssetImage } from '../components/AssetImage';
+import type { ImageLayout } from '../domain/types';
 import type { ContentItem } from '../domain/types';
 
 export function ItemPage() {
@@ -106,8 +108,11 @@ function Editor({ item }: { item: ContentItem }) {
             placeholder="Title (optional)"
             className="w-full bg-transparent font-serif text-3xl leading-tight text-ink placeholder:text-muted/60 focus:outline-none focus-visible:outline-none md:text-4xl"
           />
-          <label htmlFor="item-body" className="sr-only">
-            Writing
+          {item.type === 'image' && item.assetId && (
+            <AssetImage id={item.assetId} alt={title} className="mt-5 max-h-[70dvh] w-auto max-w-full rounded-xl border border-line" />
+          )}
+          <label htmlFor="item-body" className={item.type === 'image' ? 'label mt-5' : 'sr-only'}>
+            {item.type === 'image' ? 'Caption (optional)' : 'Writing'}
           </label>
           <AutoTextarea
             id="item-body"
@@ -134,6 +139,23 @@ function Editor({ item }: { item: ContentItem }) {
             </label>
             <TypeSelect id="item-type" value={item.type} onChange={(t) => void updateContent(item.id, { type: t })} />
           </section>
+          {item.type === 'image' && (
+            <section>
+              <label className="label" htmlFor="item-layout">
+                In print
+              </label>
+              <select
+                id="item-layout"
+                className="input"
+                value={item.imageLayout ?? 'full-page'}
+                onChange={(e) => void updateContent(item.id, { imageLayout: e.target.value as ImageLayout })}
+              >
+                <option value="full-page">Its own page (within margins)</option>
+                <option value="full-bleed">Full page to the edges (bleed)</option>
+                <option value="inline">Between pieces, on the same page</option>
+              </select>
+            </section>
+          )}
           <section>
             <h2 className="label">Tags</h2>
             <div className="rounded-xl border border-line bg-card px-2 py-1.5">

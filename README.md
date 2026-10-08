@@ -60,6 +60,37 @@ Once installed, the app opens and works with no connection.
 - **Safety:** soft delete to Trash, confirmation before anything destructive, Undo toasts, revision history, and a request for persistent storage so the browser doesn't evict data.
 - **Shortcuts:** Ctrl/⌘K or `/` for search; `N` or Alt+N for a new brain dump; Ctrl+Enter to capture.
 
+## Importing a whole manuscript
+
+Drop in one Word document (or .txt / .md) holding a whole collection or journal, and YOUrigin finds where each piece begins. It uses, in order of preference:
+
+1. Word headings, or bold title lines.
+2. Page breaks.
+3. Separator lines (`***`, `⁂`…).
+4. ALL-CAPS or numbered titles.
+5. Blank-line gaps.
+
+Chapters are recognised from the top heading level or "Chapter / Introduction / Closing…" lines. In the review list you can join, cut, rename or skip pieces before anything is saved. Each piece's type is guessed (prompts, rituals, reflections, poems…).
+
+**Also build this as a book** creates the book with the chapters as sections and every piece placed in order. The text is always imported exactly as written.
+
+## Design & print
+
+Open a book → **Design & print**. Paged.js (CSS Paged Media) lays the book out as real pages, shown as spreads. Changes save automatically, and print or save as PDF at the true trim size.
+
+The Design panel covers:
+
+- **Page size and margins:** trim size, margins, mirrored gutters.
+- **Typography:** EB Garamond / Cormorant Garamond / Newsreader, Cinzel headings, size, line spacing, poem and title alignment.
+- **Chapters and flow:** chapter opening style and ornament, each piece on a new page, chapters on right-hand pages.
+- **Running heads and page numbers:** book title on left pages, chapter on right pages.
+- **Front pages:** title page, author, copyright, dedication, contents with page numbers.
+- **Journals:** ruled writing lines after prompts, from 6 lines up to a full page.
+- **Artwork:** a cover image, chapter-opener images, and image pieces placed anywhere (own page, full bleed, or between pieces).
+- **Print services:** an optional 0.125in bleed with crop marks.
+
+**Automatic image shrinking:** pictures are resized on the device to print resolution (at most 2700px, enough for a full 6×9in page at 300dpi) and re-compressed (WebP, keeping transparency). The app's own images are also optimised at build time.
+
 ## The creative assistant (AI)
 
 The assistant **suggests**; it never writes on your behalf. Suggestions are stored as *pending* and look visibly different (dashed, ✦). Nothing is applied until you accept it.
