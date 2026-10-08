@@ -16,7 +16,7 @@ export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
       sizes={size === 'lg' ? '420px' : '210px'}
       alt="YOUrigin"
       width={700}
-      height={253}
+      height={256}
       decoding="async"
       className={`block select-none ${SIZE[size]}`}
       draggable={false}

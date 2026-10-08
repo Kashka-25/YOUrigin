@@ -13,7 +13,7 @@ for (let i = 0; i < N; i++) {
   const r = data[i * 3], g = data[i * 3 + 1], b = data[i * 3 + 2];
   const sat = Math.max(r, g, b) - Math.min(r, g, b);
   const v = (r + g + b) / 3;
-  cand[i] = sat <= 8 && v >= 105 && v <= 230 ? 1 : 0;
+  cand[i] = sat <= 10 && v >= 70 && v <= 230 ? 1 : 0;
 }
 
 // Connected components of candidates; remove those touching the border or large enough
@@ -38,6 +38,23 @@ for (let s = 0; s < N; s++) {
     }
   }
   if (border || size > 400) for (const p of members) bg[p] = 1;
+}
+
+// Peel greyish fringe/shadow pixels that touch the background (a few layers deep).
+// Bright highlights and anything not touching the background are left alone.
+for (let pass = 0; pass < 8; pass++) {
+  const peel = [];
+  for (let i = 0; i < N; i++) {
+    if (bg[i]) continue;
+    const r = data[i * 3], g = data[i * 3 + 1], b = data[i * 3 + 2];
+    const sat = Math.max(r, g, b) - Math.min(r, g, b);
+    const v = (r + g + b) / 3;
+    if (sat > 26 || v < 90 || v > 236) continue;
+    const x = i % W;
+    if ((x > 0 && bg[i - 1]) || (x < W - 1 && bg[i + 1]) || (i >= W && bg[i - W]) || (i + W < N && bg[i + W])) peel.push(i);
+  }
+  if (!peel.length) break;
+  for (const i of peel) bg[i] = 1;
 }
 
 // Alpha: opaque logo, transparent background, with a soft 1px edge.
