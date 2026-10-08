@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dataChecks, kdpGutter, layoutChecks, type Check } from './preflight';
-import { copyrightTemplate, defaultDesign } from './design';
+import { DEDICATION_STARTERS, copyrightTemplate, defaultDesign } from './design';
 import { bookCss } from './render';
 import type { Book, BookEntry, ContentItem, Section } from '../domain/types';
 
@@ -85,5 +85,11 @@ describe('KDP print-ready check', () => {
     expect(find(run([item('a')], [entry('a')], d), 'isbn')?.level).toBe('warn');
     const filled = { ...d, copyright: text.replace('[insert ISBN]', '979-8-0000-0000-0') };
     expect(find(run([item('a')], [entry('a')], filled), 'copyright')?.level).toBe('pass');
+  });
+
+  it('flags a dedication template until its [placeholders] are rewritten', () => {
+    const d = { ...defaultDesign('poetry'), dedication: DEDICATION_STARTERS[1].text };
+    expect(find(run([item('a')], [entry('a')], d), 'dedication')?.level).toBe('warn');
+    expect(find(run([item('a')], [entry('a')], { ...d, dedication: 'For Mum,\nwho taught me the sea.' }), 'dedication')).toBeUndefined();
   });
 });

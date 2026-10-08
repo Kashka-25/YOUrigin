@@ -1,7 +1,7 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import type { Book, BookDesign, Section, SpaceSize, TrimSize } from '../../domain/types';
-import { BODY_FONTS, LINE_SPACING, MARGINS, ORNAMENTS, SPACE_LABEL, TRIMS, copyrightTemplate } from '../../print/design';
+import { BODY_FONTS, LINE_SPACING, MARGINS, ORNAMENTS, SPACE_LABEL, TRIMS, DEDICATION_STARTERS, copyrightTemplate } from '../../print/design';
 import { IMAGE_ACCEPT, saveImage, useAsset, removeAssetIfUnused } from '../../db/assets';
 import { updateBook } from '../../db/books';
 import { db } from '../../db/db';
@@ -278,6 +278,24 @@ export function DesignPanel({ book, design: d, sections, onChange }: { book: Boo
         </Field>
         <Field label="Dedication" htmlFor="d-ded">
           <textarea id="d-ded" className="input min-h-16" value={d.dedication} onChange={(e) => onChange({ dedication: e.target.value })} placeholder="For…" />
+          <select
+            className="input mt-1 text-sm"
+            aria-label="Use a dedication template"
+            value=""
+            onChange={(e) => {
+              const starter = DEDICATION_STARTERS.find((s) => s.id === e.target.value);
+              if (!starter || (d.dedication.trim() && !window.confirm('Replace your dedication with this template?'))) return;
+              onChange({ dedication: starter.text });
+            }}
+          >
+            <option value="">Use a dedication template…</option>
+            {DEDICATION_STARTERS.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-muted">Replace anything in [brackets] with your own words. Leave empty for no dedication page.</p>
         </Field>
         <Toggle label="Contents page (with page numbers)" checked={d.toc} onChange={(v) => onChange({ toc: v })} />
       </Group>

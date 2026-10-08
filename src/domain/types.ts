@@ -215,6 +215,8 @@ export interface Template extends Syncable {
   builtIn: boolean;
   /** New books start with a copyright page (ISBN placeholder). Unset counts as yes. */
   copyrightPage?: boolean;
+  /** New books start with a dedication page to rewrite. Unset counts as no. */
+  dedicationPage?: boolean;
 }
 
 export type SuggestionKind = 'tags' | 'type';

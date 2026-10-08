@@ -146,6 +146,9 @@ export function dataChecks({ book, design: d, sections, entries, contentById, as
     out.push({ id: 'isbn', level: 'info', title: 'Copyright page has no ISBN', detail: 'KDP can assign a free ISBN — add it to the copyright page once you have it.', fix: { label: 'Front pages', to: `${base}/print` } });
   else out.push({ id: 'copyright', level: 'pass', title: 'Copyright page with ISBN' });
 
+  if (/\[[^\]]+\]/.test(d.dedication))
+    out.push({ id: 'dedication', level: 'warn', title: 'Dedication still has a [placeholder]', detail: 'Replace the words in [brackets] — or clear the dedication to leave the page out.', fix: { label: 'Front pages', to: `${base}/print` } });
+
   // --- Cover -------------------------------------------------------------------
   const g = coverGeometry(d, cover, pages ?? d.pageCount);
   const front = book.coverAssetId ? assets.get(book.coverAssetId) : undefined;

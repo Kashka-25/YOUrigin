@@ -209,5 +209,8 @@ describe('moving between devices', () => {
     expect(book?.design?.copyright).toMatch(/Copyright © \d{4} Cassidy Dugan[\s\S]*ISBN: \[insert ISBN\]/);
     const without = await createBook({ title: 'Plain', templateId: 'tpl-poetry', copyrightPage: false });
     expect((await db.books.get(without))?.design?.copyright).toBeUndefined();
+    expect(book?.design?.dedication).toBeUndefined(); // dedication is opt-in
+    const dedicated = await db.books.get(await createBook({ title: 'For You', templateId: 'tpl-journal', dedicationPage: true }));
+    expect(dedicated?.design?.dedication).toMatch(/the reader/);
   });
 });

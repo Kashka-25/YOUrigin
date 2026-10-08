@@ -114,3 +114,20 @@ export function copyrightTemplate(book: { title: string; type: BookType }, autho
     lines.push('', 'This journal is for personal reflection and is not a substitute for professional medical or mental-health care.');
   return lines.join('\n');
 }
+
+/** Marks who the book is for on the dedication page (the KDP check looks for it). */
+export const NAME_PLACEHOLDER = '[name]';
+
+/** Starting points for a dedication page — each is meant to be rewritten in your own words. */
+export const DEDICATION_STARTERS: { id: string; label: string; text: string }[] = [
+  { id: 'simple', label: 'For someone', text: `For ${NAME_PLACEHOLDER}` },
+  { id: 'who', label: 'For someone, and why', text: `For ${NAME_PLACEHOLDER},\nwho taught me [what they gave you].` },
+  { id: 'memory', label: 'In memory', text: `In loving memory of ${NAME_PLACEHOLDER}\n[years]` },
+  { id: 'reader', label: 'To the reader', text: 'For you, the reader —\nmay these pages meet you exactly where you are.' },
+  { id: 'self', label: 'To my younger self', text: 'For the version of me\nwho needed these words first.' },
+];
+
+/** The dedication a new book starts with: journals speak to the reader, others to someone. */
+export function dedicationTemplate(type: BookType): string {
+  return DEDICATION_STARTERS.find((s) => s.id === (type === 'journal' ? 'reader' : 'who'))!.text;
+}
