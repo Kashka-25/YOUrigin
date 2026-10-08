@@ -20,6 +20,26 @@ export interface DraftPiece {
   include: boolean;
   /** Chapter/section in the source document, if it has them. */
   section?: string;
+  /** This piece is the document's own contents list (mostly other pieces' titles). */
+  contentsList?: boolean;
+}
+
+const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+
+/**
+ * A document's own contents/glossary lists the titles of its pieces. In the app
+ * that's replaced by the live, linked Contents, so such a piece is flagged and
+ * left unticked (it can still be kept).
+ */
+export function markContentsLists(pieces: DraftPiece[]): DraftPiece[] {
+  const titles = new Set(pieces.map((p) => norm(p.title)).filter(Boolean));
+  if (titles.size < 4) return pieces;
+  return pieces.map((p) => {
+    const lines = p.body.split('\n').map(norm).filter(Boolean);
+    if (lines.length < 4) return p;
+    const hits = lines.filter((l) => titles.has(l) && l !== norm(p.title)).length;
+    return hits / lines.length >= 0.5 ? { ...p, contentsList: true, include: false } : p;
+  });
 }
 
 // Word styles that mark a poem's title, and page breaks, survive conversion.
@@ -86,7 +106,7 @@ export function draftPieces(
       });
     }
   }
-  return { pieces, used };
+  return { pieces: markContentsLists(pieces), used };
 }
 
 export interface ImportOptions {

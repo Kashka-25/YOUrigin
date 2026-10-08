@@ -17,6 +17,8 @@ import { coverColour } from '../components/BookCover';
 import { providerFor, type ProposedSection } from '../ai';
 import { useSettings } from '../db/settings';
 import { displayTitle } from '../domain/text';
+import { ContentsList } from '../components/book/ContentsList';
+import { ChevronDown, Maximize2 } from 'lucide-react';
 
 export function BookBuilder() {
   const { id } = useParams();
@@ -78,6 +80,22 @@ export function BookBuilder() {
       <div className="mt-6">
         <BookDashboard progress={progress} />
       </div>
+
+      <details className="group mt-4 rounded-2xl border border-line bg-card">
+        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
+          <span className="font-serif text-xl">Contents</span>
+          <span className="text-sm text-muted">· {progress.counts.total} pieces, colour-coded by status</span>
+          <ChevronDown size={18} className="ml-auto text-muted transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
+        <div className="px-4 pb-4">
+          <div className="mb-3 flex justify-end">
+            <Link to={`/books/${book.id}/contents`} className="btn-ghost px-2 py-1 text-xs">
+              <Maximize2 size={13} /> Open as a page
+            </Link>
+          </div>
+          <ContentsList bookId={book.id} compact />
+        </div>
+      </details>
 
       {relevantOrphans.length > 0 && (
         <p className="mt-3 text-sm text-ink-2">

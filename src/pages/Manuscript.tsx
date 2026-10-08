@@ -5,6 +5,15 @@ import { useLibrary } from '../hooks/useLibrary';
 import { orderedBook } from '../io/export';
 import { EmptyState, Spinner, StatusBadge } from '../components/ui';
 import { AssetImage } from '../components/AssetImage';
+import { displayTitle } from '../domain/text';
+import type { Status } from '../domain/types';
+
+const STATUS_DOT: Record<Status, string> = { seed: 'bg-seed', developing: 'bg-developing', polished: 'bg-polished' };
+
+/** Scroll to an element by id (plain #anchors would clash with the app's hash routing). */
+function jump(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 const SIZES = ['text-[1.05rem]', 'text-[1.2rem]', 'text-[1.35rem]'];
 
@@ -63,18 +72,33 @@ export function Manuscript() {
         </header>
 
         {nonEmpty.length > 1 && (
-          <nav className="print-break py-16" aria-label="Contents">
-            <h2 className="mb-6 text-center text-sm font-sans font-semibold tracking-[0.2em] text-muted uppercase">Contents</h2>
-            <ol className="space-y-2">
-              {nonEmpty.map(({ section }) => (
+          <details open className="group print-break py-16" aria-label="Contents">
+            <summary className="mb-6 flex cursor-pointer list-none items-center justify-center gap-2 text-center font-sans text-sm font-semibold tracking-[0.2em] text-muted uppercase [&::-webkit-details-marker]:hidden">
+              Contents
+              <span className="no-print text-xs tracking-normal normal-case transition-transform group-open:rotate-180" aria-hidden>
+                ▾
+              </span>
+            </summary>
+            <ol className="space-y-5">
+              {nonEmpty.map(({ section, items }) => (
                 <li key={section.id}>
-                  <a href={`#s-${section.id}`} className="hover:underline">
+                  <button type="button" onClick={() => jump(`s-${section.id}`)} className="text-left font-semibold hover:underline">
                     {section.title}
-                  </a>
+                  </button>
+                  <ol className="mt-1 space-y-0.5 pl-4 text-[0.9em]">
+                    {items.map((item) => (
+                      <li key={item.id} className="flex items-center gap-2">
+                        {showStatus && <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[item.status]}`} aria-label={item.status} />}
+                        <button type="button" onClick={() => jump(`p-${item.id}`)} className="truncate text-left text-ink-2 hover:text-ink hover:underline">
+                          {displayTitle(item)}
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
                 </li>
               ))}
             </ol>
-          </nav>
+          </details>
         )}
 
         {nonEmpty.length === 0 && (
@@ -84,10 +108,10 @@ export function Manuscript() {
         )}
 
         {nonEmpty.map(({ section, items }) => (
-          <section key={section.id} id={`s-${section.id}`} className="print-break pt-24">
+          <section key={section.id} id={`s-${section.id}`} className="print-break scroll-mt-16 pt-24">
             <h2 className="mb-14 text-center text-sm font-sans font-semibold tracking-[0.25em] text-muted uppercase">{section.title}</h2>
             {items.map((item, i) => (
-              <div key={item.id} className="manuscript-piece">
+              <div key={item.id} id={`p-${item.id}`} className="manuscript-piece scroll-mt-16">
                 {i > 0 && (
                   <p className="my-12 text-center text-muted" aria-hidden>
                     ⁂

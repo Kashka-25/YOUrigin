@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Archive, ArrowLeft, BookPlus, FolderPlus, Trash2, X } from 'lucide-react';
+import { Archive, ArrowLeft, BookPlus, ChevronDown, ChevronLeft, ChevronRight, FolderPlus, List, Trash2, X } from 'lucide-react';
+import { ContentsList, useBookOrder } from '../components/book/ContentsList';
+import { displayTitle } from '../domain/text';
 import { db } from '../db/db';
 import { useLibrary } from '../hooks/useLibrary';
 import { useAutosave } from '../hooks/useAutosave';
@@ -44,6 +46,12 @@ export function ItemPage() {
 function Editor({ item }: { item: ContentItem }) {
   const lib = useLibrary();
   const nav = useNavigate();
+  const [params] = useSearchParams();
+  const bookParam = params.get('book');
+  const order = useBookOrder(bookParam);
+  const at = order ? order.flat.findIndex((c) => c.id === item.id) : -1;
+  const prev = at > 0 ? order!.flat[at - 1] : null;
+  const next = order && at >= 0 && at < order.flat.length - 1 ? order.flat[at + 1] : null;
   const toast = useToast();
   const [title, setTitle] = useState(item.title);
   const [body, setBody] = useState(item.body);
@@ -84,11 +92,40 @@ function Editor({ item }: { item: ContentItem }) {
   return (
     <div className="mx-auto max-w-6xl px-4 pt-6 md:px-8 md:pt-10">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <button type="button" onClick={() => nav(-1)} className="btn-ghost -ml-3">
-          <ArrowLeft size={16} /> Back
-        </button>
+        {order ? (
+          <Link to={`/books/${order.book.id}`} className="btn-ghost -ml-3 min-w-0">
+            <ArrowLeft size={16} /> <span className="truncate">{order.book.title}</span>
+          </Link>
+        ) : (
+          <button type="button" onClick={() => nav(-1)} className="btn-ghost -ml-3">
+            <ArrowLeft size={16} /> Back
+          </button>
+        )}
         <SaveIndicator state={state} />
       </div>
+      {order && at >= 0 && (
+        <nav className="mb-5 flex items-center gap-2 rounded-xl border border-line bg-card px-2 py-1.5 text-sm" aria-label="Move through the book">
+          {prev ? (
+            <Link to={`/item/${prev.id}?book=${order.book.id}`} className="btn-ghost min-w-0 px-2" onClick={() => void flush()} title={displayTitle(prev)}>
+              <ChevronLeft size={16} /> <span className="hidden truncate sm:inline">{displayTitle(prev)}</span>
+              <span className="sm:hidden">Previous</span>
+            </Link>
+          ) : (
+            <span className="px-2 text-muted">Start of book</span>
+          )}
+          <Link to={`/books/${order.book.id}/contents`} className="mx-auto shrink-0 text-xs text-muted hover:text-ink">
+            {at + 1} of {order.flat.length}
+          </Link>
+          {next ? (
+            <Link to={`/item/${next.id}?book=${order.book.id}`} className="btn-ghost min-w-0 px-2" onClick={() => void flush()} title={displayTitle(next)}>
+              <span className="hidden truncate sm:inline">{displayTitle(next)}</span>
+              <span className="sm:hidden">Next</span> <ChevronRight size={16} />
+            </Link>
+          ) : (
+            <span className="px-2 text-muted">End of book</span>
+          )}
+        </nav>
+      )}
 
       {item.deletedAt && (
         <p className="mb-4 rounded-xl bg-seed-bg px-4 py-2 text-sm text-seed">
@@ -129,6 +166,17 @@ function Editor({ item }: { item: ContentItem }) {
         </div>
 
         <aside className="space-y-6 lg:border-l lg:border-line lg:pl-6">
+          {order && (
+            <details className="group rounded-xl border border-line">
+              <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
+                <List size={15} aria-hidden /> Contents
+                <ChevronDown size={16} className="ml-auto text-muted transition-transform group-open:rotate-180" aria-hidden />
+              </summary>
+              <div className="max-h-[60dvh] overflow-y-auto px-3 pb-3">
+                <ContentsList bookId={order.book.id} currentId={item.id} compact />
+              </div>
+            </details>
+          )}
           <section>
             <h2 className="label">Status</h2>
             <StatusPicker value={item.status} onChange={(s) => void updateContent(item.id, { status: s })} size="sm" />

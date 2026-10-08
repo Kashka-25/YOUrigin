@@ -292,6 +292,12 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
                         <p className="px-1 text-[11px] text-muted">
                           {lines.filter((l) => l.trim()).length} lines · {d.file}
                         </p>
+                        {d.contentsList && (
+                          <p className="mt-1 rounded-lg bg-ai-bg/60 px-2 py-1 text-xs text-ai">
+                            This looks like your contents list. Your book gets a live, linked <strong>Contents</strong> instead — every title
+                            opens its piece, colour-coded by status. Tick to keep this text as well.
+                          </p>
+                        )}
                       </div>
                       <div className="flex shrink-0 flex-col gap-1 sm:flex-row">
                         <button

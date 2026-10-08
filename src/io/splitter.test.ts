@@ -88,6 +88,20 @@ describe('poem splitter', () => {
     ]);
   });
 
+  it('recognises a document’s own contents list and leaves it unticked', async () => {
+    const { markContentsLists } = await import('./import');
+    const piece = (title: string, body: string) => ({ key: title, file: 'f', title, body, include: true });
+    const marked = markContentsLists([
+      piece('Contents', 'North Star\nDistant Meadows\nMessage In A Bottle\nSeasonal Flower\n\nHOPEFUL'),
+      piece('North Star', 'all this time'),
+      piece('Distant Meadows', 'meadow lines'),
+      piece('Message In A Bottle', 'bottle lines'),
+      piece('Seasonal Flower', 'flower lines'),
+    ]);
+    expect(marked[0]).toMatchObject({ contentsList: true, include: false });
+    expect(marked.slice(1).every((p) => p.include && !('contentsList' in p))).toBe(true);
+  });
+
   it('does not mistake ordinary verse for titles', () => {
     expect(isTitleLike('and the door stayed open,')).toBe(false);
     expect(isTitleLike('I keep circling back to the idea that loss is a kind of shape')).toBe(false);

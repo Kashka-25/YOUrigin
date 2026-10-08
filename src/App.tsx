@@ -13,6 +13,7 @@ import { ItemPage } from './pages/ItemPage';
 import { Books } from './pages/Books';
 import { BookBuilder } from './pages/BookBuilder';
 import { Manuscript } from './pages/Manuscript';
+import { BookContents } from './pages/BookContents';
 import { BookMap } from './pages/BookMap';
 import { Tags } from './pages/Tags';
 import { Orphans } from './pages/Orphans';
@@ -94,6 +95,7 @@ export default function App() {
                       <Route path="/item/:id" element={<ItemPage />} />
                       <Route path="/books" element={<Books />} />
                       <Route path="/books/:id" element={<BookBuilder />} />
+                      <Route path="/books/:id/contents" element={<BookContents />} />
                       <Route path="/map" element={<BookMap />} />
                       <Route path="/tags" element={<Tags />} />
                       <Route path="/orphans" element={<Orphans />} />
