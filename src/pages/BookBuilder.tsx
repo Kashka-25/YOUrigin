@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { BookOpenText, Download, Settings2, Sparkles, ArrowLeft, LayoutTemplate } from 'lucide-react';
+import { BookImage, BookOpenText, Download, Settings2, Sparkles, ArrowLeft, LayoutTemplate } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { computeBookProgress } from '../domain/progress';
 import { BOOK_TYPE_LABEL, COVER_COLOURS } from '../domain/constants';
@@ -66,6 +66,9 @@ export function BookBuilder() {
         <div className="flex flex-wrap gap-2">
           <Link to={`/books/${book.id}/print`} className="btn-primary">
             <LayoutTemplate size={16} /> Design & print
+          </Link>
+          <Link to={`/books/${book.id}/cover`} className="btn">
+            <BookImage size={16} /> Cover
           </Link>
           <Link to={`/books/${book.id}/read`} className="btn">
             <BookOpenText size={16} /> Read

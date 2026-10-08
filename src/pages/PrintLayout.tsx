@@ -5,7 +5,7 @@ import '@fontsource-variable/cormorant-garamond/wght-italic.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, BookOpenText, Loader2, Printer, SlidersHorizontal, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, BookImage, BookOpenText, Loader2, Printer, SlidersHorizontal, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { db } from '../db/db';
 import { updateBook } from '../db/books';
@@ -133,6 +133,12 @@ export function PrintLayout() {
     return () => clearTimeout(timer);
   }, [html, css, renderPages]);
 
+  // Remember the interior page count — the cover designer uses it for the spine width.
+  useEffect(() => {
+    if (!book || pages === null || rendering || book.design?.pageCount === pages) return;
+    void updateBook(book.id, { design: { ...(book.design ?? {}), pageCount: pages } });
+  }, [book, pages, rendering]);
+
   // Leaving the page removes the print styles Paged.js added to the document.
   useEffect(() => () => document.querySelectorAll('style[data-yourigin-print]').forEach((el) => el.remove()), []);
 
@@ -169,6 +175,9 @@ export function PrintLayout() {
         <button type="button" className={`btn ${panel ? 'border-accent text-accent' : ''}`} onClick={() => setPanel((p) => !p)} aria-expanded={panel}>
           <SlidersHorizontal size={15} /> Design
         </button>
+        <Link to={`/books/${book.id}/cover`} className="btn">
+          <BookImage size={15} /> Cover
+        </Link>
         <button type="button" className="btn-primary" onClick={() => window.print()} disabled={rendering}>
           <Printer size={15} /> Print / PDF
         </button>

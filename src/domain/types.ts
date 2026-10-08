@@ -138,6 +138,35 @@ export interface BookDesign {
   drawingFrame: boolean;
   /** Add 0.125in bleed for print-on-demand services. */
   bleed: boolean;
+  /** Interior page count from the last print layout (used for the spine). */
+  pageCount?: number;
+  /** Wraparound paperback cover. */
+  cover?: Partial<CoverDesign>;
+}
+
+export interface CoverDesign {
+  paper: 'white' | 'cream' | 'standard-colour' | 'premium-colour';
+  /** Manual page count; 0 = use the counted interior. */
+  pageCount: number;
+  /** Manual spine width in inches; 0 = calculate from pages and paper. */
+  spineOverride: number;
+  background: string;
+  textColour: string;
+  accentColour: string;
+  font: 'cinzel' | 'garamond' | 'cormorant';
+  /** Title size multiplier. */
+  titleSize: number;
+  /** Front panel: artwork fills it with the title over it, or artwork above the title, or type only. */
+  frontLayout: 'image-full' | 'image-top' | 'type-only';
+  /** Stretch the front artwork across the whole wrap (back, spine and front). */
+  wrapImage: boolean;
+  backImageAssetId?: string;
+  blurb: string;
+  authorBio: string;
+  spineText: boolean;
+  barcodeSpace: boolean;
+  /** On-screen guides (never printed). */
+  showGuides: boolean;
 }
 
 /** How much room to leave: to the end of the current page, a whole extra page, both, or none. */

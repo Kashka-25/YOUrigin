@@ -25,6 +25,17 @@ import { EmptyState, Spinner } from './components/ui';
 // The print designer (and its page-layout engine) only loads when opened.
 const PrintLayout = lazy(() => import('./pages/PrintLayout').then((m) => ({ default: m.PrintLayout })));
 
+const CoverDesigner = lazy(() => import('./pages/CoverDesigner').then((m) => ({ default: m.CoverDesigner })));
+
+function CoverRoute() {
+  const { id } = useParams();
+  return (
+    <Suspense fallback={<Spinner />}>
+      <CoverDesigner key={id} />
+    </Suspense>
+  );
+}
+
 /** A fresh print view per book, so one book's pages never linger while another lays out. */
 function PrintRoute() {
   const { id } = useParams();
@@ -85,6 +96,7 @@ export default function App() {
                 path="/books/:id/print"
                 element={<PrintRoute />}
               />
+              <Route path="/books/:id/cover" element={<CoverRoute />} />
               <Route
                 path="*"
                 element={

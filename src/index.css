@@ -202,6 +202,18 @@
   .print-stage .pagedjs_first_page {
     margin-left: 0 !important;
   }
+  /* Cover designer: only the cover, at true size. */
+  .cover-designer {
+    background: #fff !important;
+  }
+  .cover-designer main {
+    padding: 0 !important;
+  }
+  .cover-designer .cover-stage {
+    zoom: 1 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
 
   .no-print {
     display: none !important;

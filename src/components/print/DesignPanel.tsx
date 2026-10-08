@@ -56,7 +56,7 @@ export function SpaceSelect({ id, value, onChange }: { id?: string; value: Space
 }
 
 /** Upload or remove one piece of artwork (cover or section opener). Images are shrunk automatically. */
-function ArtworkPicker({ assetId, onPick, onClear, label }: { assetId?: string; onPick: (id: string) => Promise<void>; onClear: () => Promise<void>; label: string }) {
+export function ArtworkPicker({ assetId, onPick, onClear, label }: { assetId?: string; onPick: (id: string) => Promise<void>; onClear: () => Promise<void>; label: string }) {
   const asset = useAsset(assetId);
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
