@@ -1,6 +1,10 @@
 // Removes a baked-in grey checkerboard "transparency" from the logo artwork.
-// Usage: node scripts/logo-cutout.mjs <input> <outputDir>
+// Usage: node scripts/logo-cutout.mjs <input> <outputDir>   (or: npm run brand)
 import sharp from 'sharp';
+import { mkdir } from 'node:fs/promises';
+
+export const CACHE_DIR = 'node_modules/.cache/yourigin';
+export const FULL_CUTOUT = `${CACHE_DIR}/logo-full.png`;
 
 const [input, outDir] = process.argv.slice(2);
 const { data, info } = await sharp(input).removeAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -86,5 +90,6 @@ for (const w of [1400, 700]) {
   const out = await sharp(trimmed).resize(w).webp({ quality: 85, alphaQuality: 90 }).toFile(`${outDir}/yourigin-logo-${w}.webp`);
   console.log(`yourigin-logo-${w}.webp`, out.width, 'x', out.height, Math.round(out.size / 1024) + 'KB');
 }
-await sharp(trimmed).resize(1400).png().toFile(`${outDir}/preview-logo.png`);
-if (process.env.FULL_OUT) await sharp(trimmed).png().toFile(process.env.FULL_OUT);
+// Full-resolution cutout for scripts/brand-icons.mjs.
+await mkdir(CACHE_DIR, { recursive: true });
+await sharp(trimmed).png().toFile(FULL_CUTOUT);

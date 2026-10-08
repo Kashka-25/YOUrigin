@@ -13,7 +13,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "icons": "node scripts/icons.mjs"
+    "brand": "node scripts/logo-cutout.mjs scripts/logo-source.webp src/assets/brand && node scripts/brand-icons.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
