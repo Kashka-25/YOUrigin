@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dataChecks, kdpGutter, layoutChecks, type Check } from './preflight';
-import { defaultDesign } from './design';
+import { copyrightTemplate, defaultDesign } from './design';
 import { bookCss } from './render';
 import type { Book, BookEntry, ContentItem, Section } from '../domain/types';
 
@@ -75,5 +75,15 @@ describe('KDP print-ready check', () => {
     const css = bookCss({ ...defaultDesign('journal'), bleed: true });
     expect(css).toContain('size: 6.1250in 9.2500in');
     expect(css).not.toMatch(/marks:|bleed:/);
+  });
+
+  it('offers a copyright template and flags its ISBN placeholder until filled', () => {
+    const text = copyrightTemplate(book, 'Cassidy Dugan', 2026);
+    expect(text).toContain('Copyright © 2026 Cassidy Dugan');
+    expect(text).toMatch(/not a substitute/); // journals get a wellbeing note
+    const d = { ...defaultDesign('journal'), author: 'Cassidy Dugan', copyright: text };
+    expect(find(run([item('a')], [entry('a')], d), 'isbn')?.level).toBe('warn');
+    const filled = { ...d, copyright: text.replace('[insert ISBN]', '979-8-0000-0000-0') };
+    expect(find(run([item('a')], [entry('a')], filled), 'copyright')?.level).toBe('pass');
   });
 });

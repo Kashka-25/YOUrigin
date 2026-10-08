@@ -1,7 +1,7 @@
 // Print-ready check for Amazon KDP paperbacks. Pure data checks live here;
 // layout checks (blank pages, image sharpness) measure the rendered pages.
 import type { Asset, Book, BookDesign, BookEntry, ContentItem, Section, TrimSize } from '../domain/types';
-import { MARGINS, TRIMS } from './design';
+import { ISBN_PLACEHOLDER, MARGINS, TRIMS } from './design';
 import { coverGeometry, resolveCover, MIN_PAGES_FOR_SPINE_TEXT, BLEED_IN } from './cover';
 import { displayTitle } from '../domain/text';
 import { resolveSpace } from './render';
@@ -140,6 +140,8 @@ export function dataChecks({ book, design: d, sections, entries, contentById, as
   out.push(d.titlePage ? { id: 'titlepage', level: 'pass', title: 'Title page included' } : { id: 'titlepage', level: 'warn', title: 'No title page', fix: { label: 'Front pages', to: `${base}/print` } });
   out.push(d.author.trim() ? { id: 'author', level: 'pass', title: `Author: ${d.author.trim()}` } : { id: 'author', level: 'warn', title: 'No author name set', fix: { label: 'Add author', to: `${base}/print` } });
   if (!d.copyright.trim()) out.push({ id: 'copyright', level: 'warn', title: 'No copyright page', detail: 'Add © year, your name and rights, plus the ISBN.', fix: { label: 'Front pages', to: `${base}/print` } });
+  else if (d.copyright.includes(ISBN_PLACEHOLDER) || /\[(insert|add)[^\]]*\]/i.test(d.copyright))
+    out.push({ id: 'isbn', level: 'warn', title: 'Copyright page still has a placeholder', detail: 'Replace “[insert ISBN]” with your ISBN — KDP shows it after you set up the paperback, or offers a free one.', fix: { label: 'Front pages', to: `${base}/print` } });
   else if (!/isbn/i.test(d.copyright))
     out.push({ id: 'isbn', level: 'info', title: 'Copyright page has no ISBN', detail: 'KDP can assign a free ISBN — add it to the copyright page once you have it.', fix: { label: 'Front pages', to: `${base}/print` } });
   else out.push({ id: 'copyright', level: 'pass', title: 'Copyright page with ISBN' });

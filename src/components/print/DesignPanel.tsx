@@ -1,7 +1,7 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import type { Book, BookDesign, Section, SpaceSize, TrimSize } from '../../domain/types';
-import { BODY_FONTS, LINE_SPACING, MARGINS, ORNAMENTS, SPACE_LABEL, TRIMS } from '../../print/design';
+import { BODY_FONTS, LINE_SPACING, MARGINS, ORNAMENTS, SPACE_LABEL, TRIMS, copyrightTemplate } from '../../print/design';
 import { IMAGE_ACCEPT, saveImage, useAsset, removeAssetIfUnused } from '../../db/assets';
 import { updateBook } from '../../db/books';
 import { db } from '../../db/db';
@@ -264,6 +264,17 @@ export function DesignPanel({ book, design: d, sections, onChange }: { book: Boo
             onChange={(e) => onChange({ copyright: e.target.value })}
             placeholder={`© ${new Date().getFullYear()} Your Name. All rights reserved.\nISBN …`}
           />
+          <button
+            type="button"
+            className="mt-1 text-xs text-accent underline"
+            onClick={() => {
+              if (d.copyright.trim() && !window.confirm('Replace your copyright page with the template?')) return;
+              onChange({ copyright: copyrightTemplate(book, d.author) });
+            }}
+          >
+            Use copyright template
+          </button>
+          <p className="mt-1 text-xs text-muted">Replace “[insert ISBN]” once you have your ISBN (KDP offers a free one).</p>
         </Field>
         <Field label="Dedication" htmlFor="d-ded">
           <textarea id="d-ded" className="input min-h-16" value={d.dedication} onChange={(e) => onChange({ dedication: e.target.value })} placeholder="For…" />

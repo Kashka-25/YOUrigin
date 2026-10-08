@@ -92,3 +92,25 @@ export function contentHeightIn(d: BookDesign): number {
   const m = MARGINS[d.margins];
   return h - m.top - m.bottom - 0.45; // leave room for the page number line
 }
+
+/** Marks the spot to fill in on the copyright page (the KDP check looks for it). */
+export const ISBN_PLACEHOLDER = '[insert ISBN]';
+
+/** A standard copyright page, ready to edit. */
+export function copyrightTemplate(book: { title: string; type: BookType }, author: string, year = new Date().getFullYear()): string {
+  const name = author.trim() || 'Your Name';
+  const lines = [
+    book.title,
+    '',
+    `Copyright © ${year} ${name}`,
+    'All rights reserved. No part of this book may be reproduced, stored or shared in any form without written permission from the author, except for brief quotations in reviews.',
+    '',
+    `ISBN: ${ISBN_PLACEHOLDER}`,
+    '',
+    `First edition ${year}`,
+    `Cover and interior design by ${name}`,
+  ];
+  if (book.type === 'journal')
+    lines.push('', 'This journal is for personal reflection and is not a substitute for professional medical or mental-health care.');
+  return lines.join('\n');
+}
