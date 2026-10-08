@@ -14,7 +14,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['icon.svg'],
+      includeAssets: ['icon.svg', 'favicon-*.png'],
       manifest: {
         name: 'YOUrigin — Your Creative Codex',
         short_name: 'YOUrigin',

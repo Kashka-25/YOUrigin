@@ -87,3 +87,4 @@ for (const w of [1400, 700]) {
   console.log(`yourigin-logo-${w}.webp`, out.width, 'x', out.height, Math.round(out.size / 1024) + 'KB');
 }
 await sharp(trimmed).resize(1400).png().toFile(`${outDir}/preview-logo.png`);
+if (process.env.FULL_OUT) await sharp(trimmed).png().toFile(process.env.FULL_OUT);
