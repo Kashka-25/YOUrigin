@@ -14,6 +14,8 @@ import type {
   Template,
 } from '../domain/types';
 import { BUILT_IN_FAMILIES, BUILT_IN_TEMPLATES } from '../domain/constants';
+import { installChangeTracking } from '../sync/tracking';
+import { appOutbox, isSyncEnabled } from '../sync/runtime';
 
 export const SCHEMA_VERSION = 1;
 
@@ -55,6 +57,8 @@ export class YOUriginDB extends Dexie {
 }
 
 export const db = new YOUriginDB();
+// Records local changes for sync (a no-op until sync is set up on this device).
+installChangeTracking(db, appOutbox, isSyncEnabled);
 
 /** Built-ins have stable ids, so this is idempotent and merge-safe. */
 export async function ensureBuiltIns(target: YOUriginDB = db): Promise<void> {

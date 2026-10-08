@@ -10,6 +10,7 @@ import { useToast } from '../components/Toast';
 import { hasSample, loadSample, removeSample } from '../db/sample';
 import { requestPersistentStorage } from '../db/db';
 import { useInstallPrompt } from '../pwa';
+import { SyncPanel } from '../components/SyncPanel';
 
 function Section({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {
   return (
@@ -81,10 +82,15 @@ export function Settings() {
     <div className="mx-auto max-w-3xl px-4 pt-8 md:px-8 md:pt-12">
       <h1 className="page-title">Settings</h1>
 
-      <Section title="Your writing, your devices" id="s-data">
+      <Section title="Sync between devices" id="s-sync">
+        <SyncPanel />
+      </Section>
+
+      <Section title="Your writing on this device" id="s-data">
         <p className="text-[15px] leading-relaxed text-ink-2">
-          Everything lives on this device and works fully offline. To carry your work between your phone and laptop, download a backup on one and{' '}
-          <em>merge</em> it on the other — the newest version of each piece wins and nothing is deleted.
+          Everything lives on this device and works fully offline. Backups are a safety net whether or not you sync — and without sync, you can still carry
+          work between devices by downloading a backup on one and <em>merging</em> it on the other (the newest version of each piece wins; nothing is
+          deleted).
         </p>
         <div className="panel flex flex-wrap items-center gap-3 p-4 text-sm">
           <HardDrive size={18} className="text-muted" aria-hidden />

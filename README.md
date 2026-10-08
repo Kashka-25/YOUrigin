@@ -26,7 +26,7 @@ npm run dev          # http://localhost:5173 (or the next free port)
 | `npm run typecheck` / `npm run lint` / `npm test` | Quality checks |
 | `npm run icons` | Re-render PNG app icons from `public/icon.svg` |
 
-**No environment variables are required.** The optional Claude API key is entered in *Settings → Creative assistant*. It's stored only on that device and never included in backups.
+**No environment variables are required.** (Sync uses the public Supabase URL and publishable key in `src/sync/config.ts`; override them with `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY`.) The optional Claude API key is entered in *Settings → Creative assistant*. It's stored only on that device and never included in backups.
 
 ## Using it on your phone and laptop
 
@@ -39,7 +39,7 @@ Then:
 
 Once installed, the app opens and works with no connection.
 
-**Moving work between devices (V1):** *Settings → Download full backup* on one device, then *Merge a backup* on the other. For each record, the most recently edited version wins. Tags with the same name are unified, and nothing local is deleted. Automatic sync is planned for V1.1 (see below).
+**Sync between devices:** *Settings → Sync between devices*. Sign in, then choose a sync passphrase on your first device and enter the same one on each other device. See [Sync](#sync) below. Without sync, you can still move work with *Download full backup* on one device and *Merge a backup* on the other.
 
 ## What's in V1
 
@@ -134,9 +134,22 @@ There are also tests for trash and purge, exact import fidelity, opt-in AI sugge
 
 During onboarding you can choose *Explore with sample pieces*. *Settings → Remove sample material* deletes only those examples.
 
+## Sync
+
+Sync is optional and **end-to-end encrypted**: the server never sees readable writing.
+
+- **Key:** a sync passphrase derives an AES-256-GCM key on the device (PBKDF2-SHA-256, 600k iterations). The key is non-extractable, and the passphrase is never stored or sent. The server keeps only a salt and an encrypted "verifier" so other devices can check the passphrase.
+- **Server:** Supabase (`supabase/migrations/`). It has one table of encrypted records keyed by user/table/id, and a push function with last-write-wins on change time. Row-level security plus an email allowlist (`yourigin_private.yourigin_allowed_users`) means only allowed accounts can sync. Sign-in is shared with the YOU app's project; nothing of the YOU app is touched.
+- **Change tracking:** a Dexie middleware (`src/sync/tracking.ts`) records every local add, put or delete on synced tables into an outbox kept in localStorage. Deletions are therefore synced too. Changes applied from the server are never re-queued.
+- **Engine** (`src/sync/engine.ts`): pull → apply → push.
+  - A newer unsent local edit is never overwritten by an older remote one.
+  - When a newer remote version replaces different local wording, the local wording is saved to the piece's History first.
+  - Tags or book placements created separately on two devices are merged deterministically.
+- **When it runs:** a few seconds after a change, when you return to the app or come back online, and every minute while the app is open.
+- **Not synced:** device settings, the Claude API key and the capture draft.
+
 ## V1.1 — next
 
-- **Automatic sync between phone and laptop.** A sync backend such as Supabase keeps the local-first store and syncs changed records by `updatedAt`. The schema is already shaped for it.
 - PDF import, voice capture/transcription.
 - EPUB and print-ready PDF export with typographic control.
 - Subsections; per-type progress lines (e.g. *Prompts 70%*); richer Book Map (zoom/pan, piece nodes).

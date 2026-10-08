@@ -4,6 +4,7 @@ import './index.css';
 import './pwa';
 import App from './App';
 import { ensureBuiltIns } from './db/db';
+import { startSync } from './sync/controller';
 
 const root = createRoot(document.getElementById('root')!);
 
@@ -15,4 +16,5 @@ ensureBuiltIns()
         <App />
       </StrictMode>,
     );
+    void startSync();
   });

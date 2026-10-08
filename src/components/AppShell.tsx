@@ -19,6 +19,7 @@ import { SearchPalette } from './SearchPalette';
 import { useLibrary } from '../hooks/useLibrary';
 import { isOrphan } from '../domain/query';
 import { Modal } from './Modal';
+import { SyncBadge } from './SyncBadge';
 
 const PRIMARY = [
   { to: '/', label: 'Gathering', icon: Feather, end: true },
@@ -148,6 +149,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
         <nav aria-label="Secondary" className="mt-auto space-y-0.5 pt-6">
           {SECONDARY.map((i) => navItem(i))}
+          <SyncBadge />
           {!online && (
             <p className="flex items-center gap-2 px-3 pt-2 text-xs text-muted">
               <WifiOff size={14} aria-hidden /> Offline — everything still works
@@ -161,6 +163,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Logo />
         <div className="flex items-center gap-1">
           {!online && <WifiOff size={16} className="text-muted" aria-label="Offline" />}
+          <SyncBadge compact />
           <button type="button" className="btn-ghost" onClick={() => setSearchOpen(true)} aria-label="Search">
             <Search size={20} />
           </button>
