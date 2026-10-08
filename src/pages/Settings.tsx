@@ -262,8 +262,39 @@ export function Settings() {
             </button>
           ))}
         </div>
+        {s.aiProvider !== 'claude' && (
+          <p className="text-xs leading-relaxed text-muted">
+            Choosing Claude sends the text you work on to Anthropic and uses your own pay-as-you-go API key. The details appear when you select it.
+          </p>
+        )}
         {s.aiProvider === 'claude' && (
           <div className="panel space-y-3 p-4">
+            <div className="rounded-xl border border-dashed border-ai/60 bg-ai-bg/50 p-3 text-sm leading-relaxed text-ink-2">
+              <p className="font-semibold text-ink">Before you connect</p>
+              <ul className="mt-1.5 list-disc space-y-1.5 pl-5">
+                <li>
+                  <span className="font-medium text-ink">What is shared:</span> while Claude is on, the text of a piece is sent to Anthropic whenever the
+                  assistant looks at it — automatically after each capture (for tag and type suggestions), and when you use <em>Suggest</em>,{' '}
+                  <em>Develop</em> or <em>Refine</em>. Finding related pieces, placement and themes always stay on this device. Nothing is sent while the
+                  on-device option is selected.
+                </li>
+                <li>
+                  <span className="font-medium text-ink">Who pays:</span> this uses your own Anthropic API key, billed per use to your account at{' '}
+                  <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="text-accent underline underline-offset-2">
+                    console.anthropic.com
+                  </a>
+                  . It is separate from a Claude.ai Pro or Max subscription. Each person who connects pays only for their own use.
+                </li>
+                <li>
+                  <span className="font-medium text-ink">Keeping costs low:</span> suggestions run on every capture, so Sonnet or Haiku cost far less than
+                  Opus if you capture often. Setting a monthly spending limit in the Anthropic console is a good safeguard.
+                </li>
+                <li>
+                  <span className="font-medium text-ink">Your key:</span> anyone who can open YOUrigin on this device could find it, so only add it on
+                  devices that are yours.
+                </li>
+              </ul>
+            </div>
             <div>
               <label className="label" htmlFor="ai-key">
                 Anthropic API key
@@ -288,9 +319,9 @@ export function Settings() {
                 Model
               </label>
               <select id="ai-model" className="input" value={s.claudeModel} onChange={(e) => void setSetting('claudeModel', e.target.value)}>
-                <option value="claude-opus-5-5">Claude Opus 5.5 (most capable)</option>
-                <option value="claude-sonnet-5-5">Claude Sonnet 5.5 (faster, lower cost)</option>
-                <option value="claude-haiku-4-5">Claude Haiku 4.5 (fastest)</option>
+                <option value="claude-opus-5-5">Claude Opus 5.5 (most capable, highest cost)</option>
+                <option value="claude-sonnet-5-5">Claude Sonnet 5.5 (balanced, about half the cost)</option>
+                <option value="claude-haiku-4-5">Claude Haiku 4.5 (fastest, lowest cost)</option>
               </select>
             </div>
           </div>
