@@ -39,7 +39,8 @@ async function appIcon(file, s, { scale, rounded }) {
   const art = await sharp(emblem).resize(e, e, { kernel: 'lanczos3' }).png().toBuffer();
   await sharp(night(s, rounded))
     .composite([{ input: art, left: Math.round((s - e) / 2), top: Math.round((s - e) / 2) }])
-    .png({ compressionLevel: 9 })
+    // Palette PNG keeps the files small with no visible difference.
+    .png({ palette: true, quality: 92, effort: 10, compressionLevel: 9 })
     .toFile(`public/${file}`);
 }
 
