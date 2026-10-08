@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Download, HardDrive, Laptop, Smartphone, Upload } from 'lucide-react';
+import { Download, HardDrive, Laptop, Monitor, Smartphone, TabletSmartphone, Upload } from 'lucide-react';
 import { setSetting, useSettings } from '../db/settings';
 import { StatusPicker, TypeSelect, Spinner } from '../components/ui';
 import { exportBackup, isBackup, mergeBackup, replaceWithBackup } from '../db/backup';
@@ -157,7 +157,7 @@ export function Settings() {
         </div>
       </Section>
 
-      <Section title="Install on your phone and laptop" id="s-install">
+      <Section title="Install on your devices" id="s-install">
         {install.installed ? (
           <p className="text-[15px] text-polished">YOUrigin is running as an installed app on this device.</p>
         ) : install.canInstall ? (
@@ -182,7 +182,30 @@ export function Settings() {
               In Edge or Chrome, click the install icon in the address bar (or menu → <em>Apps → Install YOUrigin</em>). It opens in its own window and works offline.
             </p>
           </div>
+          <div className="panel p-4 text-sm leading-relaxed">
+            <p className="flex items-center gap-2 font-semibold">
+              <TabletSmartphone size={16} aria-hidden /> iPhone / iPad
+            </p>
+            <p className="mt-1 text-ink-2">
+              Open YOUrigin in Safari → tap <em>Share</em> (the square with an arrow) → <em>Add to Home Screen</em> → <em>Add</em>. Recent iOS versions also
+              allow this from Chrome or Edge via their Share menu.
+            </p>
+          </div>
+          <div className="panel p-4 text-sm leading-relaxed">
+            <p className="flex items-center gap-2 font-semibold">
+              <Monitor size={16} aria-hidden /> Mac
+            </p>
+            <p className="mt-1 text-ink-2">
+              In Safari (macOS Sonoma or later): <em>File → Add to Dock</em>. In Chrome or Edge, click the install icon in the address bar.
+            </p>
+          </div>
         </div>
+        <p className="text-sm leading-relaxed text-ink-2">
+          <strong className="font-semibold text-ink">On iPhone and iPad:</strong> the installed app and Safari keep separate libraries, so do your writing
+          in the app you added to your Home Screen. Safari can clear data from websites you haven’t opened in a while — installed apps are far better
+          protected — so download a backup now and then.
+        </p>
+        <p className="text-sm text-muted">Open the app once while online after installing; from then on it works offline on every device.</p>
       </Section>
 
       <Section title="Capture defaults" id="s-capture">
