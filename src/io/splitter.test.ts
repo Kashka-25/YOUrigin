@@ -59,6 +59,35 @@ describe('poem splitter', () => {
     expect(pieces.map((p) => p.body)).toEqual(['a1\na2\n\na3', 'b1\nb2', 'c1']);
   });
 
+  it('treats top-level headings as chapters and the next level as pieces', () => {
+    const html =
+      '<h1>- H O P E F U L -</h1><h2>North Star</h2><p>a</p><h2>Meadows</h2><p>b</p>' + '<h1>S A D</h1><h2>Far From Home</h2><p>c</p>';
+    const { pieces } = splitDocument(blocksFromHtml(html), 'auto');
+    expect(pieces.map((p) => [p.section, p.title])).toEqual([
+      ['HOPEFUL', 'North Star'],
+      ['HOPEFUL', 'Meadows'],
+      ['SAD', 'Far From Home'],
+    ]);
+  });
+
+  it('reads bold lines as titles and "Chapter" lines as chapters, even right after a page break', () => {
+    const html =
+      '<p><strong>Introduction: Learning to Swim</strong></p><p>Welcome.</p>' +
+      '<p><strong>🌀 Invitation 1: A Breath</strong></p><p>Breathe.</p>' +
+      '<p><strong>1 What have you brought with you?</strong></p>' +
+      // The parser lifts a bold title out of a paragraph that starts with a page break.
+      '<p><em><hr /></em><strong>Chapter 2: Ankle Deep</strong></p><p>Opening words.</p>' +
+      '<p><strong>2 What feels alive?</strong></p><p>notes</p>';
+    const { pieces } = splitDocument(blocksFromHtml(html), 'auto');
+    expect(pieces.map((p) => [p.section ?? '', p.title])).toEqual([
+      ['Introduction: Learning to Swim', 'Introduction: Learning to Swim'],
+      ['Introduction: Learning to Swim', '🌀 Invitation 1: A Breath'],
+      ['Introduction: Learning to Swim', '1 What have you brought with you?'],
+      ['Chapter 2: Ankle Deep', 'Chapter 2: Ankle Deep'],
+      ['Chapter 2: Ankle Deep', '2 What feels alive?'],
+    ]);
+  });
+
   it('does not mistake ordinary verse for titles', () => {
     expect(isTitleLike('and the door stayed open,')).toBe(false);
     expect(isTitleLike('I keep circling back to the idea that loss is a kind of shape')).toBe(false);

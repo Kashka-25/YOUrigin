@@ -1,11 +1,27 @@
 import { useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, Merge, Scissors, Upload } from 'lucide-react';
 import { Modal } from './Modal';
-import { IMPORT_ACCEPT, draftPieces, joinWithNext, readFiles, splitAt, toNewContent, type DraftPiece, type ImportedFile } from '../io/import';
+import {
+  IMPORT_ACCEPT,
+  draftPieces,
+  includedDrafts,
+  joinWithNext,
+  readFiles,
+  resolveTypes,
+  splitAt,
+  toNewContent,
+  type DraftPiece,
+  type ImportedFile,
+} from '../io/import';
+import { buildBookFromImport, guessBookType } from '../io/importBook';
+import { useNavigate } from 'react-router-dom';
+import { BookOpen } from 'lucide-react';
+import { BOOK_TYPE_LABEL, CONTENT_TYPES, TYPE_LABEL } from '../domain/constants';
+import type { BookType } from '../domain/types';
 import { STRATEGY_LABEL, type SplitStrategy } from '../io/splitter';
 import { normaliseTagName } from '../domain/text';
 import type { ContentType, Status } from '../domain/types';
-import { StatusPicker, TypeSelect } from './ui';
+import { StatusPicker } from './ui';
 import { createMany } from '../db/content';
 import { db } from '../db/db';
 import { useToast } from './Toast';
@@ -18,7 +34,11 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
   const [drafts, setDrafts] = useState<DraftPiece[] | null>(null);
   const [used, setUsed] = useState<Record<string, Exclude<SplitStrategy, 'auto'>>>({});
   const [status, setStatus] = useState<Status>('seed');
-  const [type, setType] = useState<ContentType>('poem');
+  const [type, setType] = useState<ContentType | 'auto'>('auto');
+  const [makeBook, setMakeBook] = useState(false);
+  const [bookTitle, setBookTitle] = useState('');
+  const [bookType, setBookType] = useState<BookType>('poetry');
+  const nav = useNavigate();
   const [tags, setTags] = useState('');
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -27,6 +47,10 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
   const resplit = (fs: ImportedFile[], s: SplitStrategy) => {
     const r = draftPieces(fs, s);
     setDrafts(r.pieces);
+    // Documents with chapters are most useful imported as a ready-made book.
+    setMakeBook(r.pieces.some((d) => d.section));
+    setBookType(guessBookType(resolveTypes(r.pieces, 'auto')));
+    setBookTitle((t) => t || (fs[0]?.name.replace(/\.[^.]+$/, '').replace(/_+/g, ' ').trim() ?? ''));
     setUsed(r.used);
     setExpanded(null);
   };
@@ -47,6 +71,8 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
     setFiles([]);
     setDrafts(null);
     setTags('');
+    setBookTitle('');
+    setMakeBook(false);
     setStrategy('auto');
   };
 
@@ -60,16 +86,25 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
     if (!drafts) return;
     setBusy(true);
     try {
+      const kept = includedDrafts(drafts);
       const ids = await createMany(
         toNewContent(drafts, { status, type, extraTags: tags.split(/[\s,]+/).map(normaliseTagName).filter(Boolean) }),
       );
-      toast(`Imported ${ids.length} piece${ids.length === 1 ? '' : 's'} into your Library`, {
+      const title = bookTitle.trim() || 'Imported book';
+      const bookId = makeBook ? await buildBookFromImport(title, bookType, kept, ids) : null;
+      toast(bookId ? `Imported ${ids.length} pieces and built “${title}”` : `Imported ${ids.length} piece${ids.length === 1 ? '' : 's'} into your Library`, {
         undo: async () => {
+          if (bookId) {
+            await db.entries.where('bookId').equals(bookId).delete();
+            await db.sections.where('bookId').equals(bookId).delete();
+            await db.books.delete(bookId);
+          }
           await db.content.bulkDelete(ids);
         },
       });
       reset();
       onClose();
+      if (bookId) nav(`/books/${bookId}`);
     } finally {
       setBusy(false);
     }
@@ -149,12 +184,57 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
             </p>
           </div>
 
+          <div className={`panel space-y-3 p-4 ${makeBook ? 'border-accent' : ''}`}>
+            <label className="flex items-start gap-2">
+              <input type="checkbox" className="mt-1 h-4 w-4" checked={makeBook} onChange={(e) => setMakeBook(e.target.checked)} />
+              <span>
+                <span className="flex items-center gap-1.5 font-semibold">
+                  <BookOpen size={15} aria-hidden /> Also build this as a book
+                </span>
+                <span className="block text-xs text-muted">
+                  {drafts.some((d) => d.section)
+                    ? `Creates the book with its ${new Set(drafts.map((d) => d.section).filter(Boolean)).size} chapters as sections and every piece placed in order — ready to edit and design.`
+                    : 'Creates a book containing these pieces in this order, ready to arrange and design.'}
+                </span>
+              </span>
+            </label>
+            {makeBook && (
+              <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                <div>
+                  <label className="label" htmlFor="imp-book-title">
+                    Book title
+                  </label>
+                  <input id="imp-book-title" className="input font-serif text-base" value={bookTitle} onChange={(e) => setBookTitle(e.target.value)} />
+                </div>
+                <div>
+                  <label className="label" htmlFor="imp-book-type">
+                    Kind of book
+                  </label>
+                  <select id="imp-book-type" className="input" value={bookType} onChange={(e) => setBookType(e.target.value as BookType)}>
+                    {Object.entries(BOOK_TYPE_LABEL).map(([k, v]) => (
+                      <option key={k} value={k}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <label className="label" htmlFor="imp-type">
                 Type
               </label>
-              <TypeSelect id="imp-type" value={type} onChange={setType} className="w-full" />
+              <select id="imp-type" className="input" value={type} onChange={(e) => setType(e.target.value as ContentType | 'auto')}>
+                <option value="auto">Detect for each piece</option>
+                {CONTENT_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    All {TYPE_LABEL[t]}s
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <span className="label">Status</span>
@@ -186,8 +266,10 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
               {drafts.map((d, i) => {
                 const lines = d.body.split('\n');
                 const open = expanded === d.key;
+                const newSection = d.section && d.section !== drafts[i - 1]?.section;
                 return (
                   <li key={d.key} className={`px-3 py-2.5 ${d.include ? '' : 'opacity-50'}`}>
+                    {newSection && <p className="eyebrow mb-2 border-b border-line pb-1 text-accent">{d.section}</p>}
                     <div className="flex items-start gap-2">
                       <input
                         type="checkbox"

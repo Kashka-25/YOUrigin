@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { ChevronDown, Plus, Pencil, Trash2 } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { computeBookProgress } from '../domain/progress';
 import { BOOK_TYPE_LABEL } from '../domain/constants';
@@ -85,47 +85,52 @@ export function Books() {
         </p>
       )}
 
-      <section className="mt-14" aria-labelledby="tpl-h">
-        <div className="flex items-end justify-between">
+      <details className="group mt-14 rounded-2xl border border-line" aria-labelledby="tpl-h">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
           <div>
             <h2 id="tpl-h" className="font-serif text-2xl">
-              Templates
+              Templates <span className="align-middle text-sm text-muted">({templates.length})</span>
             </h2>
             <p className="text-sm text-ink-2">Starting shapes for new books. All of them can be edited.</p>
           </div>
-          <button type="button" className="btn" onClick={() => setEditing({ name: '', bookType: 'custom', sections: [] })}>
-            <Plus size={15} /> New template
-          </button>
-        </div>
-        <ul className="mt-4 divide-y divide-line border-y border-line">
-          {templates.map((t) => (
-            <li key={t.id} className="flex items-start gap-3 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="font-serif text-lg">
-                  {t.name} <span className="text-xs text-muted">· {BOOK_TYPE_LABEL[t.bookType]}</span>
-                </p>
-                <p className="truncate text-sm text-ink-2">{t.sections.join(' · ') || 'Empty structure'}</p>
-              </div>
-              <button type="button" className="btn-ghost" onClick={() => setEditing(t)} aria-label={`Edit template ${t.name}`}>
-                <Pencil size={15} />
-              </button>
-              {!t.builtIn && (
-                <button
-                  type="button"
-                  className="btn-ghost"
-                  aria-label={`Delete template ${t.name}`}
-                  onClick={async () => {
-                    if (await confirm({ title: 'Delete template?', message: `“${t.name}” will be removed. Books made from it are not affected.`, confirmLabel: 'Delete', danger: true }))
-                      await deleteTemplate(t.id);
-                  }}
-                >
-                  <Trash2 size={15} />
+          <ChevronDown size={20} className="shrink-0 text-muted transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
+        <div className="px-4 pb-4">
+          <div className="flex justify-end">
+            <button type="button" className="btn" onClick={() => setEditing({ name: '', bookType: 'custom', sections: [] })}>
+              <Plus size={15} /> New template
+            </button>
+          </div>
+          <ul className="mt-4 divide-y divide-line border-y border-line">
+            {templates.map((t) => (
+              <li key={t.id} className="flex items-start gap-3 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-serif text-lg">
+                    {t.name} <span className="text-xs text-muted">· {BOOK_TYPE_LABEL[t.bookType]}</span>
+                  </p>
+                  <p className="truncate text-sm text-ink-2">{t.sections.join(' · ') || 'Empty structure'}</p>
+                </div>
+                <button type="button" className="btn-ghost" onClick={() => setEditing(t)} aria-label={`Edit template ${t.name}`}>
+                  <Pencil size={15} />
                 </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
+                {!t.builtIn && (
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    aria-label={`Delete template ${t.name}`}
+                    onClick={async () => {
+                      if (await confirm({ title: 'Delete template?', message: `“${t.name}” will be removed. Books made from it are not affected.`, confirmLabel: 'Delete', danger: true }))
+                        await deleteTemplate(t.id);
+                    }}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </details>
 
       <Modal open={creating} onClose={() => setCreating(false)} title="New book">
         <form

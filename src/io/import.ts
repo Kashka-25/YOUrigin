@@ -18,6 +18,8 @@ export interface DraftPiece {
   title: string;
   body: string;
   include: boolean;
+  /** Chapter/section in the source document, if it has them. */
+  section?: string;
 }
 
 // Word styles that mark a poem's title, and page breaks, survive conversion.
@@ -37,8 +39,12 @@ export async function readFiles(files: File[]): Promise<ImportedFile[]> {
       try {
         if (/\.docx$/i.test(f.name)) {
           const mammoth = await import('mammoth');
+          const data = await f.arrayBuffer();
+          // The browser build takes an ArrayBuffer; the Node build (tests) needs a Buffer.
+          const NodeBuffer = (globalThis as { Buffer?: { from(a: ArrayBuffer): unknown } }).Buffer;
+          const input = (NodeBuffer ? { buffer: NodeBuffer.from(data) } : { arrayBuffer: data }) as { arrayBuffer: ArrayBuffer };
           const { value } = await mammoth.convertToHtml(
-            { arrayBuffer: await f.arrayBuffer() },
+            input,
             { styleMap: DOCX_STYLE_MAP, ignoreEmptyParagraphs: false, convertImage: mammoth.images.imgElement(async () => ({ src: '' })) },
           );
           return { name: f.name, blocks: blocksFromHtml(value) };
@@ -76,6 +82,7 @@ export function draftPieces(
         title: p.title || (split.length === 1 ? baseName(f.name) : ''),
         body: p.body,
         include: true,
+        section: p.section,
       });
     }
   }
@@ -84,8 +91,45 @@ export function draftPieces(
 
 export interface ImportOptions {
   status: Status;
-  type: ContentType;
+  /** 'auto' guesses each piece's type from its title and shape. */
+  type: ContentType | 'auto';
   extraTags: string[];
+}
+
+/** The drafts that will actually be imported, in order. */
+export function includedDrafts(drafts: DraftPiece[]): DraftPiece[] {
+  return drafts.filter((d) => d.include && (d.body.trim() || d.title.trim()));
+}
+
+/**
+ * Types for a whole import. In a document that is mostly verse, short
+ * untitled-looking pieces are poems too, not fragments or notes.
+ */
+export function resolveTypes(drafts: Pick<DraftPiece, 'title' | 'body'>[], choice: ContentType | 'auto'): ContentType[] {
+  if (choice !== 'auto') return drafts.map(() => choice);
+  const guesses = drafts.map((d) => guessType(d.title, d.body));
+  const verse = guesses.filter((t) => t === 'poem' || t === 'fragment' || t === 'note').length;
+  if (guesses.length && verse / guesses.length >= 0.7) {
+    return guesses.map((t) => (t === 'fragment' || t === 'note' ? 'poem' : t));
+  }
+  return guesses;
+}
+
+/** Guesses a piece's type from how journals and collections usually label things. */
+export function guessType(title: string, body: string): ContentType {
+  const t = title.toLowerCase();
+  const lines = body.split('\n').filter((l) => l.trim());
+  if (/^\W*\d+[\s.)]/.test(title) && title.includes('?')) return 'prompt';
+  if (/prompt|journal(ing)? question|question/.test(t)) return 'prompt';
+  if (/invitation|ritual|practice|meditation|exercise|ceremony|breath/.test(t)) return 'ritual';
+  if (/reflection/.test(t)) return 'reflection';
+  if (/teaching|lesson|energetics|wisdom/.test(t)) return 'teaching';
+  if (/quote|epigraph/.test(t)) return 'quote';
+  if (/introduction|chapter|preface|foreword|opening|closing|conclusion|afterword/.test(t)) return 'reflection';
+  const words = body.split(/\s+/).filter(Boolean).length;
+  if (lines.length >= 2 && words / lines.length <= 10) return 'poem';
+  if (words > 120) return 'reflection';
+  return lines.length <= 2 ? 'fragment' : 'note';
 }
 
 /**
@@ -93,12 +137,13 @@ export interface ImportOptions {
  * written; hashtags are read into tags but never removed from the writing.
  */
 export function toNewContent(drafts: DraftPiece[], opts: ImportOptions): NewContent[] {
-  return drafts
-    .filter((d) => d.include && (d.body.trim() || d.title.trim()))
-    .map((d) => ({
+  const kept = includedDrafts(drafts);
+  const types = resolveTypes(kept, opts.type);
+  return kept
+    .map((d, i) => ({
       title: d.title.trim(),
       body: d.body,
-      type: opts.type,
+      type: types[i],
       status: opts.status,
       tagNames: [...new Set([...extractHashtags(`${d.title}\n${d.body}`), ...opts.extraTags])],
       source: { kind: 'import' as const, fileName: d.file },
