@@ -117,7 +117,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside className="no-print sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line px-4 py-6 md:flex">
         <div className="px-3">
           <Logo />
-          <p className="mt-1 text-xs text-muted">Your Creative Codex</p>
+          <p className="mt-1 font-display text-[10px] tracking-[0.25em] text-muted uppercase">Your Creative Codex</p>
         </div>
         <button type="button" onClick={() => setSearchOpen(true)} className="mt-6 flex items-center gap-2 rounded-xl border border-line bg-card px-3 py-2 text-sm text-muted hover:text-ink">
           <Search size={16} aria-hidden />

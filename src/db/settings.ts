@@ -19,7 +19,7 @@ export const DEFAULT_SETTINGS: Settings = {
   onboarded: false,
   defaultStatus: 'seed',
   defaultType: 'fragment',
-  theme: 'system',
+  theme: 'dark',
   aiProvider: 'local',
   claudeApiKey: '',
   claudeModel: 'claude-opus-5-5',

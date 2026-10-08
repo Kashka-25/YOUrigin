@@ -1,53 +1,65 @@
 @import '@fontsource-variable/newsreader/opsz.css';
 @import '@fontsource-variable/newsreader/opsz-italic.css';
 @import '@fontsource-variable/inter/index.css';
+@import '@fontsource-variable/cinzel/index.css';
 @import 'tailwindcss';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Design tokens. Warm paper, ink, and three creative states that are always
-   paired with a symbol + label so colour is never the only signal. */
+/* Design tokens — "dark academia": candlelit gold on aubergine night,
+   parchment ink, amethyst for the assistant. Drawn from the YOUrigin artwork.
+   The three creative states are always paired with a symbol + label so
+   colour is never the only signal. */
+
+/* Light: "Vellum" — parchment pages, plum-black ink, antique gold. */
 :root {
-  --paper: #f6f1e9;
-  --paper-2: #efe8dc;
-  --card: #fbf8f3;
-  --ink: #2a2521;
-  --ink-2: #5d544c;
-  --muted: #8a7f74;
-  --line: #e2d8ca;
-  --accent: #9c5b3b;
-  --accent-ink: #ffffff;
-  --seed: #b4513c;
-  --seed-bg: #f6e1da;
-  --developing: #a87a12;
-  --developing-bg: #f5ebcf;
-  --polished: #3f7550;
-  --polished-bg: #dcebdd;
-  --ai: #5b6aa8;
-  --ai-bg: #e7e9f5;
-  --focus: #9c5b3b;
+  --paper: #f1e8d6;
+  --paper-2: #e7dac0;
+  --card: #f8f1e3;
+  --ink: #2b1d2f;
+  --ink-2: #514055;
+  --muted: #84725e;
+  --line: #d8c6a4;
+  --accent: #85590c;
+  --accent-ink: #fff8ea;
+  --gold: #a87a22;
+  --rigin: #4b2a5f;
+  --seed: #9b3a2b;
+  --seed-bg: #f0d8cd;
+  --developing: #7d5a00;
+  --developing-bg: #f0e2bb;
+  --polished: #36663f;
+  --polished-bg: #d9e6d1;
+  --ai: #5b3d99;
+  --ai-bg: #e7ddf4;
+  --focus: #85590c;
+  --glow: transparent;
   color-scheme: light;
 }
 
+/* Dark: "Night Library" — the signature look. */
 .dark {
-  --paper: #1a1816;
-  --paper-2: #23201d;
-  --card: #211e1b;
-  --ink: #ece5da;
-  --ink-2: #c3b9ac;
-  --muted: #958a7e;
-  --line: #3a342e;
-  --accent: #d9926b;
-  --accent-ink: #1a1816;
-  --seed: #e7856f;
-  --seed-bg: #3d2520;
-  --developing: #e2b647;
-  --developing-bg: #3a3020;
-  --polished: #84bf93;
-  --polished-bg: #1f3326;
-  --ai: #a3afe6;
-  --ai-bg: #262a40;
-  --focus: #d9926b;
+  --paper: #130f19;
+  --paper-2: #1e1726;
+  --card: #1a1421;
+  --ink: #eee2cb;
+  --ink-2: #c7b79a;
+  --muted: #8e7f6c;
+  --line: #352a3c;
+  --accent: #d4a54c;
+  --accent-ink: #1a1206;
+  --gold: #e0b45c;
+  --rigin: #c8b0ea;
+  --seed: #e5806b;
+  --seed-bg: #3a1c1e;
+  --developing: #eccb66;
+  --developing-bg: #382b12;
+  --polished: #93c38c;
+  --polished-bg: #1b2c1f;
+  --ai: #b9a0f2;
+  --ai-bg: #2a1f3f;
+  --focus: #d4a54c;
+  --glow: rgba(212, 165, 76, 0.07);
   color-scheme: dark;
 }
 
@@ -69,6 +81,9 @@
   --color-polished-bg: var(--polished-bg);
   --color-ai: var(--ai);
   --color-ai-bg: var(--ai-bg);
+  --color-gold: var(--gold);
+  --color-rigin: var(--rigin);
+  --font-display: 'Cinzel Variable', 'Trajan Pro', Georgia, serif;
   --font-serif: 'Newsreader Variable', 'Iowan Old Style', Georgia, serif;
   --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
@@ -76,7 +91,7 @@
 @layer base {
   html,
   body {
-    background: var(--paper);
+    background: radial-gradient(120% 70% at 50% -10%, var(--glow), transparent 60%) fixed, var(--paper);
     color: var(--ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -140,7 +155,7 @@
     @apply font-serif text-3xl font-medium tracking-tight text-ink md:text-4xl;
   }
   .eyebrow {
-    @apply text-xs font-semibold tracking-[0.14em] text-muted uppercase;
+    @apply font-display text-[11px] font-semibold tracking-[0.2em] text-muted uppercase;
   }
 }
 

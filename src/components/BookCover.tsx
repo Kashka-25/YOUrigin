@@ -1,10 +1,11 @@
+// Bound-leather cover colours. Keys are stored on books, so they stay stable.
 export const COVER_HEX: Record<string, string> = {
-  clay: '#c4876a',
-  sea: '#6c95a6',
-  moss: '#7d9768',
-  dusk: '#8a7aa6',
-  sand: '#cdb487',
-  ink: '#4a4540',
+  clay: '#8c3b2e', // oxblood
+  sea: '#2f4a63', // midnight navy
+  moss: '#3f5a3a', // library green
+  dusk: '#5a3a73', // amethyst
+  sand: '#a8802e', // old gold
+  ink: '#2e2733', // ink black
 };
 
 export function coverColour(cover: string): string {

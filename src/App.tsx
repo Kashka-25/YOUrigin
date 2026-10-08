@@ -27,7 +27,7 @@ function useTheme(theme: 'system' | 'light' | 'dark' | undefined) {
     const apply = () => {
       const dark = theme === 'dark' || ((theme ?? 'system') === 'system' && mq.matches);
       document.documentElement.classList.toggle('dark', dark);
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#1a1816' : '#f6f1e9');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#130f19' : '#f1e8d6');
     };
     apply();
     mq.addEventListener('change', apply);
