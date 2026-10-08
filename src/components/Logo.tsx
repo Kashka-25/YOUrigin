@@ -1,13 +1,25 @@
-/** YOU + origin: the gilded YOU is the seed; "rigin" grows from it. */
-export function Logo({ size = 'md' }: { size?: 'md' | 'lg' }) {
+import logo700 from '../assets/brand/yourigin-logo-700.webp';
+import logo1400 from '../assets/brand/yourigin-logo-1400.webp';
+
+const SIZE: Record<'sm' | 'md' | 'lg', string> = {
+  sm: 'h-10 w-auto',
+  md: 'h-auto w-full max-w-[210px]',
+  lg: 'h-auto w-full max-w-[420px]',
+};
+
+/** The gilded YOUrigin wordmark. */
+export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   return (
-    <span className={`inline-flex items-baseline ${size === 'lg' ? 'text-4xl md:text-5xl' : 'text-2xl'}`} aria-label="YOUrigin">
-      <span aria-hidden className="font-display font-bold tracking-[0.04em] text-gold" style={{ fontSize: '0.92em' }}>
-        YOU
-      </span>
-      <span aria-hidden className="font-serif font-medium text-rigin">
-        rigin
-      </span>
-    </span>
+    <img
+      src={logo700}
+      srcSet={`${logo700} 700w, ${logo1400} 1400w`}
+      sizes={size === 'lg' ? '420px' : '210px'}
+      alt="YOUrigin"
+      width={700}
+      height={253}
+      decoding="async"
+      className={`block select-none ${SIZE[size]}`}
+      draggable={false}
+    />
   );
 }

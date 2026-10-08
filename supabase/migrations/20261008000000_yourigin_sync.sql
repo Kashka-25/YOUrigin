@@ -102,3 +102,8 @@ revoke all on public.yourigin_records, public.yourigin_sync_keys from anon;
 grant select, insert, update, delete on public.yourigin_records, public.yourigin_sync_keys to authenticated;
 grant usage on sequence public.yourigin_records_rev_seq to authenticated;
 revoke all on function public.yourigin_bump_rev() from public, anon;
+
+-- The allowlist is never reachable from clients (explicit deny; access only via is_allowed()).
+revoke all on yourigin_private.yourigin_allowed_users from anon, authenticated;
+create policy "No direct client access" on yourigin_private.yourigin_allowed_users
+  for all to anon, authenticated using (false) with check (false);

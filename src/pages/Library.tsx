@@ -116,7 +116,7 @@ export function Library() {
         </div>
       </div>
 
-      <div className="sticky top-[52px] z-20 -mx-4 mt-6 bg-paper/95 px-4 py-3 backdrop-blur md:top-0 md:-mx-8 md:px-8">
+      <div className="sticky top-[61px] z-20 -mx-4 mt-6 bg-paper/95 px-4 py-3 backdrop-blur md:top-0 md:-mx-8 md:px-8">
         <div className="flex gap-2">
           <input
             type="search"
