@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Archive, ArrowLeft, BookPlus, ChevronDown, ChevronLeft, ChevronRight, FolderPlus, List, Trash2, X } from 'lucide-react';
 import { ContentsList, useBookOrder } from '../components/book/ContentsList';
+import { SpaceControl } from '../components/book/SpaceControl';
 import { displayTitle } from '../domain/text';
 import { db } from '../db/db';
 import { useLibrary } from '../hooks/useLibrary';
@@ -187,6 +188,10 @@ function Editor({ item }: { item: ContentItem }) {
             </label>
             <TypeSelect id="item-type" value={item.type} onChange={(t) => void updateContent(item.id, { type: t })} />
           </section>
+          {order && (() => {
+            const entry = lib.entries.find((e) => e.bookId === order.book.id && e.contentId === item.id);
+            return entry && item.type !== 'image' ? <SpaceControl entry={entry} item={item} /> : null;
+          })()}
           {item.type === 'image' && (
             <section>
               <label className="label" htmlFor="item-layout">

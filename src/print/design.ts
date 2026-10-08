@@ -1,4 +1,4 @@
-import type { Book, BookDesign, BookType, TrimSize } from '../domain/types';
+import type { Book, BookDesign, BookType, SpaceSize, TrimSize } from '../domain/types';
 
 export const TRIMS: Record<TrimSize, { label: string; w: number; h: number; unit: 'in' | 'mm' }> = {
   '5x8': { label: '5 × 8 in — pocket', w: 5, h: 8, unit: 'in' },
@@ -47,18 +47,43 @@ export function defaultDesign(type: BookType): BookDesign {
     copyright: '',
     dedication: '',
     toc: true,
-    promptLines: 0,
+    promptSpace: 'none',
+    activitySpace: 'none',
+    drawingSpace: 'none',
+    detectDrawing: true,
+    lineSpacing: 'wide',
+    drawingFrame: false,
     bleed: false,
   };
   if (type === 'poetry') return { ...base, trim: '5.5x8.5', pieceOnNewPage: true, fontSize: 11.5, lineHeight: 1.45, pageNumbers: 'bottom-center' };
-  if (type === 'journal') return { ...base, trim: '6x9', promptLines: 12, lineHeight: 1.55 };
+  if (type === 'journal')
+    return { ...base, trim: '6x9', lineHeight: 1.55, promptSpace: 'fill', activitySpace: 'fill', drawingSpace: 'fill', pieceOnNewPage: true };
   if (type === 'essay') return { ...base, sectionStyle: 'classic', fontSize: 11, lineHeight: 1.45 };
   return base;
 }
 
 export function resolveDesign(book: Pick<Book, 'type' | 'design'>): BookDesign {
-  return { ...defaultDesign(book.type), ...(book.design ?? {}) };
+  const saved = { ...(book.design ?? {}) } as Partial<BookDesign> & { promptLines?: number };
+  // Earlier versions stored a number of prompt lines.
+  if (saved.promptLines !== undefined && saved.promptSpace === undefined) {
+    saved.promptSpace = saved.promptLines === 0 ? 'none' : saved.promptLines === -1 ? 'page' : 'fill';
+  }
+  delete saved.promptLines;
+  return { ...defaultDesign(book.type), ...saved };
 }
+
+export const LINE_SPACING: Record<BookDesign['lineSpacing'], { label: string; inches: number }> = {
+  wide: { label: 'Wide ruled — roomy handwriting (8.7mm)', inches: 0.34 },
+  college: { label: 'College ruled (7.1mm)', inches: 0.28 },
+  narrow: { label: 'Narrow (6.4mm)', inches: 0.25 },
+};
+
+export const SPACE_LABEL: Record<SpaceSize, string> = {
+  fill: 'To the end of the page',
+  page: 'A full extra page',
+  'fill+page': 'End of the page, plus a full page',
+  none: 'No space',
+};
 
 /** Text area height in inches — used to size a full page of writing lines. */
 export function contentHeightIn(d: BookDesign): number {

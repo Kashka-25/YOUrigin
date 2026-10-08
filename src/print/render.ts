@@ -1,5 +1,5 @@
-import type { Asset, Book, BookDesign, BookEntry, ContentItem, Section } from '../domain/types';
-import { BODY_FONTS, MARGINS, TRIMS, contentHeightIn } from './design';
+import type { Asset, Book, BookDesign, BookEntry, ContentItem, Section, SpaceSize } from '../domain/types';
+import { BODY_FONTS, LINE_SPACING, MARGINS, TRIMS, contentHeightIn } from './design';
 import { displayTitle } from '../domain/text';
 
 export interface PrintInput {
@@ -17,6 +17,36 @@ function img(a: Asset | undefined, cls: string, alt = '') {
   if (!a) return '';
   const size = a.width && a.height ? ` width="${a.width}" height="${a.height}"` : '';
   return `<img class="${cls}" src="${a.dataUrl}" alt="${esc(alt)}"${size} />`;
+}
+
+export interface ResolvedSpace {
+  kind: 'lines' | 'blank' | 'none';
+  size: SpaceSize;
+  /** Why: shown in the editor so automatic choices are understandable. */
+  reason: string;
+}
+
+const DRAW_WORDS = /\b(draw|drawing|sketch|doodle|paint|colou?r(?:ing)? in|illustrat\w*|collage|mandala|map(?:ping)?|trace|outline (?:your|the)|create an image)\b/i;
+const WRITE_WORDS = /\b(write|writing|journal|list|answer|letter|describe|note down|reflect on|record)\b/i;
+
+/**
+ * What space follows a piece: the piece's own override, else automatic —
+ * prompts get lines, activities get lines if they ask you to write and blank
+ * space if they ask you to draw.
+ */
+export function resolveSpace(c: ContentItem, entry: Pick<BookEntry, 'space'> | undefined, d: BookDesign): ResolvedSpace {
+  const o = entry?.space;
+  if (o && o.kind !== 'auto') return { kind: o.kind, size: o.kind === 'none' ? 'none' : o.size, reason: 'Set for this piece' };
+  const text = `${c.title}\n${c.body}`;
+  const draws = d.detectDrawing && DRAW_WORDS.test(text);
+  const pick = (kind: 'lines' | 'blank', size: SpaceSize, reason: string): ResolvedSpace =>
+    size === 'none' ? { kind: 'none', size, reason } : { kind, size, reason };
+  if (c.type === 'prompt') return draws ? pick('blank', d.drawingSpace, 'Prompt asks you to draw') : pick('lines', d.promptSpace, 'Prompt');
+  if (c.type === 'ritual' || c.type === 'reflection' || c.type === 'idea') {
+    if (draws) return pick('blank', d.drawingSpace, 'Activity asks you to draw');
+    if (c.type === 'ritual' && WRITE_WORDS.test(text)) return pick('lines', d.activitySpace, 'Activity asks you to write');
+  }
+  return { kind: 'none', size: 'none', reason: 'No writing needed' };
 }
 
 /** The book as HTML, in reading order. Paged.js turns this into pages using bookCss(). */
@@ -44,14 +74,14 @@ export function bookHtml({ book, design: d, sections, entries, contentById, asse
     return c && !c.deletedAt ? c : undefined;
   };
   const groups = ordered
-    .map((s) => ({
-      section: s,
-      items: entries
+    .map((s) => {
+      const placed = entries
         .filter((e) => e.sectionId === s.id)
         .sort((a, b) => a.order - b.order)
-        .map(live)
-        .filter((c): c is ContentItem => !!c),
-    }))
+        .map((e) => ({ entry: e, item: live(e) }))
+        .filter((x): x is { entry: BookEntry; item: ContentItem } => !!x.item);
+      return { section: s, items: placed.map((x) => x.item), placed };
+    })
     .filter((g) => g.items.length || g.section.imageAssetId);
 
   if (d.toc && groups.length > 1) {
@@ -60,14 +90,19 @@ export function bookHtml({ book, design: d, sections, entries, contentById, asse
       .join('')}</ol></nav>`);
   }
 
-  const lines = (n: number) =>
-    n === -1
-      ? `<div class="yb-lines yb-lines-page" style="height:${contentHeightIn(d).toFixed(2)}in"></div>`
-      : n > 0
-        ? `<div class="yb-lines" style="height:${(n * 0.34).toFixed(2)}in"></div>`
-        : '';
+  const fullPage = contentHeightIn(d).toFixed(2);
+  const lineIn = LINE_SPACING[d.lineSpacing].inches;
+  const linePx = (lineIn * 96).toFixed(3);
+  const spaceHtml = (sp: ResolvedSpace) => {
+    if (sp.kind === 'none') return '';
+    const cls = sp.kind === 'lines' ? 'yb-space yb-space-lines' : 'yb-space yb-space-blank';
+    const fill = sp.size === 'fill' || sp.size === 'fill+page' ? `<div class="${cls} yb-space-fill" data-line="${sp.kind === 'lines' ? linePx : 0}">${sp.kind === 'lines' ? '<div class="yb-rule"></div>'.repeat(3) : ''}</div>` : '';
+    const rules = (n: number) => (sp.kind === 'lines' ? '<div class="yb-rule"></div>'.repeat(n) : '');
+    const page = sp.size === 'page' || sp.size === 'fill+page' ? `<div class="${cls} yb-space-page" style="height:${fullPage}in">${rules(Math.floor(Number(fullPage) / lineIn))}</div>` : '';
+    return fill + page;
+  };
 
-  for (const { section, items } of groups) {
+  for (const { section, items, placed } of groups) {
     const opener = section.imageAssetId ? assets.get(section.imageAssetId) : undefined;
     const pieces = items.map((c, i) => {
       const title = c.title.trim() || (c.type === 'image' ? '' : displayTitle(c));
@@ -80,10 +115,11 @@ export function bookHtml({ book, design: d, sections, entries, contentById, asse
           c.body.trim() ? `<figcaption>${esc(c.body)}</figcaption>` : ''
         }</figure>`;
       }
-      return `${sep}<article class="yb-piece yb-type-${c.type}">
+      const sp = resolveSpace(c, placed[i].entry, d);
+      return `${sep}<article class="yb-piece yb-type-${c.type}${sp.kind !== 'none' ? ' yb-has-space' : ''}">
         ${showTitle ? `<h3 class="yb-piece-title">${esc(showTitle)}</h3>` : ''}
         ${c.body.trim() ? `<div class="yb-body">${esc(c.body)}</div>` : ''}
-        ${c.type === 'prompt' ? lines(d.promptLines) : ''}
+        ${spaceHtml(sp)}
       </article>`;
     });
     parts.push(`<section class="yb-section" id="s-${section.id}">
@@ -107,6 +143,7 @@ export function bookCss(d: BookDesign): string {
   const body = BODY_FONTS[d.bodyFont].css;
   const heading = d.headingFont === 'cinzel' ? "'Cinzel Variable', 'Trajan Pro', Georgia, serif" : body;
   const num = 'counter(page)';
+  const ls = LINE_SPACING[d.lineSpacing].inches;
   const pageNumbers =
     d.pageNumbers === 'bottom-center'
       ? `@page { @bottom-center { content: ${num}; } }`
@@ -122,7 +159,9 @@ export function bookCss(d: BookDesign): string {
   margin: ${m.top}in ${m.outer}in ${m.bottom}in ${m.inner}in;
   ${d.bleed ? 'bleed: 0.125in; marks: crop;' : ''}
   @top-center { font-family: ${heading}; font-size: 7.5pt; letter-spacing: 0.18em; text-transform: uppercase; color: #6b5d55; }
-  @bottom-center, @bottom-left, @bottom-right { font-family: ${body}; font-size: 9pt; color: #4a3f3a; }
+  @bottom-center { font-family: ${body}; font-size: 9pt; color: #4a3f3a; }
+  @bottom-left { font-family: ${body}; font-size: 9pt; color: #4a3f3a; }
+  @bottom-right { font-family: ${body}; font-size: 9pt; color: #4a3f3a; }
 }
 @page :left { margin-left: ${m.outer}in; margin-right: ${m.inner}in; }
 @page :right { margin-left: ${m.inner}in; margin-right: ${m.outer}in; }
@@ -177,10 +216,16 @@ ${d.pieceOnNewPage ? '.yb-piece + .yb-piece, .yb-fig + .yb-piece, .yb-piece + .y
 .yb-type-poem .yb-body, .yb-type-fragment .yb-body { text-align: ${d.poemAlign}; }
 .yb-type-prompt .yb-piece-title { font-family: ${body}; font-style: italic; font-weight: 500; text-align: left; }
 .yb-type-quote .yb-body { font-style: italic; text-align: center; }
-.yb-type-ritual .yb-piece-title::before { content: '${(d.ornament || '✦').replace(/'/g, "\\'")}  '; color: #8a6a3a; }
 
-.yb-lines { margin-top: 0.6em; background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(0.34in - 0.6pt), #b9ab9a calc(0.34in - 0.6pt), #b9ab9a 0.34in); }
-.yb-lines-page { break-before: page; margin-top: 0; }
+.yb-has-space { break-inside: avoid; }
+.yb-space { margin-top: 0.5em; }
+.yb-rule { height: ${ls}in; border-bottom: 0.75pt solid #a8998a; }
+/* Margin boxes (page numbers, running heads) sit outside .yb-root: give them ink colour too. */
+.pagedjs_margin-content { color: #4a3f3a; }
+.yb-space-blank { ${d.drawingFrame ? "border: 0.6pt solid #c7b9a6; border-radius: 3pt;" : ""} }
+/* Grows to the bottom of its page once the page is laid out (see print/fillSpace.ts). */
+.yb-space-fill { min-height: ${(ls * 3).toFixed(2)}in; break-after: page; break-inside: avoid; }
+.yb-space-page { break-before: page; margin-top: 0; }
 
 .yb-fig { margin: 0; text-align: center; }
 .yb-fig-img { display: block; margin: 0 auto; }

@@ -125,10 +125,28 @@ export interface BookDesign {
   copyright: string;
   dedication: string;
   toc: boolean;
-  /** Ruled writing lines after each prompt (guided journals). 0 = none, -1 = rest of the page. */
-  promptLines: number;
+  /** Space for handwriting after prompts (guided journals). */
+  promptSpace: SpaceSize;
+  /** Space after activities that ask the reader to write (invitations, rituals…). */
+  activitySpace: SpaceSize;
+  /** Blank space after activities that ask the reader to draw. */
+  drawingSpace: SpaceSize;
+  /** Recognise drawing activities from their wording (draw, sketch, map…). */
+  detectDrawing: boolean;
+  lineSpacing: 'wide' | 'college' | 'narrow';
+  /** Thin frame around drawing spaces. */
+  drawingFrame: boolean;
   /** Add 0.125in bleed for print-on-demand services. */
   bleed: boolean;
+}
+
+/** How much room to leave: to the end of the current page, a whole extra page, both, or none. */
+export type SpaceSize = 'fill' | 'page' | 'fill+page' | 'none';
+
+/** Per-piece override of the writing/drawing space, stored on the piece's place in a book. */
+export interface EntrySpace {
+  kind: 'auto' | 'lines' | 'blank' | 'none';
+  size: Exclude<SpaceSize, 'none'>;
 }
 
 export interface Section extends Syncable {
@@ -148,6 +166,8 @@ export interface BookEntry extends Syncable {
   sectionId: string | null;
   contentId: string;
   order: number;
+  /** Writing/drawing space after this piece in this book (default: automatic). */
+  space?: EntrySpace;
 }
 
 export type RelationshipKind = 'related' | 'echoes' | 'continues' | 'variant';

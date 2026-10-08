@@ -12,6 +12,7 @@ import { updateBook } from '../db/books';
 import { bookCss, bookHtml } from '../print/render';
 import { resolveDesign } from '../print/design';
 import { DesignPanel } from '../components/print/DesignPanel';
+import { registerFillSpace } from '../print/fillSpace';
 import { EmptyState, Spinner } from '../components/ui';
 import type { BookDesign } from '../domain/types';
 
@@ -68,7 +69,9 @@ export function PrintLayout() {
     setProgress(0);
     const added: Element[] = [];
     try {
-      const { Previewer } = await import('pagedjs');
+      const paged = await import('pagedjs');
+      registerFillSpace(paged);
+      const { Previewer } = paged;
       await document.fonts.ready;
       await Promise.all(
         ["'EB Garamond Variable'", "'Cormorant Garamond Variable'", "'Newsreader Variable'", "'Cinzel Variable'"].map((f) =>

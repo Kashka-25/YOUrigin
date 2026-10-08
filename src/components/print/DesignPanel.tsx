@@ -1,7 +1,7 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { ImagePlus, Loader2, X } from 'lucide-react';
-import type { Book, BookDesign, Section, TrimSize } from '../../domain/types';
-import { BODY_FONTS, MARGINS, ORNAMENTS, TRIMS } from '../../print/design';
+import type { Book, BookDesign, Section, SpaceSize, TrimSize } from '../../domain/types';
+import { BODY_FONTS, LINE_SPACING, MARGINS, ORNAMENTS, SPACE_LABEL, TRIMS } from '../../print/design';
 import { IMAGE_ACCEPT, saveImage, useAsset, removeAssetIfUnused } from '../../db/assets';
 import { updateBook } from '../../db/books';
 import { db } from '../../db/db';
@@ -40,6 +40,18 @@ function Toggle({ label, checked, onChange, hint }: { label: string; checked: bo
         {hint && <span className="block text-xs text-muted">{hint}</span>}
       </span>
     </label>
+  );
+}
+
+export function SpaceSelect({ id, value, onChange }: { id?: string; value: SpaceSize; onChange: (v: SpaceSize) => void }) {
+  return (
+    <select id={id} className="input" value={value} onChange={(e) => onChange(e.target.value as SpaceSize)}>
+      {(Object.keys(SPACE_LABEL) as SpaceSize[]).map((k) => (
+        <option key={k} value={k}>
+          {SPACE_LABEL[k]}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -194,15 +206,38 @@ export function DesignPanel({ book, design: d, sections, onChange }: { book: Boo
         </Field>
         <Toggle label="Each piece starts on a new page" checked={d.pieceOnNewPage} onChange={(v) => onChange({ pieceOnNewPage: v })} />
         <Toggle label="Chapters start on a right-hand page" checked={d.sectionOnRightPage} onChange={(v) => onChange({ sectionOnRightPage: v })} />
-        <Field label="Writing lines after each prompt" htmlFor="d-lines">
-          <select id="d-lines" className="input" value={d.promptLines} onChange={(e) => onChange({ promptLines: Number(e.target.value) })}>
-            <option value={0}>None</option>
-            <option value={6}>6 lines</option>
-            <option value={12}>12 lines</option>
-            <option value={20}>20 lines</option>
-            <option value={-1}>A full page of lines</option>
+      </Group>
+
+      <Group title="Writing & drawing space" open={d.promptSpace !== 'none' || d.drawingSpace !== 'none'}>
+        <p className="text-xs text-muted">
+          Room for the reader’s own hand. Lines grow to fill the empty space under each piece. Any piece can be changed on its own page (open it from
+          the book’s Contents).
+        </p>
+        <Field label="After prompts — ruled lines" htmlFor="d-pspace">
+          <SpaceSelect id="d-pspace" value={d.promptSpace} onChange={(v) => onChange({ promptSpace: v })} />
+        </Field>
+        <Field label="After activities that ask you to write — ruled lines" htmlFor="d-aspace">
+          <SpaceSelect id="d-aspace" value={d.activitySpace} onChange={(v) => onChange({ activitySpace: v })} />
+        </Field>
+        <Field label="After activities that ask you to draw — open space" htmlFor="d-dspace">
+          <SpaceSelect id="d-dspace" value={d.drawingSpace} onChange={(v) => onChange({ drawingSpace: v })} />
+        </Field>
+        <Toggle
+          label="Recognise drawing activities automatically"
+          hint="Pieces that mention drawing, sketching, doodling, mapping, colouring… get open space instead of lines."
+          checked={d.detectDrawing}
+          onChange={(v) => onChange({ detectDrawing: v })}
+        />
+        <Field label="Line spacing" htmlFor="d-ls">
+          <select id="d-ls" className="input" value={d.lineSpacing} onChange={(e) => onChange({ lineSpacing: e.target.value as BookDesign['lineSpacing'] })}>
+            {Object.entries(LINE_SPACING).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v.label}
+              </option>
+            ))}
           </select>
         </Field>
+        <Toggle label="Frame drawing spaces" hint="A thin border around open drawing areas." checked={d.drawingFrame} onChange={(v) => onChange({ drawingFrame: v })} />
       </Group>
 
       <Group title="Headers & page numbers">

@@ -185,3 +185,8 @@ export async function templateFromBook(bookId: string, name: string): Promise<st
   const sections = (await db.sections.where('bookId').equals(bookId).sortBy('order')).map((s) => s.title);
   return saveTemplate({ name, bookType: book?.type ?? 'custom', sections });
 }
+
+/** Writing/drawing space after a piece in one book (undefined = automatic). */
+export async function setEntrySpace(entryId: string, space: BookEntry['space']): Promise<void> {
+  await db.entries.update(entryId, { space, updatedAt: Date.now() });
+}
