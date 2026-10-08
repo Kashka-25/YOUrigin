@@ -201,4 +201,13 @@ describe('moving between devices', () => {
     const backup = await exportBackup();
     expect(JSON.stringify(backup)).not.toContain('sk-ant-secret');
   });
+
+  it('starts new books with a copyright page unless the template or writer opts out', async () => {
+    const withPage = await createBook({ title: 'Tide', templateId: 'tpl-journal', author: 'Cassidy Dugan' });
+    const book = await db.books.get(withPage);
+    expect(book?.design?.author).toBe('Cassidy Dugan');
+    expect(book?.design?.copyright).toMatch(/Copyright © \d{4} Cassidy Dugan[\s\S]*ISBN: \[insert ISBN\]/);
+    const without = await createBook({ title: 'Plain', templateId: 'tpl-poetry', copyrightPage: false });
+    expect((await db.books.get(without))?.design?.copyright).toBeUndefined();
+  });
 });

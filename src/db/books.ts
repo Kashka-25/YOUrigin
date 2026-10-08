@@ -2,6 +2,7 @@ import { db } from './db';
 import type { Book, BookEntry, BookType } from '../domain/types';
 import { newId } from '../domain/text';
 import { COVER_COLOURS } from '../domain/constants';
+import { copyrightTemplate } from '../print/design';
 
 export interface NewBook {
   title: string;
@@ -9,6 +10,10 @@ export interface NewBook {
   description?: string;
   templateId: string | null;
   type?: BookType;
+  /** Name for the title and copyright pages. */
+  author?: string;
+  /** Start with the copyright page template (defaults to the template's setting). */
+  copyrightPage?: boolean;
 }
 
 export async function createBook(input: NewBook): Promise<string> {
@@ -16,12 +21,16 @@ export async function createBook(input: NewBook): Promise<string> {
     const tpl = input.templateId ? await db.templates.get(input.templateId) : undefined;
     const now = Date.now();
     const count = await db.books.count();
+    const title = input.title.trim() || 'Untitled book';
+    const type = input.type ?? tpl?.bookType ?? 'custom';
+    const author = input.author?.trim() ?? '';
+    const withCopyright = input.copyrightPage ?? tpl?.copyrightPage ?? true;
     const book: Book = {
       id: newId(),
-      title: input.title.trim() || 'Untitled book',
+      title,
       subtitle: input.subtitle?.trim() ?? '',
       description: input.description?.trim() ?? '',
-      type: input.type ?? tpl?.bookType ?? 'custom',
+      type,
       templateId: tpl?.id ?? null,
       cover: COVER_COLOURS[count % COVER_COLOURS.length],
       notes: '',
@@ -29,6 +38,7 @@ export async function createBook(input: NewBook): Promise<string> {
       createdAt: now,
       updatedAt: now,
     };
+    if (author || withCopyright) book.design = { author, ...(withCopyright ? { copyright: copyrightTemplate({ title, type }, author) } : {}) };
     await db.books.add(book);
     await db.sections.bulkAdd(
       (tpl?.sections ?? []).map((title, order) => ({
@@ -164,14 +174,15 @@ export async function removeEntries(entryIds: string[]): Promise<void> {
 
 // ---- templates -------------------------------------------------------------
 
-export async function saveTemplate(t: { id?: string; name: string; bookType: BookType; sections: string[] }): Promise<string> {
+export async function saveTemplate(t: { id?: string; name: string; bookType: BookType; sections: string[]; copyrightPage?: boolean }): Promise<string> {
   const now = Date.now();
+  const copyrightPage = t.copyrightPage ?? true;
   if (t.id) {
-    await db.templates.update(t.id, { name: t.name, bookType: t.bookType, sections: t.sections, updatedAt: now });
+    await db.templates.update(t.id, { name: t.name, bookType: t.bookType, sections: t.sections, copyrightPage, updatedAt: now });
     return t.id;
   }
   const id = newId();
-  await db.templates.add({ id, name: t.name, bookType: t.bookType, sections: t.sections, builtIn: false, createdAt: now, updatedAt: now });
+  await db.templates.add({ id, name: t.name, bookType: t.bookType, sections: t.sections, copyrightPage, builtIn: false, createdAt: now, updatedAt: now });
   return id;
 }
 

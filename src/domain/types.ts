@@ -213,6 +213,8 @@ export interface Template extends Syncable {
   bookType: BookType;
   sections: string[];
   builtIn: boolean;
+  /** New books start with a copyright page (ISBN placeholder). Unset counts as yes. */
+  copyrightPage?: boolean;
 }
 
 export type SuggestionKind = 'tags' | 'type';

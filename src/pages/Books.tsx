@@ -19,11 +19,18 @@ export function Books() {
   const [subtitle, setSubtitle] = useState('');
   const [templateId, setTemplateId] = useState('tpl-poetry');
   const [editing, setEditing] = useState<Partial<Template> | null>(null);
+  const [author, setAuthor] = useState<string | null>(null);
+  const [copyrightPage, setCopyrightPage] = useState<boolean | null>(null);
 
   if (!lib) return <Spinner />;
   const books = [...lib.books].filter((b) => !b.archived).sort((a, b) => b.updatedAt - a.updatedAt);
   const archived = lib.books.filter((b) => b.archived);
   const templates = [...lib.templates].sort((a, b) => Number(b.builtIn) - Number(a.builtIn) || a.name.localeCompare(b.name));
+  // Suggest the author name used most recently; the copyright choice follows the template unless changed.
+  const lastAuthor = [...lib.books].sort((a, b) => b.updatedAt - a.updatedAt).find((b) => b.design?.author?.trim())?.design?.author ?? '';
+  const authorValue = author ?? lastAuthor;
+  const chosen = templates.find((t) => t.id === templateId);
+  const withCopyright = copyrightPage ?? chosen?.copyrightPage ?? true;
 
   return (
     <div className="mx-auto max-w-5xl px-4 pt-8 md:px-8 md:pt-12">
@@ -109,6 +116,7 @@ export function Books() {
                     {t.name} <span className="text-xs text-muted">· {BOOK_TYPE_LABEL[t.bookType]}</span>
                   </p>
                   <p className="truncate text-sm text-ink-2">{t.sections.join(' · ') || 'Empty structure'}</p>
+                  {t.copyrightPage !== false && <p className="text-xs text-muted">+ copyright page with ISBN placeholder</p>}
                 </div>
                 <button type="button" className="btn-ghost" onClick={() => setEditing(t)} aria-label={`Edit template ${t.name}`}>
                   <Pencil size={15} />
@@ -137,10 +145,11 @@ export function Books() {
           className="space-y-4"
           onSubmit={async (e) => {
             e.preventDefault();
-            const id = await createBook({ title, subtitle, templateId });
+            const id = await createBook({ title, subtitle, templateId, author: authorValue, copyrightPage: withCopyright });
             setCreating(false);
             setTitle('');
             setSubtitle('');
+            setCopyrightPage(null);
             nav(`/books/${id}`);
           }}
         >
@@ -156,12 +165,27 @@ export function Books() {
             </label>
             <input id="nb-sub" className="input" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
           </div>
+          <div>
+            <label className="label" htmlFor="nb-author">
+              Author name (optional)
+            </label>
+            <input id="nb-author" className="input" value={authorValue} onChange={(e) => setAuthor(e.target.value)} placeholder="As it should appear in print" />
+          </div>
           <fieldset>
             <legend className="label">Template</legend>
             <div className="max-h-64 space-y-1 overflow-y-auto">
               {templates.map((t) => (
                 <label key={t.id} className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-paper-2">
-                  <input type="radio" name="tpl" className="mt-1" checked={templateId === t.id} onChange={() => setTemplateId(t.id)} />
+                  <input
+                    type="radio"
+                    name="tpl"
+                    className="mt-1"
+                    checked={templateId === t.id}
+                    onChange={() => {
+                      setTemplateId(t.id);
+                      setCopyrightPage(null);
+                    }}
+                  />
                   <span>
                     <span className="font-medium">{t.name}</span>
                     <span className="block text-xs text-muted">{t.sections.join(' · ') || 'Start empty'}</span>
@@ -170,6 +194,13 @@ export function Books() {
               ))}
             </div>
           </fieldset>
+          <label className="flex cursor-pointer items-start gap-2">
+            <input type="checkbox" className="mt-1" checked={withCopyright} onChange={(e) => setCopyrightPage(e.target.checked)} />
+            <span>
+              Include a copyright page
+              <span className="block text-xs text-muted">© year and name, rights notice and an “[insert ISBN]” placeholder — edit it any time in Design &amp; print.</span>
+            </span>
+          </label>
           <div className="flex justify-end gap-2">
             <button type="button" className="btn" onClick={() => setCreating(false)}>
               Cancel
@@ -190,6 +221,7 @@ function TemplateEditor({ template, onClose }: { template: Partial<Template>; on
   const [name, setName] = useState(template.name ?? '');
   const [bookType, setBookType] = useState<BookType>(template.bookType ?? 'custom');
   const [sections, setSections] = useState((template.sections ?? []).join('\n'));
+  const [copyrightPage, setCopyrightPage] = useState(template.copyrightPage ?? true);
   return (
     <Modal open onClose={onClose} title={template.id ? 'Edit template' : 'New template'}>
       <form
@@ -201,6 +233,7 @@ function TemplateEditor({ template, onClose }: { template: Partial<Template>; on
             name: name.trim() || 'Untitled template',
             bookType,
             sections: sections.split('\n').map((s) => s.trim()).filter(Boolean),
+            copyrightPage,
           });
           onClose();
         }}
@@ -229,6 +262,13 @@ function TemplateEditor({ template, onClose }: { template: Partial<Template>; on
           </label>
           <textarea id="tpl-sections" className="input min-h-56 font-serif text-base" value={sections} onChange={(e) => setSections(e.target.value)} />
         </div>
+        <label className="flex cursor-pointer items-start gap-2">
+          <input type="checkbox" className="mt-1" checked={copyrightPage} onChange={(e) => setCopyrightPage(e.target.checked)} />
+          <span>
+            Start books with a copyright page
+            <span className="block text-xs text-muted">Includes an “[insert ISBN]” placeholder to fill in before publishing.</span>
+          </span>
+        </label>
         <div className="flex justify-end gap-2">
           <button type="button" className="btn" onClick={onClose}>
             Cancel
