@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
-import { Upload } from 'lucide-react';
+import { ChevronDown, ChevronUp, Merge, Scissors, Upload } from 'lucide-react';
 import { Modal } from './Modal';
-import { IMPORT_ACCEPT, buildImport, readFiles, type ImportedFile } from '../io/import';
-import type { SplitMode } from '../domain/text';
-import { displayTitle, normaliseTagName } from '../domain/text';
+import { IMPORT_ACCEPT, draftPieces, joinWithNext, readFiles, splitAt, toNewContent, type DraftPiece, type ImportedFile } from '../io/import';
+import { STRATEGY_LABEL, type SplitStrategy } from '../io/splitter';
+import { normaliseTagName } from '../domain/text';
 import type { ContentType, Status } from '../domain/types';
 import { StatusPicker, TypeSelect } from './ui';
 import { createMany } from '../db/content';
@@ -14,33 +14,55 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<ImportedFile[]>([]);
-  const [split, setSplit] = useState<SplitMode>('none');
+  const [strategy, setStrategy] = useState<SplitStrategy>('auto');
+  const [drafts, setDrafts] = useState<DraftPiece[] | null>(null);
+  const [used, setUsed] = useState<Record<string, Exclude<SplitStrategy, 'auto'>>>({});
   const [status, setStatus] = useState<Status>('seed');
   const [type, setType] = useState<ContentType>('poem');
   const [tags, setTags] = useState('');
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
-  const preview = useMemo(
-    () => buildImport(files, { split, status, type, extraTags: tags.split(/[\s,]+/).map(normaliseTagName).filter(Boolean) }),
-    [files, split, status, type, tags],
-  );
-  const errors = files.filter((f) => f.error);
+  const resplit = (fs: ImportedFile[], s: SplitStrategy) => {
+    const r = draftPieces(fs, s);
+    setDrafts(r.pieces);
+    setUsed(r.used);
+    setExpanded(null);
+  };
 
   const add = async (list: FileList | File[]) => {
-    const read = await readFiles([...list]);
-    setFiles((prev) => [...prev, ...read]);
+    setBusy(true);
+    try {
+      const read = await readFiles([...list]);
+      const next = [...files, ...read];
+      setFiles(next);
+      resplit(next, strategy);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const reset = () => {
     setFiles([]);
+    setDrafts(null);
     setTags('');
+    setStrategy('auto');
   };
 
+  const errors = files.filter((f) => f.error);
+  const included = drafts?.filter((d) => d.include).length ?? 0;
+  const detected = useMemo(() => [...new Set(Object.values(used))], [used]);
+
+  const update = (i: number, patch: Partial<DraftPiece>) => setDrafts((d) => d && d.map((p, j) => (j === i ? { ...p, ...patch } : p)));
+
   const commit = async () => {
+    if (!drafts) return;
     setBusy(true);
     try {
-      const ids = await createMany(preview);
+      const ids = await createMany(
+        toNewContent(drafts, { status, type, extraTags: tags.split(/[\s,]+/).map(normaliseTagName).filter(Boolean) }),
+      );
       toast(`Imported ${ids.length} piece${ids.length === 1 ? '' : 's'} into your Library`, {
         undo: async () => {
           await db.content.bulkDelete(ids);
@@ -66,11 +88,13 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
           setDragging(false);
           void add(e.dataTransfer.files);
         }}
-        className={`flex flex-col items-center rounded-2xl border-2 border-dashed px-6 py-8 text-center ${dragging ? 'border-accent bg-paper-2' : 'border-line'}`}
+        className={`flex flex-col items-center rounded-2xl border-2 border-dashed px-6 py-7 text-center ${dragging ? 'border-accent bg-paper-2' : 'border-line'}`}
       >
         <Upload className="text-muted" aria-hidden />
-        <p className="mt-2 text-sm text-ink-2">Drop .txt, .md or .docx files here — as many as you like.</p>
-        <button type="button" className="btn mt-3" onClick={() => inputRef.current?.click()}>
+        <p className="mt-2 text-sm text-ink-2">
+          Drop a Word document (.docx), .txt or .md file — one with all your poems, or many files at once. Each poem becomes its own piece.
+        </p>
+        <button type="button" className="btn mt-3" onClick={() => inputRef.current?.click()} disabled={busy}>
           Choose files
         </button>
         <input
@@ -86,19 +110,46 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
         />
       </div>
 
-      {files.length > 0 && (
+      {errors.length > 0 && (
+        <ul className="mt-3 text-sm text-seed">
+          {errors.map((f) => (
+            <li key={f.name}>
+              {f.name}: {f.error}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {drafts && (
         <div className="mt-5 space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="label" htmlFor="imp-split">
-                One file contains…
-              </label>
-              <select id="imp-split" className="input" value={split} onChange={(e) => setSplit(e.target.value as SplitMode)}>
-                <option value="none">One piece per file</option>
-                <option value="separator">Several pieces separated by --- or ***</option>
-                <option value="blank-lines">Several pieces separated by 2+ blank lines</option>
-              </select>
-            </div>
+          <div className="panel space-y-2 p-4">
+            <label className="label" htmlFor="imp-split">
+              Where does each poem begin?
+            </label>
+            <select
+              id="imp-split"
+              className="input"
+              value={strategy}
+              onChange={(e) => {
+                const s = e.target.value as SplitStrategy;
+                setStrategy(s);
+                resplit(files, s);
+              }}
+            >
+              <option value="auto">Find it automatically{detected.length === 1 ? ` — found: ${STRATEGY_LABEL[detected[0]].toLowerCase()}` : ''}</option>
+              {(Object.keys(STRATEGY_LABEL) as Exclude<SplitStrategy, 'auto'>[]).map((s) => (
+                <option key={s} value={s}>
+                  {STRATEGY_LABEL[s]}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted">
+              Check the list below. <strong>Join</strong> pieces that were split too eagerly, open a piece to <strong>cut</strong> it where a new poem starts,
+              and untick anything you don't want. Changing this setting resets those edits.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <label className="label" htmlFor="imp-type">
                 Type
@@ -111,45 +162,119 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
             </div>
             <div>
               <label className="label" htmlFor="imp-tags">
-                Add tags to all (optional)
+                Add tags to all
               </label>
-              <input id="imp-tags" className="input" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="#archive #2019" />
+              <input id="imp-tags" className="input" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="#poetry #2019" />
             </div>
           </div>
+
+          <div className="panel">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-2 rounded-t-2xl border-b border-line bg-card px-4 py-2">
+              <p className="text-sm font-semibold">
+                {drafts.length} piece{drafts.length === 1 ? '' : 's'} found · {included} selected
+              </p>
+              <div className="flex gap-1">
+                <button type="button" className="btn-ghost px-2 py-0.5 text-xs" onClick={() => setDrafts(drafts.map((d) => ({ ...d, include: true })))}>
+                  Select all
+                </button>
+                <button type="button" className="btn-ghost px-2 py-0.5 text-xs" onClick={() => setDrafts(drafts.map((d) => ({ ...d, include: false })))}>
+                  None
+                </button>
+              </div>
+            </div>
+            <ol className="max-h-[50dvh] divide-y divide-line overflow-y-auto">
+              {drafts.map((d, i) => {
+                const lines = d.body.split('\n');
+                const open = expanded === d.key;
+                return (
+                  <li key={d.key} className={`px-3 py-2.5 ${d.include ? '' : 'opacity-50'}`}>
+                    <div className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        className="mt-2 h-4 w-4"
+                        checked={d.include}
+                        onChange={(e) => update(i, { include: e.target.checked })}
+                        aria-label={`Include piece ${i + 1}`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <input
+                          className="w-full rounded-lg bg-transparent px-1 py-0.5 font-serif text-base text-ink placeholder:text-muted hover:bg-paper-2 focus:bg-paper-2 focus:outline-none"
+                          value={d.title}
+                          placeholder={lines.find((l) => l.trim())?.slice(0, 60) ?? 'Untitled'}
+                          onChange={(e) => update(i, { title: e.target.value })}
+                          aria-label={`Title of piece ${i + 1}`}
+                        />
+                        {!open && (
+                          <p className="line-clamp-2 px-1 font-serif text-sm whitespace-pre-line text-ink-2">{lines.filter((l) => l.trim()).slice(0, 2).join('\n')}</p>
+                        )}
+                        <p className="px-1 text-[11px] text-muted">
+                          {lines.filter((l) => l.trim()).length} lines · {d.file}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-col gap-1 sm:flex-row">
+                        <button
+                          type="button"
+                          className="btn-ghost px-2 py-1 text-xs"
+                          onClick={() => setExpanded(open ? null : d.key)}
+                          aria-expanded={open}
+                          title="Open to cut this piece in two"
+                        >
+                          {open ? <ChevronUp size={14} /> : <Scissors size={14} />} {open ? 'Close' : 'Cut'}
+                        </button>
+                        {i < drafts.length - 1 && (
+                          <button type="button" className="btn-ghost px-2 py-1 text-xs" onClick={() => setDrafts(joinWithNext(drafts, i))} title="Join with the next piece">
+                            <Merge size={14} /> Join
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {open && (
+                      <div className="mt-2 ml-6 rounded-xl bg-paper-2 p-2">
+                        <p className="mb-1 px-1 text-[11px] text-muted">Tap ✂ above the line where the next poem begins.</p>
+                        {lines.map((line, li) => (
+                          <div key={li}>
+                            {li > 0 && (
+                              <button
+                                type="button"
+                                className="group flex w-full items-center gap-2 py-0.5 text-[11px] text-muted hover:text-accent"
+                                onClick={() => {
+                                  setDrafts(splitAt(drafts, i, li));
+                                  setExpanded(null);
+                                }}
+                                aria-label={`Cut before line ${li + 1}`}
+                              >
+                                <Scissors size={11} />
+                                <span className="h-px flex-1 bg-line group-hover:bg-accent" />
+                              </button>
+                            )}
+                            <p className="writing min-h-[1.2em] px-1 font-serif text-sm text-ink">{line}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+
           <p className="text-xs text-muted">
             Your text is imported exactly as written. Hashtags in the files become tags; nothing is removed from the writing.
           </p>
-          {errors.length > 0 && (
-            <ul className="text-sm text-seed">
-              {errors.map((f) => (
-                <li key={f.name}>
-                  {f.name}: {f.error}
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="panel max-h-64 overflow-y-auto">
-            <p className="sticky top-0 border-b border-line bg-card px-4 py-2 text-sm font-semibold">
-              {preview.length} piece{preview.length === 1 ? '' : 's'} from {files.length - errors.length} file{files.length === 1 ? '' : 's'}
-            </p>
-            <ol className="divide-y divide-line">
-              {preview.slice(0, 200).map((p, i) => (
-                <li key={i} className="px-4 py-2">
-                  <span className="font-serif">{displayTitle({ title: p.title ?? '', body: p.body })}</span>
-                  <span className="ml-2 text-xs text-muted">{p.source?.fileName}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
           <div className="flex justify-end gap-2">
             <button type="button" className="btn" onClick={reset}>
-              Clear
+              Start over
             </button>
-            <button type="button" className="btn-primary" onClick={() => void commit()} disabled={busy || !preview.length}>
-              Import {preview.length}
+            <button type="button" className="btn-primary" onClick={() => void commit()} disabled={busy || !included}>
+              Import {included} piece{included === 1 ? '' : 's'}
             </button>
           </div>
         </div>
+      )}
+      {busy && !drafts && (
+        <p className="mt-4 flex items-center gap-2 text-sm text-ink-2">
+          <ChevronDown size={14} className="animate-bounce" /> Reading…
+        </p>
       )}
     </Modal>
   );

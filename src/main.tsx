@@ -5,6 +5,7 @@ import './pwa';
 import App from './App';
 import { ensureBuiltIns } from './db/db';
 import { startSync } from './sync/controller';
+import { finishSplash } from './splash';
 
 const root = createRoot(document.getElementById('root')!);
 
@@ -16,5 +17,6 @@ ensureBuiltIns()
         <App />
       </StrictMode>,
     );
+    finishSplash();
     void startSync();
   });

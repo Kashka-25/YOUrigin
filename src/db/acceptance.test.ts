@@ -6,7 +6,8 @@ import { renameTag } from './tags';
 import { exportBackup, mergeBackup } from './backup';
 import { acceptSuggestion, recordSuggestions } from './suggestions';
 import { EMPTY_FILTERS, filterItems, isOrphan, type LibraryContext } from '../domain/query';
-import { buildImport } from '../io/import';
+import { draftPieces, toNewContent } from '../io/import';
+import { blocksFromText } from '../io/splitter';
 import { bookToMarkdown } from '../io/export';
 import { localProvider } from '../ai/local';
 
@@ -134,7 +135,8 @@ describe('data safety', () => {
 
   it('import never alters the original text', () => {
     const text = '# Salt\n\nMy mother kept salt by the door  \n   for luck #memory\n';
-    const [piece] = buildImport([{ name: 'salt.md', text }], { split: 'none', status: 'seed', type: 'poem', extraTags: ['archive'] });
+    const { pieces } = draftPieces([{ name: 'salt.md', blocks: blocksFromText(text, true) }], 'none');
+    const [piece] = toNewContent(pieces, { status: 'seed', type: 'poem', extraTags: ['archive'] });
     expect(piece.title).toBe('Salt');
     expect(piece.body).toBe('My mother kept salt by the door  \n   for luck #memory');
     expect(piece.tagNames).toEqual(['memory', 'archive']);
