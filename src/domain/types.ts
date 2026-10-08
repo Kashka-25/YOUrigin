@@ -124,6 +124,10 @@ export interface BookDesign {
   author: string;
   copyright: string;
   dedication: string;
+  /** Thanks page — empty means no page. */
+  acknowledgements: string;
+  /** Front matter (after the dedication) or back matter (after the last chapter). */
+  acknowledgementsAt: 'front' | 'back';
   toc: boolean;
   /** Space for handwriting after prompts (guided journals). */
   promptSpace: SpaceSize;
@@ -217,6 +221,8 @@ export interface Template extends Syncable {
   copyrightPage?: boolean;
   /** New books start with a dedication page to rewrite. Unset counts as no. */
   dedicationPage?: boolean;
+  /** New books start with an acknowledgements page to rewrite. Unset counts as no. */
+  acknowledgementsPage?: boolean;
 }
 
 export type SuggestionKind = 'tags' | 'type';

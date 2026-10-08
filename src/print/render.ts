@@ -67,6 +67,10 @@ export function bookHtml({ book, design: d, sections, entries, contentById, asse
   }
   if (d.copyright.trim()) parts.push(`<section class="yb-front yb-copyright"><div>${esc(d.copyright)}</div></section>`);
   if (d.dedication.trim()) parts.push(`<section class="yb-front yb-dedication"><div>${esc(d.dedication)}</div></section>`);
+  const acks = d.acknowledgements.trim()
+    ? `<section class="yb-front yb-acks" id="acknowledgements"><h2 class="yb-toc-title">Acknowledgements</h2><div class="yb-acks-body">${esc(d.acknowledgements)}</div></section>`
+    : '';
+  if (acks && d.acknowledgementsAt === 'front') parts.push(acks);
 
   const ordered = [...sections].sort((a, b) => a.order - b.order);
   const live = (e: BookEntry) => {
@@ -87,7 +91,7 @@ export function bookHtml({ book, design: d, sections, entries, contentById, asse
   if (d.toc && groups.length > 1) {
     parts.push(`<nav class="yb-front yb-toc"><h2 class="yb-toc-title">Contents</h2><ol>${groups
       .map((g) => `<li><a href="#s-${g.section.id}">${esc(g.section.title)}</a></li>`)
-      .join('')}</ol></nav>`);
+      .join('')}${acks && d.acknowledgementsAt === 'back' ? '<li><a href="#acknowledgements">Acknowledgements</a></li>' : ''}</ol></nav>`);
   }
 
   const fullPage = contentHeightIn(d).toFixed(2);
@@ -132,6 +136,7 @@ export function bookHtml({ book, design: d, sections, entries, contentById, asse
     </section>`);
   }
   if (!groups.length) parts.push('<section class="yb-section"><p class="yb-empty">This book has no placed pieces yet.</p></section>');
+  if (acks && d.acknowledgementsAt === 'back') parts.push(acks);
   return parts.join('\n');
 }
 
@@ -193,6 +198,8 @@ ${heads}
 .yb-author { margin-top: 3em; font-family: ${heading}; letter-spacing: 0.2em; text-transform: uppercase; font-size: 0.85em; }
 .yb-copyright { display: flex; flex-direction: column; justify-content: flex-end; height: 100%; font-size: 0.78em; line-height: 1.5; white-space: pre-wrap; }
 .yb-dedication { text-align: center; font-style: italic; padding-top: 30%; white-space: pre-wrap; }
+.yb-acks { break-before: page; }
+.yb-acks-body { white-space: pre-wrap; }
 .yb-toc-title { font-family: ${heading}; text-align: center; font-weight: 500; font-size: 1.1em; letter-spacing: 0.2em; text-transform: uppercase; margin: 2em 0 1.6em; }
 .yb-toc ol { list-style: none; padding: 0; margin: 0; }
 .yb-toc li { margin: 0.45em 0; }

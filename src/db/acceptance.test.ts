@@ -212,5 +212,8 @@ describe('moving between devices', () => {
     expect(book?.design?.dedication).toBeUndefined(); // dedication is opt-in
     const dedicated = await db.books.get(await createBook({ title: 'For You', templateId: 'tpl-journal', dedicationPage: true }));
     expect(dedicated?.design?.dedication).toMatch(/the reader/);
+    expect(dedicated?.design?.acknowledgements).toBeUndefined(); // acknowledgements are opt-in
+    const thanked = await db.books.get(await createBook({ title: 'Thanks', templateId: 'tpl-poetry', acknowledgementsPage: true }));
+    expect(thanked?.design?.acknowledgements).toMatch(/To \[name\], for/);
   });
 });

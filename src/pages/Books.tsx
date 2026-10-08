@@ -22,6 +22,7 @@ export function Books() {
   const [author, setAuthor] = useState<string | null>(null);
   const [copyrightPage, setCopyrightPage] = useState<boolean | null>(null);
   const [dedicationPage, setDedicationPage] = useState<boolean | null>(null);
+  const [acksPage, setAcksPage] = useState<boolean | null>(null);
 
   if (!lib) return <Spinner />;
   const books = [...lib.books].filter((b) => !b.archived).sort((a, b) => b.updatedAt - a.updatedAt);
@@ -33,6 +34,7 @@ export function Books() {
   const chosen = templates.find((t) => t.id === templateId);
   const withCopyright = copyrightPage ?? chosen?.copyrightPage ?? true;
   const withDedication = dedicationPage ?? chosen?.dedicationPage ?? false;
+  const withAcks = acksPage ?? chosen?.acknowledgementsPage ?? false;
 
   return (
     <div className="mx-auto max-w-5xl px-4 pt-8 md:px-8 md:pt-12">
@@ -118,9 +120,12 @@ export function Books() {
                     {t.name} <span className="text-xs text-muted">· {BOOK_TYPE_LABEL[t.bookType]}</span>
                   </p>
                   <p className="truncate text-sm text-ink-2">{t.sections.join(' · ') || 'Empty structure'}</p>
-                  {(t.copyrightPage !== false || t.dedicationPage) && (
+                  {(t.copyrightPage !== false || t.dedicationPage || t.acknowledgementsPage) && (
                     <p className="text-xs text-muted">
-                      + {[t.copyrightPage !== false && 'copyright page with ISBN placeholder', t.dedicationPage && 'dedication page'].filter(Boolean).join(' · ')}
+                      +{' '}
+                      {[t.copyrightPage !== false && 'copyright page with ISBN placeholder', t.dedicationPage && 'dedication page', t.acknowledgementsPage && 'acknowledgements page']
+                        .filter(Boolean)
+                        .join(' · ')}
                     </p>
                   )}
                 </div>
@@ -151,12 +156,13 @@ export function Books() {
           className="space-y-4"
           onSubmit={async (e) => {
             e.preventDefault();
-            const id = await createBook({ title, subtitle, templateId, author: authorValue, copyrightPage: withCopyright, dedicationPage: withDedication });
+            const id = await createBook({ title, subtitle, templateId, author: authorValue, copyrightPage: withCopyright, dedicationPage: withDedication, acknowledgementsPage: withAcks });
             setCreating(false);
             setTitle('');
             setSubtitle('');
             setCopyrightPage(null);
             setDedicationPage(null);
+            setAcksPage(null);
             nav(`/books/${id}`);
           }}
         >
@@ -192,6 +198,7 @@ export function Books() {
                       setTemplateId(t.id);
                       setCopyrightPage(null);
                       setDedicationPage(null);
+                      setAcksPage(null);
                     }}
                   />
                   <span>
@@ -216,6 +223,13 @@ export function Books() {
               <span className="block text-xs text-muted">A starting line to rewrite in your own words — or pick another in Design &amp; print.</span>
             </span>
           </label>
+          <label className="flex cursor-pointer items-start gap-2">
+            <input type="checkbox" className="mt-1" checked={withAcks} onChange={(e) => setAcksPage(e.target.checked)} />
+            <span>
+              Include an acknowledgements page
+              <span className="block text-xs text-muted">A thank-you page at the end of the book, with [brackets] for the people you want to thank.</span>
+            </span>
+          </label>
           <div className="flex justify-end gap-2">
             <button type="button" className="btn" onClick={() => setCreating(false)}>
               Cancel
@@ -238,6 +252,7 @@ function TemplateEditor({ template, onClose }: { template: Partial<Template>; on
   const [sections, setSections] = useState((template.sections ?? []).join('\n'));
   const [copyrightPage, setCopyrightPage] = useState(template.copyrightPage ?? true);
   const [dedicationPage, setDedicationPage] = useState(template.dedicationPage ?? false);
+  const [acksPage, setAcksPage] = useState(template.acknowledgementsPage ?? false);
   return (
     <Modal open onClose={onClose} title={template.id ? 'Edit template' : 'New template'}>
       <form
@@ -251,6 +266,7 @@ function TemplateEditor({ template, onClose }: { template: Partial<Template>; on
             sections: sections.split('\n').map((s) => s.trim()).filter(Boolean),
             copyrightPage,
             dedicationPage,
+            acknowledgementsPage: acksPage,
           });
           onClose();
         }}
@@ -291,6 +307,13 @@ function TemplateEditor({ template, onClose }: { template: Partial<Template>; on
           <span>
             Start books with a dedication page
             <span className="block text-xs text-muted">A starting line to rewrite in your own words.</span>
+          </span>
+        </label>
+        <label className="flex cursor-pointer items-start gap-2">
+          <input type="checkbox" className="mt-1" checked={acksPage} onChange={(e) => setAcksPage(e.target.checked)} />
+          <span>
+            Start books with an acknowledgements page
+            <span className="block text-xs text-muted">A thank-you page to rewrite in your own words.</span>
           </span>
         </label>
         <div className="flex justify-end gap-2">

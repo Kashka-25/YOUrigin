@@ -2,7 +2,7 @@ import { db } from './db';
 import type { Book, BookEntry, BookType } from '../domain/types';
 import { newId } from '../domain/text';
 import { COVER_COLOURS } from '../domain/constants';
-import { copyrightTemplate, dedicationTemplate } from '../print/design';
+import { acknowledgementsTemplate, copyrightTemplate, dedicationTemplate } from '../print/design';
 
 export interface NewBook {
   title: string;
@@ -16,6 +16,8 @@ export interface NewBook {
   copyrightPage?: boolean;
   /** Start with a dedication page to rewrite (defaults to the template's setting). */
   dedicationPage?: boolean;
+  /** Start with an acknowledgements page to rewrite (defaults to the template's setting). */
+  acknowledgementsPage?: boolean;
 }
 
 export async function createBook(input: NewBook): Promise<string> {
@@ -28,6 +30,7 @@ export async function createBook(input: NewBook): Promise<string> {
     const author = input.author?.trim() ?? '';
     const withCopyright = input.copyrightPage ?? tpl?.copyrightPage ?? true;
     const withDedication = input.dedicationPage ?? tpl?.dedicationPage ?? false;
+    const withAcks = input.acknowledgementsPage ?? tpl?.acknowledgementsPage ?? false;
     const book: Book = {
       id: newId(),
       title,
@@ -41,11 +44,12 @@ export async function createBook(input: NewBook): Promise<string> {
       createdAt: now,
       updatedAt: now,
     };
-    if (author || withCopyright || withDedication)
+    if (author || withCopyright || withDedication || withAcks)
       book.design = {
         author,
         ...(withCopyright ? { copyright: copyrightTemplate({ title, type }, author) } : {}),
         ...(withDedication ? { dedication: dedicationTemplate(type) } : {}),
+        ...(withAcks ? { acknowledgements: acknowledgementsTemplate(type) } : {}),
       };
     await db.books.add(book);
     await db.sections.bulkAdd(
@@ -189,16 +193,18 @@ export async function saveTemplate(t: {
   sections: string[];
   copyrightPage?: boolean;
   dedicationPage?: boolean;
+  acknowledgementsPage?: boolean;
 }): Promise<string> {
   const now = Date.now();
   const copyrightPage = t.copyrightPage ?? true;
   const dedicationPage = t.dedicationPage ?? false;
+  const acknowledgementsPage = t.acknowledgementsPage ?? false;
   if (t.id) {
-    await db.templates.update(t.id, { name: t.name, bookType: t.bookType, sections: t.sections, copyrightPage, dedicationPage, updatedAt: now });
+    await db.templates.update(t.id, { name: t.name, bookType: t.bookType, sections: t.sections, copyrightPage, dedicationPage, acknowledgementsPage, updatedAt: now });
     return t.id;
   }
   const id = newId();
-  await db.templates.add({ id, name: t.name, bookType: t.bookType, sections: t.sections, copyrightPage, dedicationPage, builtIn: false, createdAt: now, updatedAt: now });
+  await db.templates.add({ id, name: t.name, bookType: t.bookType, sections: t.sections, copyrightPage, dedicationPage, acknowledgementsPage, builtIn: false, createdAt: now, updatedAt: now });
   return id;
 }
 

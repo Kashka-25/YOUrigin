@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { dataChecks, kdpGutter, layoutChecks, type Check } from './preflight';
-import { DEDICATION_STARTERS, copyrightTemplate, defaultDesign } from './design';
-import { bookCss } from './render';
+import { DEDICATION_STARTERS, acknowledgementsTemplate, copyrightTemplate, defaultDesign } from './design';
+import { bookCss, bookHtml } from './render';
 import type { Book, BookEntry, ContentItem, Section } from '../domain/types';
 
 const book: Book = { id: 'b', title: 'Tide', subtitle: '', description: '', type: 'journal', templateId: null, cover: 'clay', notes: '', archived: false, createdAt: 1, updatedAt: 1 };
@@ -91,5 +91,16 @@ describe('KDP print-ready check', () => {
     const d = { ...defaultDesign('poetry'), dedication: DEDICATION_STARTERS[1].text };
     expect(find(run([item('a')], [entry('a')], d), 'dedication')?.level).toBe('warn');
     expect(find(run([item('a')], [entry('a')], { ...d, dedication: 'For Mum,\nwho taught me the sea.' }), 'dedication')).toBeUndefined();
+  });
+
+  it('places the acknowledgements page front or back, and flags its [placeholders]', () => {
+    const d = { ...defaultDesign('journal'), acknowledgements: acknowledgementsTemplate('journal') };
+    expect(find(run([item('a')], [entry('a')], d), 'acknowledgements')?.level).toBe('warn');
+    const input = { book, sections: [section, { ...section, id: 's2', order: 1 }], entries: [entry('a'), entry('b', 's2')], contentById: new Map([['a', item('a')], ['b', item('b')]]), assets: new Map() };
+    const back = bookHtml({ ...input, design: d });
+    expect(back.indexOf('id="acknowledgements"')).toBeGreaterThan(back.indexOf('yb-section'));
+    expect(back).toContain('<a href="#acknowledgements">Acknowledgements</a>');
+    const front = bookHtml({ ...input, design: { ...d, acknowledgementsAt: 'front' } });
+    expect(front.indexOf('id="acknowledgements"')).toBeLessThan(front.indexOf('class="yb-section"'));
   });
 });

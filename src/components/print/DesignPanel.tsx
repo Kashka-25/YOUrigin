@@ -1,7 +1,7 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import type { Book, BookDesign, Section, SpaceSize, TrimSize } from '../../domain/types';
-import { BODY_FONTS, LINE_SPACING, MARGINS, ORNAMENTS, SPACE_LABEL, TRIMS, DEDICATION_STARTERS, copyrightTemplate } from '../../print/design';
+import { BODY_FONTS, LINE_SPACING, MARGINS, ORNAMENTS, SPACE_LABEL, TRIMS, DEDICATION_STARTERS, acknowledgementsTemplate, copyrightTemplate } from '../../print/design';
 import { IMAGE_ACCEPT, saveImage, useAsset, removeAssetIfUnused } from '../../db/assets';
 import { updateBook } from '../../db/books';
 import { db } from '../../db/db';
@@ -296,6 +296,35 @@ export function DesignPanel({ book, design: d, sections, onChange }: { book: Boo
             ))}
           </select>
           <p className="mt-1 text-xs text-muted">Replace anything in [brackets] with your own words. Leave empty for no dedication page.</p>
+        </Field>
+        <Field label="Acknowledgements" htmlFor="d-acks">
+          <textarea
+            id="d-acks"
+            className="input min-h-20"
+            value={d.acknowledgements}
+            onChange={(e) => onChange({ acknowledgements: e.target.value })}
+            placeholder="Thank you to…"
+          />
+          <button
+            type="button"
+            className="mt-1 text-xs text-accent underline"
+            onClick={() => {
+              if (d.acknowledgements.trim() && !window.confirm('Replace your acknowledgements with the template?')) return;
+              onChange({ acknowledgements: acknowledgementsTemplate(book.type) });
+            }}
+          >
+            Use acknowledgements template
+          </button>
+          <select
+            className="input mt-2 text-sm"
+            aria-label="Where the acknowledgements go"
+            value={d.acknowledgementsAt}
+            onChange={(e) => onChange({ acknowledgementsAt: e.target.value as BookDesign['acknowledgementsAt'] })}
+          >
+            <option value="back">At the back, after the last chapter</option>
+            <option value="front">At the front, after the dedication</option>
+          </select>
+          <p className="mt-1 text-xs text-muted">Replace anything in [brackets]. Leave empty for no acknowledgements page.</p>
         </Field>
         <Toggle label="Contents page (with page numbers)" checked={d.toc} onChange={(v) => onChange({ toc: v })} />
       </Group>

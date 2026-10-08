@@ -46,6 +46,8 @@ export function defaultDesign(type: BookType): BookDesign {
     author: '',
     copyright: '',
     dedication: '',
+    acknowledgements: '',
+    acknowledgementsAt: 'back',
     toc: true,
     promptSpace: 'none',
     activitySpace: 'none',
@@ -130,4 +132,24 @@ export const DEDICATION_STARTERS: { id: string; label: string; text: string }[] 
 /** The dedication a new book starts with: journals speak to the reader, others to someone. */
 export function dedicationTemplate(type: BookType): string {
   return DEDICATION_STARTERS.find((s) => s.id === (type === 'journal' ? 'reader' : 'who'))!.text;
+}
+
+/** A thank-you page to rewrite: replace each [bracket] with your own people and words. */
+export function acknowledgementsTemplate(type: BookType): string {
+  const closing =
+    type === 'journal'
+      ? 'And to you, the reader — thank you for opening these pages and doing this work with me.'
+      : 'And to you, the reader — thank you for carrying these pages with you.';
+  return [
+    'This book would not exist without the people who held it — and me — along the way.',
+    '',
+    'To [name], for [what they gave you].',
+    'To [name], for [what they gave you].',
+    '',
+    'To my family, [a few words].',
+    '',
+    'To [teachers, friends, early readers or communities], for [how they shaped this book].',
+    '',
+    closing,
+  ].join('\n');
 }

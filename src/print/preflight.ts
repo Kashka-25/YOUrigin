@@ -149,6 +149,9 @@ export function dataChecks({ book, design: d, sections, entries, contentById, as
   if (/\[[^\]]+\]/.test(d.dedication))
     out.push({ id: 'dedication', level: 'warn', title: 'Dedication still has a [placeholder]', detail: 'Replace the words in [brackets] — or clear the dedication to leave the page out.', fix: { label: 'Front pages', to: `${base}/print` } });
 
+  if (/\[[^\]]+\]/.test(d.acknowledgements))
+    out.push({ id: 'acknowledgements', level: 'warn', title: 'Acknowledgements still have [placeholders]', detail: 'Replace the words in [brackets] — or clear the box to leave the page out.', fix: { label: 'Front pages', to: `${base}/print` } });
+
   // --- Cover -------------------------------------------------------------------
   const g = coverGeometry(d, cover, pages ?? d.pageCount);
   const front = book.coverAssetId ? assets.get(book.coverAssetId) : undefined;
