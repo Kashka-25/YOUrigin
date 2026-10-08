@@ -3,9 +3,9 @@ import '@fontsource-variable/eb-garamond/wght-italic.css';
 import '@fontsource-variable/cormorant-garamond/index.css';
 import '@fontsource-variable/cormorant-garamond/wght-italic.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, BookImage, BookOpenText, Loader2, Printer, SlidersHorizontal, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, BookImage, BookOpenText, ClipboardCheck, Loader2, Printer, SlidersHorizontal, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { db } from '../db/db';
 import { updateBook } from '../db/books';
@@ -13,6 +13,8 @@ import { bookCss, bookHtml } from '../print/render';
 import { resolveDesign } from '../print/design';
 import { DesignPanel } from '../components/print/DesignPanel';
 import { registerFillSpace } from '../print/fillSpace';
+import { dataChecks, layoutChecks, measureLayout, type LayoutFindings } from '../print/preflight';
+import { PreflightPanel } from '../components/print/PreflightPanel';
 import { EmptyState, Spinner } from '../components/ui';
 import type { BookDesign } from '../domain/types';
 
@@ -27,14 +29,16 @@ export function PrintLayout() {
   const [rendering, setRendering] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(0.6);
-  const [panel, setPanel] = useState(() => window.innerWidth >= 1024);
+  const [params] = useSearchParams();
+  const [panel, setPanel] = useState<'design' | 'check' | null>(() => (params.get('check') ? 'check' : window.innerWidth >= 1024 ? 'design' : null));
+  const [findings, setFindings] = useState<LayoutFindings | null>(null);
 
   const book = lib?.books.find((b) => b.id === id);
   const design = useMemo(() => (book ? resolveDesign(book) : null), [book]);
 
-  const source = useMemo(() => {
+  const input = useMemo(() => {
     if (!lib || !book || !design || !assets) return null;
-    const input = {
+    return {
       book,
       design,
       sections: lib.sections.filter((s) => s.bookId === book.id),
@@ -42,8 +46,8 @@ export function PrintLayout() {
       contentById: lib.contentById,
       assets: new Map(assets.map((a) => [a.id, a])),
     };
-    return { html: `<div class="yb-root">${bookHtml(input)}</div>`, css: bookCss(design) };
   }, [lib, book, design, assets]);
+  const source = useMemo(() => (input ? { html: `<div class="yb-root">${bookHtml(input)}</div>`, css: bookCss(input.design) } : null), [input]);
 
   // Render only when the generated book actually changes, one layout at a time.
   const html = source?.html ?? '';
@@ -139,6 +143,18 @@ export function PrintLayout() {
     void updateBook(book.id, { design: { ...(book.design ?? {}), pageCount: pages } });
   }, [book, pages, rendering]);
 
+  // KDP check: book data now, plus measurements of the finished layout.
+  useEffect(() => {
+    if (panel !== 'check' || rendering || !stage.current || !assets) return;
+    const names = new Map(assets.map((a) => [a.dataUrl, a.name]));
+    setFindings(measureLayout(stage.current, (src) => names.get(src) ?? 'image'));
+  }, [panel, rendering, pages, assets]);
+  const checks = useMemo(() => {
+    if (!input || panel !== 'check') return [];
+    const data = dataChecks({ ...input, pages: rendering ? (pages ?? input.design.pageCount ?? null) : pages });
+    return findings && pages !== null && !rendering ? [...data, ...layoutChecks(findings, pages)] : data;
+  }, [input, panel, pages, rendering, findings]);
+
   // Leaving the page removes the print styles Paged.js added to the document.
   useEffect(() => () => document.querySelectorAll('style[data-yourigin-print]').forEach((el) => el.remove()), []);
 
@@ -172,8 +188,11 @@ export function PrintLayout() {
         <button type="button" className="btn-ghost p-2" onClick={() => setZoom((z) => Math.min(1.2, +(z + 0.1).toFixed(2)))} aria-label="Zoom in">
           <ZoomIn size={16} />
         </button>
-        <button type="button" className={`btn ${panel ? 'border-accent text-accent' : ''}`} onClick={() => setPanel((p) => !p)} aria-expanded={panel}>
+        <button type="button" className={`btn ${panel === 'design' ? 'border-accent text-accent' : ''}`} onClick={() => setPanel((p) => (p === 'design' ? null : 'design'))} aria-expanded={panel === 'design'}>
           <SlidersHorizontal size={15} /> Design
+        </button>
+        <button type="button" className={`btn ${panel === 'check' ? 'border-accent text-accent' : ''}`} onClick={() => setPanel((p) => (p === 'check' ? null : 'check'))} aria-expanded={panel === 'check'}>
+          <ClipboardCheck size={15} /> Check for KDP
         </button>
         <Link to={`/books/${book.id}/cover`} className="btn">
           <BookImage size={15} /> Cover
@@ -187,12 +206,16 @@ export function PrintLayout() {
         {panel && (
           <aside className="no-print fixed inset-x-0 bottom-0 z-20 max-h-[60dvh] overflow-y-auto border-t border-line bg-card p-4 shadow-xl lg:sticky lg:top-[53px] lg:z-auto lg:h-[calc(100dvh-53px)] lg:max-h-none lg:w-80 lg:shrink-0 lg:border-t-0 lg:border-r lg:shadow-none">
             <div className="mb-3 flex items-center justify-between lg:hidden">
-              <p className="font-serif text-lg">Design</p>
-              <button type="button" className="btn-ghost p-1" onClick={() => setPanel(false)} aria-label="Close design panel">
+              <p className="font-serif text-lg">{panel === 'check' ? 'KDP check' : 'Design'}</p>
+              <button type="button" className="btn-ghost p-1" onClick={() => setPanel(null)} aria-label="Close panel">
                 <X size={18} />
               </button>
             </div>
-            <DesignPanel book={book} design={design} sections={lib.sections.filter((s) => s.bookId === book.id)} onChange={save} />
+            {panel === 'check' ? (
+              <PreflightPanel checks={checks} measuring={rendering} bookId={book.id} onOpenDesign={() => setPanel('design')} />
+            ) : (
+              <DesignPanel book={book} design={design} sections={lib.sections.filter((s) => s.bookId === book.id)} onChange={save} />
+            )}
           </aside>
         )}
         <main className="min-w-0 flex-1 overflow-x-auto px-4 py-6">

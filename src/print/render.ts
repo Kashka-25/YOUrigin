@@ -139,7 +139,14 @@ export function bookHtml({ book, design: d, sections, entries, contentById, asse
 export function bookCss(d: BookDesign): string {
   const t = TRIMS[d.trim];
   const m = MARGINS[d.margins];
-  const size = `${t.w}${t.unit} ${t.h}${t.unit}`;
+  // KDP bleed: the page grows 0.125in at the outside edge and 0.125in top and bottom
+  // (not at the spine), so margins grow by the same amount and no crop marks are added.
+  const b = d.bleed ? 0.125 : 0;
+  const inch = (v: number) => (t.unit === 'mm' ? v / 25.4 : v);
+  const size = d.bleed ? `${(inch(t.w) + b).toFixed(4)}in ${(inch(t.h) + 2 * b).toFixed(4)}in` : `${t.w}${t.unit} ${t.h}${t.unit}`;
+  const mt = m.top + b;
+  const mb = m.bottom + b;
+  const mo = m.outer + b;
   const body = BODY_FONTS[d.bodyFont].css;
   const heading = d.headingFont === 'cinzel' ? "'Cinzel Variable', 'Trajan Pro', Georgia, serif" : body;
   const num = 'counter(page)';
@@ -156,15 +163,14 @@ export function bookCss(d: BookDesign): string {
   return `
 @page {
   size: ${size};
-  margin: ${m.top}in ${m.outer}in ${m.bottom}in ${m.inner}in;
-  ${d.bleed ? 'bleed: 0.125in; marks: crop;' : ''}
+  margin: ${mt}in ${mo}in ${mb}in ${m.inner}in;
   @top-center { font-family: ${heading}; font-size: 7.5pt; letter-spacing: 0.18em; text-transform: uppercase; color: #6b5d55; }
   @bottom-center { font-family: ${body}; font-size: 9pt; color: #4a3f3a; }
   @bottom-left { font-family: ${body}; font-size: 9pt; color: #4a3f3a; }
   @bottom-right { font-family: ${body}; font-size: 9pt; color: #4a3f3a; }
 }
-@page :left { margin-left: ${m.outer}in; margin-right: ${m.inner}in; }
-@page :right { margin-left: ${m.inner}in; margin-right: ${m.outer}in; }
+@page :left { margin-left: ${mo}in; margin-right: ${m.inner}in; }
+@page :right { margin-left: ${m.inner}in; margin-right: ${mo}in; }
 ${pageNumbers}
 ${heads}
 @page front { @top-center { content: none; } @bottom-center { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }

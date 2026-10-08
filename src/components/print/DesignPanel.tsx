@@ -136,7 +136,7 @@ export function DesignPanel({ book, design: d, sections, onChange }: { book: Boo
         </Field>
         <Toggle
           label="Add bleed for print services"
-          hint="Adds 0.125in around each page and crop marks — needed by KDP, IngramSpark etc. when artwork runs to the edge."
+          hint="Adds 0.125in at the outside, top and bottom edges (KDP’s bleed size) — needed when artwork runs to the edge. Choose “Bleed” when uploading."
           checked={d.bleed}
           onChange={(v) => onChange({ bleed: v })}
         />

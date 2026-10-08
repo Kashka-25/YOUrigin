@@ -4,7 +4,7 @@ import '@fontsource-variable/cormorant-garamond/index.css';
 import '@fontsource-variable/cormorant-garamond/wght-italic.css';
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft, Eye, EyeOff, LayoutTemplate, Printer, SlidersHorizontal, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ClipboardCheck, Eye, EyeOff, LayoutTemplate, Printer, SlidersHorizontal, X } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { useAsset, removeAssetIfUnused } from '../db/assets';
 import { updateBook } from '../db/books';
@@ -55,6 +55,9 @@ export function CoverDesigner() {
         <button type="button" className={`btn ${panel ? 'border-accent text-accent' : ''}`} onClick={() => setPanel((p) => !p)} aria-expanded={panel}>
           <SlidersHorizontal size={15} /> Design
         </button>
+        <Link to={`/books/${book.id}/print?check=1`} className="btn">
+          <ClipboardCheck size={15} /> Check for KDP
+        </Link>
         <button type="button" className="btn-primary" onClick={() => window.print()}>
           <Printer size={15} /> Print / PDF
         </button>
