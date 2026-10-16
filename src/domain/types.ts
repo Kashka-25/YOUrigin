@@ -5,6 +5,7 @@ export type Status = 'seed' | 'developing' | 'polished';
 
 export type ContentType =
   | 'poem'
+  | 'song'
   | 'fragment'
   | 'idea'
   | 'reflection'
@@ -87,11 +88,20 @@ export interface Collection extends Syncable {
 
 export type BookType = 'journal' | 'poetry' | 'essay' | 'codex' | 'custom';
 
+/** What a project is for. Only books get print, cover and manuscript tools. */
+export type ProjectKind = 'book' | 'album' | 'setlist' | 'ideas' | 'custom';
+
+/** A project (stored in the `books` table, so sync and old backups carry on unchanged). */
 export interface Book extends Syncable {
   title: string;
   subtitle: string;
   description: string;
+  /** Book style — used by book projects only. */
   type: BookType;
+  /** Missing on records made before projects: those are books. */
+  kind?: ProjectKind;
+  /** User-named shelf the project sits on ('' or missing = none). */
+  shelf?: string;
   templateId: string | null;
   /** A cover colour token (see COVER_COLOURS). */
   cover: string;
