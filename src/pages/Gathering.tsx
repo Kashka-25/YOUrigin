@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Upload } from 'lucide-react';
+import { FolderPlus, Upload, X } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { setSetting, useSettings } from '../db/settings';
-import { parseCapture, splitPieces, displayTitle, type SplitMode } from '../domain/text';
+import { parseCapture, splitPieces, type SplitMode } from '../domain/text';
 import type { ContentType, Status } from '../domain/types';
 import { StatusPicker, TypeSelect, TagChip } from '../components/ui';
-import { createMany, purgeContent, updateContent } from '../db/content';
+import { createMany, purgeContent } from '../db/content';
+import { addToCollection } from '../db/collections';
+import { TagInput } from '../components/TagInput';
+import { ItemCard } from '../components/ItemCard';
+import { BulkBar } from '../components/BulkBar';
+import { useAutoGrow } from '../hooks/useAutoGrow';
 import { db, requestPersistentStorage } from '../db/db';
 import { useToast } from '../components/Toast';
 import { PendingSuggestions, suggestFor } from '../components/Suggestions';
@@ -17,8 +22,13 @@ export function Gathering() {
   const settings = useSettings();
   const toast = useToast();
   const [params, setParams] = useSearchParams();
-  const ref = useRef<HTMLTextAreaElement>(null);
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+  const [area, setArea] = useState<HTMLTextAreaElement | null>(null);
   const [text, setText] = useState<string | null>(null);
+  const [heading, setHeading] = useState('');
+  const [extraTags, setExtraTags] = useState<string[]>([]);
+  const [collectionIds, setCollectionIds] = useState<string[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [status, setStatus] = useState<Status | null>(null);
   const [type, setType] = useState<ContentType | null>(null);
   const [split, setSplit] = useState<SplitMode>('none');
@@ -48,17 +58,13 @@ export function Gathering() {
     ref.current?.focus();
   }, []);
 
-  // Auto-grow the writing area.
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = Math.max(el.scrollHeight, 220) + 'px';
-  }, [value]);
+  useAutoGrow(area, value, 220);
 
   const pieces = useMemo(() => splitPieces(value, split).map(parseCapture), [value, split]);
-  const detectedTags = useMemo(() => [...new Set(pieces.flatMap((p) => p.tags))], [pieces]);
+  const detectedTags = useMemo(() => [...new Set(pieces.flatMap((p) => p.tags))].filter((t) => !extraTags.includes(t)), [pieces, extraTags]);
   const canCapture = pieces.some((p) => p.body.trim());
+  // A heading belongs to one piece; when splitting, each piece keeps its first line as its title.
+  const useHeading = split === 'none';
 
   const capture = async () => {
     if (!canCapture) return;
@@ -66,9 +72,20 @@ export function Gathering() {
     const ids = await createMany(
       pieces
         .filter((p) => p.body.trim())
-        .map((p) => ({ body: p.body, type: effType, status: effStatus, tagNames: p.tags, source: { kind: 'capture' as const } })),
+        .map((p) => ({
+          body: p.body,
+          title: useHeading ? heading.trim() : undefined,
+          type: effType,
+          status: effStatus,
+          tagNames: [...new Set([...p.tags, ...extraTags])],
+          source: { kind: 'capture' as const },
+        })),
     );
+    for (const c of collectionIds) await addToCollection(c, ids);
     setText('');
+    setHeading('');
+    setExtraTags([]);
+    setCollectionIds([]);
     void setSetting('captureDraft', '');
     void requestPersistentStorage();
     ref.current?.focus();
@@ -102,9 +119,6 @@ export function Gathering() {
   return (
     <div className="mx-auto max-w-3xl px-4 pt-8 md:px-8 md:pt-14">
       <h1 className="font-serif text-3xl leading-tight font-normal text-ink md:text-[2.6rem]">What’s moving through your mind?</h1>
-      <p className="mt-2 text-sm text-ink-2">
-        Write, paste, brain-dump. Add <span className="font-mono text-xs">#tags</span> on their own line if you like. Nothing else is required.
-      </p>
 
       <form
         className="mt-6"
@@ -114,12 +128,35 @@ export function Gathering() {
         }}
       >
         <div className="panel px-5 py-4 transition-colors focus-within:border-accent/60 md:px-7 md:py-6">
+          {useHeading && (
+            <>
+              <label htmlFor="capture-heading" className="sr-only">
+                Heading
+              </label>
+              <input
+                id="capture-heading"
+                value={heading}
+                onChange={(e) => setHeading(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    ref.current?.focus();
+                  }
+                }}
+                placeholder="Heading (optional)"
+                className="mb-3 block w-full border-b border-line bg-transparent pb-2 font-serif text-2xl text-ink placeholder:text-muted/60 focus:outline-none focus-visible:outline-none"
+              />
+            </>
+          )}
           <label htmlFor="capture" className="sr-only">
             Capture
           </label>
           <textarea
             id="capture"
-            ref={ref}
+            ref={(el) => {
+              ref.current = el;
+              setArea(el);
+            }}
             value={value}
             onChange={(e) => change(e.target.value)}
             onKeyDown={(e) => {
@@ -132,11 +169,44 @@ export function Gathering() {
             className="writing block w-full resize-none bg-transparent text-[1.2rem] leading-[1.75] text-ink placeholder:text-muted/70 focus:outline-none focus-visible:outline-none md:text-[1.3rem]"
             spellCheck
           />
-          {detectedTags.length > 0 && (
-            <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-line pt-3" aria-label="Detected tags">
-              {detectedTags.map((t) => (
-                <TagChip key={t} name={t} />
+          <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-line pt-3">
+            {detectedTags.map((t) => (
+              <TagChip key={t} name={t} />
+            ))}
+            <div className="min-w-[10rem] flex-1">
+              <TagInput
+                value={extraTags}
+                onAdd={(n) => setExtraTags((x) => [...x, n])}
+                onRemove={(n) => setExtraTags((x) => x.filter((t) => t !== n))}
+                placeholder="Add tags…"
+              />
+            </div>
+          </div>
+          {lib && lib.collections.length > 0 && (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {collectionIds.map((id) => (
+                <span key={id} className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-0.5 text-xs text-ink-2">
+                  <FolderPlus size={12} aria-hidden /> {lib.ctx.collectionName.get(id)}
+                  <button type="button" aria-label="Remove collection" onClick={() => setCollectionIds((x) => x.filter((c) => c !== id))}>
+                    <X size={12} />
+                  </button>
+                </span>
               ))}
+              <select
+                aria-label="Add to a collection"
+                className="rounded-full border border-line bg-card px-2.5 py-1 text-xs text-ink-2"
+                value=""
+                onChange={(e) => e.target.value && setCollectionIds((x) => [...new Set([...x, e.target.value])])}
+              >
+                <option value="">+ Collection</option>
+                {lib.collections
+                  .filter((c) => !collectionIds.includes(c.id))
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+              </select>
             </div>
           )}
         </div>
@@ -179,27 +249,25 @@ export function Gathering() {
               Library →
             </Link>
           </div>
-          <ul className="mt-2 divide-y divide-line">
+          <div className="mt-1">
             {recent.map((item) => (
-              <li key={item.id} className="py-3">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <Link to={`/item/${item.id}`} className="min-w-0 flex-1 font-serif text-lg leading-snug hover:underline">
-                    {displayTitle(item)}
-                  </Link>
-                  <StatusPicker
-                    value={item.status}
-                    size="sm"
-                    label={`Status of ${displayTitle(item)}`}
-                    onChange={(s) => void updateContent(item.id, { status: s })}
-                  />
-                </div>
-                {item.tagIds.length > 0 && (
-                  <p className="mt-1 text-xs text-muted">{item.tagIds.map((t) => '#' + lib?.ctx.tagName.get(t)).join(' ')}</p>
-                )}
-                <PendingSuggestions contentId={item.id} />
-              </li>
+              <ItemCard
+                key={item.id}
+                item={item}
+                selected={selected.has(item.id)}
+                onToggle={() =>
+                  setSelected((x) => {
+                    const next = new Set(x);
+                    if (next.has(item.id)) next.delete(item.id);
+                    else next.add(item.id);
+                    return next;
+                  })
+                }
+                extra={<PendingSuggestions contentId={item.id} />}
+              />
             ))}
-          </ul>
+          </div>
+          <BulkBar ids={[...selected].filter((id) => recent.some((r) => r.id === id))} onClear={() => setSelected(new Set())} />
         </section>
       )}
 

@@ -115,7 +115,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
 
       {/* Desktop sidebar */}
-      <aside className="no-print sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line px-4 py-6 md:flex">
+      <aside className="no-print chrome sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line px-4 py-6 md:flex">
         <div className="px-3">
           <Logo />
           <p className="mt-2 max-w-[210px] text-center font-display text-[10px] tracking-[0.25em] text-muted uppercase">Your Creative Codex</p>
@@ -159,7 +159,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Mobile top bar */}
-      <header className="no-print sticky top-0 z-30 flex items-center justify-between border-b border-line bg-paper/95 px-4 py-2.5 backdrop-blur md:hidden">
+      <header className="no-print chrome sticky top-0 z-30 flex items-center justify-between border-b border-line bg-paper/95 px-4 py-2.5 backdrop-blur md:hidden">
         <Logo size="sm" />
         <div className="flex items-center gap-1">
           {!online && <WifiOff size={16} className="text-muted" aria-label="Offline" />}
@@ -177,7 +177,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Mobile bottom navigation */}
       <nav
         aria-label="Main"
-        className="no-print fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+        className="no-print chrome fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
       >
         {[PRIMARY[0], PRIMARY[1], PRIMARY[3], PRIMARY[5]].map((item) => (
           <NavLink

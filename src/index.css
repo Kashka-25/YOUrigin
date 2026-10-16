@@ -178,6 +178,11 @@
 }
 
 /* Manuscript / print */
+/* Focus mode (editing): hide the app's bars. */
+html[data-focus] .chrome {
+  display: none !important;
+}
+
 @media print {
   /* Only the laid-out pages print, at true size. */
   .print-layout {

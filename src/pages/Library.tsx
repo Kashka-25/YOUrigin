@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Download, SlidersHorizontal, Upload, X } from 'lucide-react';
+import { Download, FolderOpen, Hash, SlidersHorizontal, Upload, X } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { EMPTY_FILTERS, filterItems, type LibraryFilters, type SortKey } from '../domain/query';
 import type { ContentType, Status } from '../domain/types';
@@ -12,6 +12,13 @@ import { ImportDialog } from '../components/ImportDialog';
 import { download, libraryToMarkdown, today } from '../io/export';
 
 const PAGE = 100;
+
+type View = 'all' | 'collections' | 'tags';
+const VIEWS: { id: View; label: string }[] = [
+  { id: 'all', label: 'All notes' },
+  { id: 'collections', label: 'Collections' },
+  { id: 'tags', label: 'Tags' },
+];
 
 // Static class names so Tailwind can see them.
 const STATUS_ON: Record<Status, string> = {
@@ -57,6 +64,10 @@ export function Library() {
   const lib = useLibrary();
   const [params, setParams] = useSearchParams();
   const filters = useMemo(() => readFilters(params), [params]);
+  const view = (params.get('view') as View | null) ?? 'all';
+  const showView = (v: View) => setParams(v === 'all' ? writeFilters(filters) : new URLSearchParams({ view: v }), { replace: true });
+  // Opening a collection or tag shows its notes in the All notes view.
+  const openWith = (patch: Partial<LibraryFilters>) => setParams(writeFilters({ ...EMPTY_FILTERS, ...patch }), { replace: true });
   const set = (patch: Partial<LibraryFilters>) => setParams(writeFilters({ ...filters, ...patch }), { replace: true });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const lastClicked = useRef<string | null>(null);
@@ -96,10 +107,7 @@ export function Library() {
   return (
     <div className="mx-auto max-w-4xl px-4 pt-8 md:px-8 md:pt-12">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="eyebrow">Everything you’ve gathered</p>
-          <h1 className="page-title">Library</h1>
-        </div>
+        <h1 className="page-title">Library</h1>
         <div className="flex gap-2">
           <button type="button" className="btn" onClick={() => setImportOpen(true)}>
             <Upload size={15} /> Import
@@ -116,190 +124,272 @@ export function Library() {
         </div>
       </div>
 
-      <div className="sticky top-[61px] z-20 -mx-4 mt-6 bg-paper/95 px-4 py-3 backdrop-blur md:top-0 md:-mx-8 md:px-8">
-        <div className="flex gap-2">
-          <input
-            type="search"
-            className="input py-2.5 text-base"
-            placeholder="Search words or #tags…"
-            value={filters.query}
-            onChange={(e) => set({ query: e.target.value })}
-            aria-label="Search library"
-          />
+      <div className="mt-5 inline-flex rounded-full border border-line p-1" role="tablist" aria-label="Library view">
+        {VIEWS.map((v) => (
           <button
+            key={v.id}
             type="button"
-            className={`btn shrink-0 ${activeCount ? 'border-accent text-accent' : ''}`}
-            onClick={() => setShowFilters((s) => !s)}
-            aria-expanded={showFilters}
+            role="tab"
+            aria-selected={view === v.id}
+            onClick={() => showView(v.id)}
+            className={`rounded-full px-4 py-1.5 text-sm ${view === v.id ? 'bg-accent font-semibold text-accent-ink' : 'text-ink-2 hover:text-ink'}`}
           >
-            <SlidersHorizontal size={15} /> Filters{activeCount ? ` · ${activeCount}` : ''}
+            {v.label}
           </button>
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter by status">
-          {STATUSES.map((s) => (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={filters.statuses.includes(s)}
-              onClick={() => set({ statuses: toggle(filters.statuses, s) })}
-              className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                filters.statuses.includes(s) ? STATUS_ON[s] : 'border-line text-ink-2'
-              }`}
-            >
-              {STATUS_META[s].symbol} {STATUS_META[s].label}
-            </button>
-          ))}
-          <button
-            type="button"
-            aria-pressed={filters.orphansOnly}
-            onClick={() => set({ orphansOnly: !filters.orphansOnly })}
-            className={`rounded-full border px-3 py-1 text-xs font-semibold ${filters.orphansOnly ? 'border-accent bg-accent text-accent-ink' : 'border-line text-ink-2'}`}
-          >
-            Unclaimed only
-          </button>
-          {filters.tagIds.map((t) => (
-            <TagChip key={t} name={lib.ctx.tagName.get(t) ?? '?'} active onRemove={() => set({ tagIds: filters.tagIds.filter((x) => x !== t) })} />
-          ))}
-        </div>
-
-        {showFilters && (
-          <div className="panel mt-3 grid gap-4 p-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <span className="label">Types</span>
-              <div className="flex flex-wrap gap-1.5">
-                {CONTENT_TYPES.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    aria-pressed={filters.types.includes(t)}
-                    onClick={() => set({ types: toggle(filters.types, t) })}
-                    className={`rounded-full border px-2.5 py-0.5 text-xs ${filters.types.includes(t) ? 'border-accent bg-accent text-accent-ink' : 'border-line text-ink-2'}`}
-                  >
-                    {TYPE_LABEL[t]}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="label" htmlFor="f-tag">
-                Must have tag (combine several)
-              </label>
-              <select
-                id="f-tag"
-                className="input"
-                value={tagPick}
-                onChange={(e) => {
-                  if (e.target.value) set({ tagIds: [...new Set([...filters.tagIds, e.target.value])] });
-                  setTagPick('');
-                }}
-              >
-                <option value="">Add a tag…</option>
-                {tagsByUse
-                  .filter((t) => !filters.tagIds.includes(t.id))
-                  .map((t) => (
-                    <option key={t.id} value={t.id}>
-                      #{t.name} ({lib.tagCounts.get(t.id) ?? 0})
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div>
-              <label className="label" htmlFor="f-sort">
-                Sort
-              </label>
-              <select id="f-sort" className="input" value={filters.sort} onChange={(e) => set({ sort: e.target.value as SortKey })}>
-                <option value="updated">Recently touched</option>
-                <option value="created">Recently gathered</option>
-                <option value="title">Title</option>
-                <option value="status">Status (seeds first)</option>
-              </select>
-            </div>
-            <div>
-              <label className="label" htmlFor="f-book">
-                In book
-              </label>
-              <select id="f-book" className="input" value={filters.bookId ?? ''} onChange={(e) => set({ bookId: e.target.value || null })}>
-                <option value="">Any</option>
-                {lib.books.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="label" htmlFor="f-col">
-                In collection
-              </label>
-              <select id="f-col" className="input" value={filters.collectionId ?? ''} onChange={(e) => set({ collectionId: e.target.value || null })}>
-                <option value="">Any</option>
-                {lib.collections.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={filters.showArchived} onChange={(e) => set({ showArchived: e.target.checked })} />
-              Show archived pieces instead
-            </label>
-            <div className="flex justify-end sm:col-span-1">
-              <button type="button" className="btn-ghost" onClick={() => setParams(writeFilters(EMPTY_FILTERS), { replace: true })}>
-                <X size={14} /> Clear all filters
-              </button>
-            </div>
-          </div>
-        )}
+        ))}
       </div>
 
-      {totalLive === 0 && !filters.showArchived ? (
-        <EmptyState
-          title="Your library is waiting"
-          action={
-            <Link to="/" className="btn-primary">
-              Capture your first piece
-            </Link>
-          }
-        >
-          Everything you capture or import appears here — no folders needed.
-        </EmptyState>
-      ) : (
-        <>
-          <div className="mt-2 flex items-center justify-between text-sm text-ink-2">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                className="h-4 w-4"
-                checked={allSelected}
-                onChange={() => setSelected(allSelected ? new Set() : new Set(results.map((r) => r.id)))}
-                aria-label="Select all shown"
-              />
-              {results.length} piece{results.length === 1 ? '' : 's'}
-            </label>
-            {selected.size > 0 && <span className="text-xs text-muted">Shift-click to select a range</span>}
-          </div>
-          {results.length === 0 ? (
-            <EmptyState title="Nothing matches">Try fewer filters, or search for a different word.</EmptyState>
-          ) : (
-            <div>
-              {results.slice(0, limit).map((item) => (
-                <ItemCard key={item.id} item={item} selected={selected.has(item.id)} onToggle={(shift) => onToggle(item.id, shift)} />
-              ))}
-              {results.length > limit && (
-                <div className="py-6 text-center">
-                  <button type="button" className="btn" onClick={() => setLimit(limit + PAGE)}>
-                    Show more ({results.length - limit} remaining)
+      {view === 'collections' && (
+        lib.collections.length === 0 ? (
+          <EmptyState title="No collections yet" action={<Link to="/collections" className="btn">Make a collection</Link>}>
+            Collections are folders for your notes.
+          </EmptyState>
+        ) : (
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+            {[...lib.collections]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((c) => {
+                const count = c.contentIds.filter((id) => {
+                  const i = lib.contentById.get(id);
+                  return i && !i.deletedAt && !i.archived;
+                }).length;
+                return (
+                  <li key={c.id}>
+                    <button type="button" onClick={() => openWith({ collectionId: c.id })} className="panel flex w-full items-center gap-3 p-4 text-left hover:border-accent/60">
+                      <FolderOpen size={20} className="shrink-0 text-accent" aria-hidden />
+                      <span className="min-w-0 flex-1 truncate font-serif text-lg">{c.name}</span>
+                      <span className="text-sm text-muted tabular-nums">{count}</span>
+                    </button>
+                  </li>
+                );
+              })}
+          </ul>
+        )
+      )}
+
+      {view === 'tags' && (
+        lib.tags.length === 0 ? (
+          <EmptyState title="No tags yet">Add #tags to a note and they appear here.</EmptyState>
+        ) : (
+          <ul className="mt-6 flex flex-wrap gap-2">
+            {[...lib.tags]
+              .filter((t) => (lib.tagCounts.get(t.id) ?? 0) > 0)
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((t) => (
+                <li key={t.id}>
+                  <button
+                    type="button"
+                    onClick={() => openWith({ tagIds: [t.id] })}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-3.5 py-1.5 text-[15px] hover:border-accent/60"
+                  >
+                    <Hash size={14} className="text-muted" aria-hidden />
+                    {t.name}
+                    <span className="text-xs text-muted tabular-nums">{lib.tagCounts.get(t.id)}</span>
                   </button>
-                </div>
+                </li>
+              ))}
+          </ul>
+        )
+      )}
+
+      {view === 'all' && (
+          <>
+          <div className="sticky top-[61px] z-20 -mx-4 mt-4 bg-paper/95 px-4 py-3 backdrop-blur md:top-0 md:-mx-8 md:px-8">
+            <div className="flex gap-2">
+              <input
+                type="search"
+                className="input py-2.5 text-base"
+                placeholder="Search words or #tags…"
+                value={filters.query}
+                onChange={(e) => set({ query: e.target.value })}
+                aria-label="Search library"
+              />
+              <button
+                type="button"
+                className={`btn shrink-0 ${activeCount ? 'border-accent text-accent' : ''}`}
+                onClick={() => setShowFilters((s) => !s)}
+                aria-expanded={showFilters}
+              >
+                <SlidersHorizontal size={15} /> Filters{activeCount ? ` · ${activeCount}` : ''}
+              </button>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter by status">
+              {STATUSES.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  aria-pressed={filters.statuses.includes(s)}
+                  onClick={() => set({ statuses: toggle(filters.statuses, s) })}
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                    filters.statuses.includes(s) ? STATUS_ON[s] : 'border-line text-ink-2'
+                  }`}
+                >
+                  {STATUS_META[s].symbol} {STATUS_META[s].label}
+                </button>
+              ))}
+              <button
+                type="button"
+                aria-pressed={filters.orphansOnly}
+                onClick={() => set({ orphansOnly: !filters.orphansOnly })}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold ${filters.orphansOnly ? 'border-accent bg-accent text-accent-ink' : 'border-line text-ink-2'}`}
+              >
+                Unclaimed only
+              </button>
+              {filters.tagIds.map((t) => (
+                <TagChip key={t} name={lib.ctx.tagName.get(t) ?? '?'} active onRemove={() => set({ tagIds: filters.tagIds.filter((x) => x !== t) })} />
+              ))}
+              {filters.collectionId && (
+                <button
+                  type="button"
+                  onClick={() => set({ collectionId: null })}
+                  className="inline-flex items-center gap-1 rounded-full border border-accent bg-accent px-3 py-1 text-xs font-semibold text-accent-ink"
+                  aria-label="Stop showing only this collection"
+                >
+                  <FolderOpen size={12} aria-hidden /> {lib.ctx.collectionName.get(filters.collectionId) ?? '?'} <X size={12} aria-hidden />
+                </button>
               )}
             </div>
-          )}
-        </>
+
+            {showFilters && (
+              <div className="panel mt-3 grid gap-4 p-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <span className="label">Types</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {CONTENT_TYPES.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        aria-pressed={filters.types.includes(t)}
+                        onClick={() => set({ types: toggle(filters.types, t) })}
+                        className={`rounded-full border px-2.5 py-0.5 text-xs ${filters.types.includes(t) ? 'border-accent bg-accent text-accent-ink' : 'border-line text-ink-2'}`}
+                      >
+                        {TYPE_LABEL[t]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="label" htmlFor="f-tag">
+                    Must have tag (combine several)
+                  </label>
+                  <select
+                    id="f-tag"
+                    className="input"
+                    value={tagPick}
+                    onChange={(e) => {
+                      if (e.target.value) set({ tagIds: [...new Set([...filters.tagIds, e.target.value])] });
+                      setTagPick('');
+                    }}
+                  >
+                    <option value="">Add a tag…</option>
+                    {tagsByUse
+                      .filter((t) => !filters.tagIds.includes(t.id))
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          #{t.name} ({lib.tagCounts.get(t.id) ?? 0})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label" htmlFor="f-sort">
+                    Sort
+                  </label>
+                  <select id="f-sort" className="input" value={filters.sort} onChange={(e) => set({ sort: e.target.value as SortKey })}>
+                    <option value="updated">Recently touched</option>
+                    <option value="created">Recently gathered</option>
+                    <option value="title">Title</option>
+                    <option value="status">Status (seeds first)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label" htmlFor="f-book">
+                    In book
+                  </label>
+                  <select id="f-book" className="input" value={filters.bookId ?? ''} onChange={(e) => set({ bookId: e.target.value || null })}>
+                    <option value="">Any</option>
+                    {lib.books.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label" htmlFor="f-col">
+                    In collection
+                  </label>
+                  <select id="f-col" className="input" value={filters.collectionId ?? ''} onChange={(e) => set({ collectionId: e.target.value || null })}>
+                    <option value="">Any</option>
+                    {lib.collections.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={filters.showArchived} onChange={(e) => set({ showArchived: e.target.checked })} />
+                  Show archived pieces instead
+                </label>
+                <div className="flex justify-end sm:col-span-1">
+                  <button type="button" className="btn-ghost" onClick={() => setParams(writeFilters(EMPTY_FILTERS), { replace: true })}>
+                    <X size={14} /> Clear all filters
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {totalLive === 0 && !filters.showArchived ? (
+            <EmptyState
+              title="Your library is waiting"
+              action={
+                <Link to="/" className="btn-primary">
+                  Capture your first piece
+                </Link>
+              }
+            >
+              Everything you capture or import appears here — no folders needed.
+            </EmptyState>
+          ) : (
+            <>
+              <div className="mt-2 flex items-center justify-between text-sm text-ink-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={allSelected}
+                    onChange={() => setSelected(allSelected ? new Set() : new Set(results.map((r) => r.id)))}
+                    aria-label="Select all shown"
+                  />
+                  {results.length} piece{results.length === 1 ? '' : 's'}
+                </label>
+                {selected.size > 0 && <span className="text-xs text-muted">Shift-click to select a range</span>}
+              </div>
+              {results.length === 0 ? (
+                <EmptyState title="Nothing matches">Try fewer filters, or search for a different word.</EmptyState>
+              ) : (
+                <div>
+                  {results.slice(0, limit).map((item) => (
+                    <ItemCard key={item.id} item={item} selected={selected.has(item.id)} onToggle={(shift) => onToggle(item.id, shift)} />
+                  ))}
+                  {results.length > limit && (
+                    <div className="py-6 text-center">
+                      <button type="button" className="btn" onClick={() => setLimit(limit + PAGE)}>
+                        Show more ({results.length - limit} remaining)
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
       )}
 
       <BulkBar ids={[...selected]} onClear={() => setSelected(new Set())} archivedView={filters.showArchived} />
+      </>
+      )}
       <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );

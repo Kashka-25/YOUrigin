@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Archive, ArrowLeft, BookPlus, ChevronDown, ChevronLeft, ChevronRight, FolderPlus, List, Trash2, X } from 'lucide-react';
+import { Archive, ArrowLeft, BookPlus, ChevronDown, ChevronLeft, ChevronRight, FolderPlus, List, Maximize2, Minimize2, Trash2, X } from 'lucide-react';
 import { ContentsList, useBookOrder } from '../components/book/ContentsList';
 import { SpaceControl } from '../components/book/SpaceControl';
 import { displayTitle } from '../domain/text';
 import { db } from '../db/db';
 import { useLibrary } from '../hooks/useLibrary';
 import { useAutosave } from '../hooks/useAutosave';
+import { useAutoGrow } from '../hooks/useAutoGrow';
+import { useFocusMode } from '../hooks/useFocusMode';
 import {
   addTagsToItems,
   moveToTrash,
@@ -62,6 +64,7 @@ function Editor({ item }: { item: ContentItem }) {
   const [body, setBody] = useState(item.body);
   const [notes, setNotes] = useState(item.notes);
   const [assign, setAssign] = useState<'book' | 'collection' | null>(null);
+  const [focus, setFocus] = useFocusMode();
 
   const save = useCallback(
     async (v: { title: string; body: string; notes: string }) => {
@@ -97,7 +100,7 @@ function Editor({ item }: { item: ContentItem }) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-6 md:px-8 md:pt-10">
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="chrome mb-4 flex items-center justify-between gap-3">
         {order ? (
           <Link to={`/books/${order.book.id}`} className="btn-ghost -ml-3 min-w-0">
             <ArrowLeft size={16} /> <span className="truncate">{order.book.title}</span>
@@ -107,10 +110,15 @@ function Editor({ item }: { item: ContentItem }) {
             <ArrowLeft size={16} /> Back
           </button>
         )}
-        <SaveIndicator state={state} />
+        <div className="flex items-center gap-2">
+          <SaveIndicator state={state} />
+          <button type="button" className="btn-ghost text-xs" onClick={() => setFocus(true)} title="Hide the bars while you write">
+            <Maximize2 size={15} /> Focus
+          </button>
+        </div>
       </div>
       {order && at >= 0 && (
-        <nav className="mb-5 flex items-center gap-2 rounded-xl border border-line bg-card px-2 py-1.5 text-sm" aria-label="Move through the book">
+        <nav className="chrome mb-5 flex items-center gap-2 rounded-xl border border-line bg-card px-2 py-1.5 text-sm" aria-label="Move through the book">
           {prev ? (
             <Link to={`/item/${prev.id}?book=${order.book.id}`} className="btn-ghost min-w-0 px-2" onClick={() => void flush()} title={displayTitle(prev)}>
               <ChevronLeft size={16} /> <span className="hidden truncate sm:inline">{displayTitle(prev)}</span>
@@ -139,7 +147,7 @@ function Editor({ item }: { item: ContentItem }) {
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className={`grid grid-cols-1 gap-8 ${focus ? 'mx-auto max-w-3xl pt-4' : 'lg:grid-cols-[minmax(0,1fr)_320px]'}`}>
         <div className="min-w-0">
           <label htmlFor="item-title" className="sr-only">
             Title
@@ -171,7 +179,7 @@ function Editor({ item }: { item: ContentItem }) {
           </p>
         </div>
 
-        <aside className="space-y-6 lg:border-l lg:border-line lg:pl-6">
+        <aside className="chrome space-y-6 lg:border-l lg:border-line lg:pl-6">
           {order && (
             <details className="group rounded-xl border border-line">
               <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
@@ -333,6 +341,18 @@ function Editor({ item }: { item: ContentItem }) {
         </aside>
       </div>
 
+      {focus && (
+        <button
+          type="button"
+          onClick={() => setFocus(false)}
+          className="no-print fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-4 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-line bg-card/80 text-muted shadow-md backdrop-blur hover:text-ink"
+          aria-label="Leave focus mode and show the bars"
+          title="Show the bars"
+        >
+          <Minimize2 size={16} />
+        </button>
+      )}
+
       {assign && <AssignDialog open mode={assign} contentIds={[item.id]} onClose={() => setAssign(null)} />}
     </div>
   );
@@ -352,10 +372,6 @@ function AutoTextarea({
   onBlur?: () => void;
 }) {
   const [el, setEl] = useState<HTMLTextAreaElement | null>(null);
-  useEffect(() => {
-    if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = Math.max(el.scrollHeight, 300) + 'px';
-  }, [el, value]);
+  useAutoGrow(el, value, 300);
   return <textarea id={id} ref={setEl} value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} className={className} spellCheck />;
 }

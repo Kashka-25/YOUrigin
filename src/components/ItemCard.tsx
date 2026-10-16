@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, FolderOpen } from 'lucide-react';
+import { BookOpen, FolderOpen, Pencil } from 'lucide-react';
 import type { ContentItem } from '../domain/types';
 import { bodyAfterTitle, displayTitle, excerpt } from '../domain/text';
 import { TYPE_LABEL } from '../domain/constants';
@@ -31,7 +31,7 @@ export function ItemCard({
         <div className="pt-1">
           <input
             type="checkbox"
-            className="h-4 w-4 accent-[var(--accent)]"
+            className="h-5 w-5 accent-[var(--accent)] md:h-4 md:w-4"
             checked={!!selected}
             onChange={(e) => onToggle((e.nativeEvent as MouseEvent).shiftKey)}
             aria-label={`Select “${title}”`}
@@ -72,6 +72,9 @@ export function ItemCard({
       {item.type === 'image' && item.assetId && (
         <AssetImage id={item.assetId} className="h-20 w-20 shrink-0 rounded-lg border border-line object-cover" />
       )}
+      <Link to={`/item/${item.id}`} className="btn-ghost shrink-0 self-start p-2" aria-label={`Edit “${title}”`} title="Edit">
+        <Pencil size={16} />
+      </Link>
     </article>
   );
 }
