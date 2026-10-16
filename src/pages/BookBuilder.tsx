@@ -61,7 +61,7 @@ export function BookBuilder() {
       </Link>
       <header className="mt-3 flex flex-wrap items-start gap-4">
         <div className="h-20 w-2 shrink-0 rounded-full" style={{ background: coverColour(book.cover) }} aria-hidden />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-60">
           <p className="eyebrow">
             {isBook ? BOOK_TYPE_LABEL[book.type] : PROJECT_KIND_META[kind].label}
             {book.shelf ? ` · ${book.shelf}` : ''}
