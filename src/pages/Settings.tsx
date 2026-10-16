@@ -11,6 +11,7 @@ import { hasSample, loadSample, removeSample } from '../db/sample';
 import { requestPersistentStorage } from '../db/db';
 import { useInstallPrompt } from '../pwa';
 import { SyncPanel } from '../components/SyncPanel';
+import { isEditNote, needsSending, resolveEditCategory, sendEditNote } from '../sync/buildNotes';
 
 function Section({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {
   return (
@@ -33,6 +34,7 @@ export function Settings() {
   const [storage, setStorage] = useState<{ persisted: boolean; usage?: number; quota?: number } | null>(null);
   const [sample, setSample] = useState(false);
   const [key, setKey] = useState<string | null>(null);
+  const [sendingAll, setSendingAll] = useState(false);
   const install = useInstallPrompt();
 
   useEffect(() => {
@@ -76,6 +78,25 @@ export function Settings() {
   };
 
   const live = lib.items.filter((i) => !i.deletedAt);
+  const editCategory = resolveEditCategory(s.editNotesCategory, lib.tags, lib.collections);
+  const editNotes = live.filter((i) => isEditNote(i, editCategory, lib.collections));
+  const unsent = editNotes.filter(needsSending);
+
+  const sendAllEditNotes = async () => {
+    setSendingAll(true);
+    let sent = 0;
+    try {
+      for (const item of unsent) {
+        await sendEditNote(item);
+        sent++;
+      }
+      toast(`Sent ${sent} edit note${sent === 1 ? '' : 's'} to Notion`);
+    } catch (e) {
+      toast(`${sent ? `Sent ${sent}, then stopped: ` : ''}${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setSendingAll(false);
+    }
+  };
   const mb = (n?: number) => (n === undefined ? '?' : (n / 1024 / 1024).toFixed(1) + ' MB');
 
   return (
@@ -84,6 +105,56 @@ export function Settings() {
 
       <Section title="Sync between devices" id="s-sync">
         <SyncPanel />
+      </Section>
+
+      <Section title="Edit notes → Notion" id="s-notes">
+        <p className="text-[15px] leading-relaxed text-ink-2">
+          Pieces in your edit-notes tag or collection go to the <em>Build Notes</em> database in Notion, filed under <em>YOUrigin</em>, so Claude can
+          read them and make the changes. Each one sends a few seconds after you finish editing it, and editing it again updates the same Notion page.
+          Uses the sign-in from Sync above.
+        </p>
+        <div>
+          <label className="label" htmlFor="edit-cat">
+            Edit notes live in
+          </label>
+          <select id="edit-cat" className="input" value={s.editNotesCategory} onChange={(e) => void setSetting('editNotesCategory', e.target.value)}>
+            <option value="">Find it by name{editCategory && !s.editNotesCategory ? ` (${editCategory.name})` : ' (anything with “edit” in it)'}</option>
+            {lib.collections.length > 0 && (
+              <optgroup label="Collections">
+                {lib.collections.map((c) => (
+                  <option key={c.id} value={`collection:${c.id}`}>
+                    {c.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {lib.tags.length > 0 && (
+              <optgroup label="Tags">
+                {[...lib.tags]
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((t) => (
+                    <option key={t.id} value={`tag:${t.id}`}>
+                      #{t.name}
+                    </option>
+                  ))}
+              </optgroup>
+            )}
+            <option value="off">Don’t send edit notes</option>
+          </select>
+        </div>
+        {editCategory ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm text-ink-2">
+              {editNotes.length} edit note{editNotes.length === 1 ? '' : 's'} in {editCategory.name}
+              {unsent.length ? ` · ${unsent.length} not sent from this device` : ' · all sent'}
+            </span>
+            <button type="button" className="btn" disabled={sendingAll || !unsent.length} onClick={() => void sendAllEditNotes()}>
+              {sendingAll ? 'Sending…' : 'Send all to Notion'}
+            </button>
+          </div>
+        ) : (
+          s.editNotesCategory !== 'off' && <p className="text-sm text-muted">No tag or collection with “edit” in its name yet — choose one above.</p>
+        )}
       </Section>
 
       <Section title="Your writing on this device" id="s-data">

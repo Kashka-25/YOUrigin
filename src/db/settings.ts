@@ -13,6 +13,8 @@ export interface Settings {
   claudeModel: string;
   captureDraft: string;
   lastBackupAt: number | null;
+  /** Which tag or collection holds edit notes for Notion: '' = find by name, 'off', 'tag:<id>' or 'collection:<id>'. */
+  editNotesCategory: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -25,6 +27,7 @@ export const DEFAULT_SETTINGS: Settings = {
   claudeModel: 'claude-opus-5-5',
   captureDraft: '',
   lastBackupAt: null,
+  editNotesCategory: '',
 };
 
 /** Keys that must never leave this device in an export. */

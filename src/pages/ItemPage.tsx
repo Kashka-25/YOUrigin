@@ -28,6 +28,9 @@ import { RelationsPanel } from '../components/RelationsPanel';
 import { HistoryPanel } from '../components/HistoryPanel';
 import { wordCount } from '../domain/text';
 import { AssetImage } from '../components/AssetImage';
+import { EditNotePanel } from '../components/EditNotePanel';
+import { useSettings } from '../db/settings';
+import { isEditNote, resolveEditCategory } from '../sync/buildNotes';
 import type { ImageLayout } from '../domain/types';
 import type { ContentItem } from '../domain/types';
 
@@ -46,6 +49,7 @@ export function ItemPage() {
 
 function Editor({ item }: { item: ContentItem }) {
   const lib = useLibrary();
+  const settings = useSettings();
   const nav = useNavigate();
   const [params] = useSearchParams();
   const bookParam = params.get('book');
@@ -89,6 +93,7 @@ function Editor({ item }: { item: ContentItem }) {
   const tagNames = item.tagIds.map((t) => lib.ctx.tagName.get(t)).filter((x): x is string => !!x);
   const memberships = lib.entries.filter((e) => e.contentId === item.id);
   const collections = lib.collections.filter((c) => c.contentIds.includes(item.id));
+  const editCategory = settings ? resolveEditCategory(settings.editNotesCategory, lib.tags, lib.collections) : null;
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-6 md:px-8 md:pt-10">
@@ -177,6 +182,9 @@ function Editor({ item }: { item: ContentItem }) {
                 <ContentsList bookId={order.book.id} currentId={item.id} compact />
               </div>
             </details>
+          )}
+          {editCategory && isEditNote(item, editCategory, lib.collections) && (
+            <EditNotePanel item={item} categoryName={editCategory.name} saved={state === 'saved'} />
           )}
           <section>
             <h2 className="label">Status</h2>
