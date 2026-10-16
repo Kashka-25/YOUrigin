@@ -8,6 +8,7 @@ import { useConfirm } from '../components/Modal';
 import { useToast } from '../components/Toast';
 import { ShowcaseSignIn } from '../components/ShowcasePanels';
 import { listMyShares, loadProfile, saveCounts, setKronkPostUrl, unshare, useShowcaseSession, type SharedWork } from '../showcase/api';
+import showcaseSymbol from '../assets/brand/showcase-512.webp';
 import { PLACEMENT_LABELS, STATUS_LABELS, kronkPostText, kronkShareUrl, type ArtistProfile } from '../showcase/model';
 
 const STATUS_CLS: Record<SharedWork['status'], string> = {
@@ -45,8 +46,9 @@ export function Shared() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 pt-8 pb-28 md:px-8 md:pt-12">
-      <h1 className="page-title">Shared to YOU</h1>
-      <p className="mt-2 text-[15px] leading-relaxed text-ink-2">
+      <img src={showcaseSymbol} alt="" className="mx-auto mb-2 h-32 w-32 md:h-40 md:w-40" />
+      <h1 className="page-title text-center">Shared to YOU</h1>
+      <p className="mx-auto mt-2 max-w-xl text-center text-[15px] leading-relaxed text-ink-2">
         Pieces you've shared to be displayed on YOU, credited to you with your support links. Each one waits for approval before anyone sees it, and you
         can unshare at any time.
       </p>

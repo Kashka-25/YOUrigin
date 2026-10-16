@@ -14,12 +14,15 @@ import { useInstallPrompt } from '../pwa';
 import { SyncPanel } from '../components/SyncPanel';
 import { WordPacks } from '../components/WordPacks';
 import { ArtistProfilePanel } from '../components/ShowcasePanels';
+import showcaseSymbol from '../assets/brand/showcase-96.webp';
+import themeSymbol from '../assets/brand/theme-96.webp';
 import { isEditNote, needsSending, resolveEditCategory, sendEditNote } from '../sync/buildNotes';
 
-function Section({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {
+function Section({ title, children, id, icon }: { title: string; children: React.ReactNode; id?: string; icon?: string }) {
   return (
     <section className="border-t border-line py-8" aria-labelledby={id}>
-      <h2 id={id} className="font-serif text-2xl">
+      <h2 id={id} className="flex items-center gap-2.5 font-serif text-2xl">
+        {icon && <img src={icon} alt="" className="h-9 w-9 shrink-0" />}
         {title}
       </h2>
       <div className="mt-4 space-y-4">{children}</div>
@@ -293,7 +296,7 @@ export function Settings() {
         <p className="text-sm text-muted">Open the app once while online after installing; from then on it works offline on every device.</p>
       </Section>
 
-      <Section title="Artist profile: Showcase on YOU" id="s-artist">
+      <Section title="Artist profile: Showcase on YOU" id="s-artist" icon={showcaseSymbol}>
         <p className="text-[15px] leading-relaxed text-ink-2">
           Share a piece to be displayed on YOU, credited to you, with your links so people can support your work. Set up who you're credited as here,
           then choose <em>Share to YOU</em> on any piece. Each share is a separate public copy that waits for approval; the rest of your codex stays
@@ -347,7 +350,7 @@ export function Settings() {
         <p className="text-sm text-muted">Art puts the Gallery in the bottom bar. Both adds it to the menu.</p>
       </Section>
 
-            <Section title="Appearance" id="s-look">
+      <Section title="Appearance" id="s-look" icon={themeSymbol}>
         <div className="flex gap-2" role="radiogroup" aria-label="Theme">
           {(['system', 'light', 'dark'] as const).map((t) => (
             <button
