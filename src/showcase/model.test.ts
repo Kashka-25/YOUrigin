@@ -37,6 +37,7 @@ describe('what can be shared', () => {
   it('shares images as images and pieces with words as words', () => {
     expect(shareKindFor(item({ type: 'image', assetId: 'a1' }))).toBe('image');
     expect(shareKindFor(item({ type: 'image' }))).toBeNull();
+    expect(shareKindFor(item({ type: 'image', assetId: 'a1', inspiration: true }))).toBeNull();
     expect(shareKindFor(item({ type: 'story', body: 'Once' }))).toBe('words');
     expect(shareKindFor(item({ type: 'idea', body: '  ' }))).toBeNull();
   });

@@ -75,9 +75,12 @@ export interface ShareDraft {
   rights: boolean;
 }
 
-/** Images share as images; any piece with words shares as written work. */
-export function shareKindFor(item: Pick<ContentItem, 'type' | 'assetId' | 'body'>): ShareKind | null {
-  if (item.type === 'image') return item.assetId ? 'image' : null;
+/**
+ * Images share as images; any piece with words shares as written work.
+ * Inspiration images are someone else's work kept for reference, so never.
+ */
+export function shareKindFor(item: Pick<ContentItem, 'type' | 'assetId' | 'body' | 'inspiration'>): ShareKind | null {
+  if (item.type === 'image') return item.assetId && !item.inspiration ? 'image' : null;
   return item.body.trim() ? 'words' : null;
 }
 
