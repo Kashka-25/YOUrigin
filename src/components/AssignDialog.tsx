@@ -5,9 +5,11 @@ import { addToBook, createBook } from '../db/books';
 import { addToCollection, createCollection } from '../db/collections';
 import { db } from '../db/db';
 import { useToast } from './Toast';
+import { PROJECT_KINDS, PROJECT_KIND_META } from '../domain/constants';
+import type { ProjectKind } from '../domain/types';
 
 /**
- * Adds a set of pieces to a book (optionally a specific section) or a
+ * Adds a set of pieces to a project (optionally a specific section) or a
  * collection — existing or new. Only references are created; content is never copied.
  */
 export function AssignDialog({
@@ -33,13 +35,14 @@ export function AssignDialog({
   const [sectionId, setSectionId] = useState<string>('');
   const [name, setName] = useState(defaultNewName);
   const [templateId, setTemplateId] = useState('tpl-poetry');
+  const [kind, setKind] = useState<ProjectKind>('book');
   const [busy, setBusy] = useState(false);
 
   const targets = useMemo(() => {
     if (!lib) return [];
     return mode === 'book'
-      ? lib.books.filter((b) => !b.archived).map((b) => ({ id: b.id, label: b.title }))
-      : lib.collections.map((c) => ({ id: c.id, label: c.name }));
+      ? lib.books.filter((b) => !b.archived).map((b) => ({ id: b.id, label: b.title, detail: b.shelf ?? '' }))
+      : lib.collections.map((c) => ({ id: c.id, label: c.name, detail: '' }));
   }, [lib, mode]);
 
   const sections = useMemo(
@@ -48,15 +51,15 @@ export function AssignDialog({
   );
 
   const n = contentIds.length;
-  const noun = mode === 'book' ? 'book' : 'collection';
+  const noun = mode === 'book' ? 'project' : 'collection';
 
   async function submit() {
     setBusy(true);
     try {
       if (mode === 'book') {
-        const bookId = targetId === 'new' ? await createBook({ title: name, templateId }) : targetId;
+        const bookId = targetId === 'new' ? await createBook({ title: name, templateId: kind === 'book' ? templateId : null, kind }) : targetId;
         const created = await addToBook(bookId, contentIds, sectionId || null);
-        const title = (await db.books.get(bookId))?.title ?? 'book';
+        const title = (await db.books.get(bookId))?.title ?? 'project';
         const skipped = n - created.length;
         toast(`Added ${created.length} to “${title}”${skipped ? ` (${skipped} already there)` : ''}`, {
           undo: async () => {
@@ -99,6 +102,7 @@ export function AssignDialog({
               <label key={t.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-paper-2">
                 <input type="radio" name="target" checked={targetId === t.id} onChange={() => setTargetId(t.id)} />
                 <span className="font-serif text-lg">{t.label}</span>
+                {t.detail && <span className="text-xs text-muted">{t.detail}</span>}
               </label>
             ))}
             <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-paper-2">
@@ -116,7 +120,21 @@ export function AssignDialog({
               </label>
               <input id="assign-name" className="input" value={name} onChange={(e) => setName(e.target.value)} data-autofocus />
             </div>
-            {mode === 'book' && lib && (
+            {mode === 'book' && (
+              <div>
+                <label className="label" htmlFor="assign-kind">
+                  Kind
+                </label>
+                <select id="assign-kind" className="input" value={kind} onChange={(e) => setKind(e.target.value as ProjectKind)}>
+                  {PROJECT_KINDS.map((k) => (
+                    <option key={k} value={k}>
+                      {PROJECT_KIND_META[k].label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {mode === 'book' && kind === 'book' && lib && (
               <div>
                 <label className="label" htmlFor="assign-tpl">
                   Template

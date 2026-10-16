@@ -158,7 +158,7 @@ function Editor({ item }: { item: ContentItem }) {
     <div className="mx-auto max-w-6xl px-4 pt-6 md:px-8 md:pt-10">
       <div className="chrome mb-4 flex items-center justify-between gap-3">
         {order ? (
-          <Link to={`/books/${order.book.id}`} className="btn-ghost -ml-3 min-w-0">
+          <Link to={`/projects/${order.book.id}`} className="btn-ghost -ml-3 min-w-0">
             <ArrowLeft size={16} /> <span className="truncate">{order.book.title}</span>
           </Link>
         ) : (
@@ -174,16 +174,16 @@ function Editor({ item }: { item: ContentItem }) {
         </div>
       </div>
       {order && at >= 0 && (
-        <nav className="chrome mb-5 flex items-center gap-2 rounded-xl border border-line bg-card px-2 py-1.5 text-sm" aria-label="Move through the book">
+        <nav className="chrome mb-5 flex items-center gap-2 rounded-xl border border-line bg-card px-2 py-1.5 text-sm" aria-label="Move through the project">
           {prev ? (
             <Link to={`/item/${prev.id}?book=${order.book.id}`} className="btn-ghost min-w-0 px-2" onClick={() => void flush()} title={displayTitle(prev)}>
               <ChevronLeft size={16} /> <span className="hidden truncate sm:inline">{displayTitle(prev)}</span>
               <span className="sm:hidden">Previous</span>
             </Link>
           ) : (
-            <span className="px-2 text-muted">Start of book</span>
+            <span className="px-2 text-muted">Start of project</span>
           )}
-          <Link to={`/books/${order.book.id}/contents`} className="mx-auto shrink-0 text-xs text-muted hover:text-ink">
+          <Link to={`/projects/${order.book.id}/contents`} className="mx-auto shrink-0 text-xs text-muted hover:text-ink">
             {at + 1} of {order.flat.length}
           </Link>
           {next ? (
@@ -192,7 +192,7 @@ function Editor({ item }: { item: ContentItem }) {
               <span className="sm:hidden">Next</span> <ChevronRight size={16} />
             </Link>
           ) : (
-            <span className="px-2 text-muted">End of book</span>
+            <span className="px-2 text-muted">End of project</span>
           )}
         </nav>
       )}
@@ -302,24 +302,24 @@ function Editor({ item }: { item: ContentItem }) {
 
           <section>
             <div className="flex items-center justify-between">
-              <h2 className="label">Books</h2>
+              <h2 className="label">Projects</h2>
               <button type="button" className="btn-ghost -mr-2 text-xs" onClick={() => setAssign('book')}>
                 <BookPlus size={14} /> Add
               </button>
             </div>
             {memberships.length === 0 ? (
-              <p className="text-sm text-muted">Not in a book yet.</p>
+              <p className="text-sm text-muted">Not in a project yet.</p>
             ) : (
               <ul className="space-y-1">
                 {memberships.map((e) => {
                   const section = lib.sections.find((s) => s.id === e.sectionId);
                   return (
                     <li key={e.id} className="flex items-center justify-between gap-2 text-sm">
-                      <Link to={`/books/${e.bookId}`} className="min-w-0 truncate hover:underline">
+                      <Link to={`/projects/${e.bookId}`} className="min-w-0 truncate hover:underline">
                         <span className="font-serif text-base">{lib.ctx.bookTitle.get(e.bookId)}</span>
                         <span className="text-muted"> · {section?.title ?? 'Tray'}</span>
                       </Link>
-                      <button type="button" className="btn-ghost p-1" aria-label="Remove from book" onClick={() => void removeEntries([e.id])}>
+                      <button type="button" className="btn-ghost p-1" aria-label="Remove from project" onClick={() => void removeEntries([e.id])}>
                         <X size={14} />
                       </button>
                     </li>

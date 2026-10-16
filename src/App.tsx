@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { HashRouter, Route, Routes, useParams } from 'react-router-dom';
+import { HashRouter, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { LibraryProvider } from './hooks/useLibrary';
 import { ToastProvider } from './components/Toast';
@@ -37,7 +37,7 @@ function CoverRoute() {
   );
 }
 
-/** A fresh print view per book, so one book's pages never linger while another lays out. */
+/** A fresh print view per book project, so one book's pages never linger while another lays out. */
 function PrintRoute() {
   const { id } = useParams();
   return (
@@ -45,6 +45,12 @@ function PrintRoute() {
       <PrintLayout key={id} />
     </Suspense>
   );
+}
+
+/** Books became projects: old /books links (bookmarks, history) still land in the right place. */
+function BooksRedirect() {
+  const { pathname, search } = useLocation();
+  return <Navigate replace to={pathname.replace(/^\/books/, '/projects') + search} />;
 }
 
 function useTheme(theme: 'system' | 'light' | 'dark' | undefined) {
@@ -92,12 +98,13 @@ export default function App() {
             <UpdateBanner />
             <Routes>
               {/* Manuscript mode is deliberately outside the app chrome: it should feel like a book. */}
-              <Route path="/books/:id/read" element={<Manuscript />} />
+              <Route path="/projects/:id/read" element={<Manuscript />} />
               <Route
-                path="/books/:id/print"
+                path="/projects/:id/print"
                 element={<PrintRoute />}
               />
-              <Route path="/books/:id/cover" element={<CoverRoute />} />
+              <Route path="/projects/:id/cover" element={<CoverRoute />} />
+              <Route path="/books/*" element={<BooksRedirect />} />
               <Route
                 path="*"
                 element={
@@ -106,9 +113,9 @@ export default function App() {
                       <Route path="/" element={<Gathering />} />
                       <Route path="/library" element={<Library />} />
                       <Route path="/item/:id" element={<ItemPage />} />
-                      <Route path="/books" element={<Books />} />
-                      <Route path="/books/:id" element={<BookBuilder />} />
-                      <Route path="/books/:id/contents" element={<BookContents />} />
+                      <Route path="/projects" element={<Books />} />
+                      <Route path="/projects/:id" element={<BookBuilder />} />
+                      <Route path="/projects/:id/contents" element={<BookContents />} />
                       <Route path="/map" element={<BookMap />} />
                       <Route path="/tags" element={<Tags />} />
                       <Route path="/orphans" element={<Orphans />} />

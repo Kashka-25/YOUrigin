@@ -50,7 +50,7 @@ export interface PreflightInput {
 
 export function dataChecks({ book, design: d, sections, entries, contentById, assets, pages }: PreflightInput): Check[] {
   const out: Check[] = [];
-  const base = `/books/${book.id}`;
+  const base = `/projects/${book.id}`;
   const cover = resolveCover(d);
   const t = TRIMS[d.trim];
   const m = MARGINS[d.margins];

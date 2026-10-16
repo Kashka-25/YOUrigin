@@ -10,14 +10,14 @@ export function BookContents() {
   const lib = useLibrary();
   const order = useBookOrder(id);
   if (!lib) return <Spinner />;
-  if (!order) return <EmptyState title="Book not found" action={<Link to="/books" className="btn">All books</Link>} />;
+  if (!order) return <EmptyState title="Project not found" action={<Link to="/projects" className="btn">All projects</Link>} />;
   return (
     <div className="mx-auto max-w-3xl px-4 pt-6 md:px-8 md:pt-10">
       <div className="flex flex-wrap items-center gap-2">
-        <Link to={`/books/${order.book.id}`} className="btn-ghost -ml-3">
+        <Link to={`/projects/${order.book.id}`} className="btn-ghost -ml-3">
           <ArrowLeft size={16} /> Builder
         </Link>
-        <Link to={`/books/${order.book.id}/read`} className="btn-ghost ml-auto">
+        <Link to={`/projects/${order.book.id}/read`} className="btn-ghost ml-auto">
           <BookOpenText size={16} /> Read
         </Link>
       </div>

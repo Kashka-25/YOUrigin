@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  BookOpen,
+  FolderKanban,
   Feather,
   FolderOpen,
   Hash,
@@ -26,7 +26,7 @@ const PRIMARY = [
   { to: '/', label: 'Gathering', icon: Feather, end: true },
   { to: '/library', label: 'Library', icon: Library },
   { to: '/map', label: 'Book Map', icon: Network },
-  { to: '/books', label: 'Books', icon: BookOpen },
+  { to: '/projects', label: 'Projects', icon: FolderKanban },
   { to: '/tags', label: 'Tags', icon: Hash },
   { to: '/orphans', label: 'Orphans', icon: Sprout },
 ];
@@ -91,7 +91,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => setMoreOpen(false), [loc.pathname]);
 
   const orphanCount = lib ? lib.items.filter((i) => !i.deletedAt && !i.archived && !i.keepUnassigned && isOrphan(i, lib.ctx)).length : 0;
-  const recentBooks = lib ? [...lib.books].filter((b) => !b.archived).sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 6) : [];
+  const recentProjects = lib ? [...lib.books].filter((b) => !b.archived).sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 6) : [];
 
   const navItem = (item: { to: string; label: string; icon: typeof Feather; end?: boolean }, badge?: number) => (
     <NavLink
@@ -130,14 +130,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav aria-label="Main" className="mt-5 space-y-0.5">
           {PRIMARY.map((i) => navItem(i, i.to === '/orphans' ? orphanCount : undefined))}
         </nav>
-        {recentBooks.length > 0 && (
+        {recentProjects.length > 0 && (
           <div className="mt-6">
-            <p className="eyebrow px-3">Books</p>
+            <p className="eyebrow px-3">Projects</p>
             <ul className="mt-2 space-y-0.5">
-              {recentBooks.map((b) => (
+              {recentProjects.map((b) => (
                 <li key={b.id}>
                   <NavLink
-                    to={`/books/${b.id}`}
+                    to={`/projects/${b.id}`}
                     className={({ isActive }) =>
                       `block truncate rounded-lg px-3 py-1.5 font-serif text-[15px] ${isActive ? 'bg-paper-2 text-ink' : 'text-ink-2 hover:text-ink'}`
                     }

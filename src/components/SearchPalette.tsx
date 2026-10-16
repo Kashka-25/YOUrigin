@@ -39,7 +39,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
       out.push({ key: 't' + t.id, kind: 'tag', label: '#' + t.name, detail: `${lib.tagCounts.get(t.id) ?? 0} pieces`, to: `/library?tags=${t.id}` });
     }
     for (const b of lib.books.filter((b) => `${b.title} ${b.subtitle}`.toLowerCase().includes(lower)).slice(0, 3)) {
-      out.push({ key: 'b' + b.id, kind: 'book', label: b.title, detail: b.subtitle, to: `/books/${b.id}` });
+      out.push({ key: 'b' + b.id, kind: 'book', label: b.title, detail: b.subtitle, to: `/projects/${b.id}` });
     }
     for (const c of lib.collections.filter((c) => c.name.toLowerCase().includes(lower)).slice(0, 3)) {
       out.push({ key: 'c' + c.id, kind: 'collection', label: c.name, detail: `${c.contentIds.length} pieces`, to: `/collections/${c.id}` });
@@ -79,7 +79,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
         ref={inputRef}
         data-autofocus
         className="input py-3 text-base"
-        placeholder="Words, #tags, books, collections, types…"
+        placeholder="Words, #tags, projects, collections, types…"
         value={q}
         onChange={(e) => {
           setQ(e.target.value);

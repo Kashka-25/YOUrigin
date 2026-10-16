@@ -32,6 +32,8 @@ interface Props {
   sectionProgress: SectionProgress[];
   shelf: ReactNode;
   traySlot?: ReactNode;
+  /** Show each piece's place in its section (track 1, 2…). */
+  numbered?: boolean;
 }
 
 /** Pure helper mirroring db.moveEntry, used for instant (optimistic) feedback. */
@@ -44,7 +46,7 @@ function applyMove(entries: BookEntry[], entryId: string, sectionId: string | nu
   return entries.map((e) => reordered.get(e.id) ?? e);
 }
 
-export function StructureBoard({ bookId, sections, entries, contentById, sectionProgress, shelf, traySlot }: Props) {
+export function StructureBoard({ bookId, sections, entries, contentById, sectionProgress, shelf, traySlot, numbered = false }: Props) {
   const confirm = useConfirm();
   // Local mirrors give instant feedback; the live query brings them back in sync.
   const [localSections, setLocalSections] = useState(sections);
@@ -118,7 +120,7 @@ export function StructureBoard({ bookId, sections, entries, contentById, section
     <DndContext sensors={sensors} collisionDetection={collision} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActive(null)}>
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-4">
-          <Zone sectionId={null} title="Tray" hint="Claimed for this book, not yet placed. Drag pieces into sections.">
+          <Zone sectionId={null} title="Tray" hint="Claimed for this project, not yet placed. Drag pieces into sections.">
             {traySlot}
             <EntryList
               entries={entriesOf(null)}
@@ -149,6 +151,7 @@ export function StructureBoard({ bookId, sections, entries, contentById, section
               >
                 <EntryList
                   entries={entriesOf(s.id)}
+                  numbered={numbered}
                   contentById={contentById}
                   moveTargets={moveTargets}
                   onMove={(id, target) => void moveEntry(id, target === TRAY ? null : target, 9999)}
@@ -270,11 +273,13 @@ function SortableSection({
 
 function EntryList({
   entries,
+  numbered = false,
   contentById,
   moveTargets,
   onMove,
 }: {
   entries: BookEntry[];
+  numbered?: boolean;
   contentById: Map<string, ContentItem>;
   moveTargets: { id: string; title: string }[];
   onMove: (entryId: string, target: string) => void;
@@ -283,8 +288,8 @@ function EntryList({
   return (
     <SortableContext items={entries.map((e) => 'entry:' + e.id)} strategy={verticalListSortingStrategy}>
       <ul className="space-y-1">
-        {entries.map((e) => (
-          <EntryRow key={e.id} entry={e} item={contentById.get(e.contentId)!} moveTargets={moveTargets} onMove={onMove} />
+        {entries.map((e, i) => (
+          <EntryRow key={e.id} entry={e} n={numbered ? i + 1 : undefined} item={contentById.get(e.contentId)!} moveTargets={moveTargets} onMove={onMove} />
         ))}
       </ul>
     </SortableContext>
@@ -293,11 +298,13 @@ function EntryList({
 
 function EntryRow({
   entry,
+  n,
   item,
   moveTargets,
   onMove,
 }: {
   entry: BookEntry;
+  n?: number;
   item: ContentItem;
   moveTargets: { id: string; title: string }[];
   onMove: (entryId: string, target: string) => void;
@@ -319,6 +326,7 @@ function EntryRow({
       >
         <GripVertical size={15} />
       </button>
+      {n !== undefined && <span className="w-5 shrink-0 text-right text-sm text-muted tabular-nums">{n}</span>}
       <StatusBadge status={item.status} compact />
       <div className="min-w-0 flex-1">
         <Link to={`/item/${item.id}`} className="block truncate font-serif text-base hover:underline">
@@ -338,7 +346,7 @@ function EntryRow({
           </option>
         ))}
       </select>
-      <button type="button" className="btn-ghost p-1" onClick={() => void removeEntries([entry.id])} aria-label={`Remove “${displayTitle(item)}” from this book`}>
+      <button type="button" className="btn-ghost p-1" onClick={() => void removeEntries([entry.id])} aria-label={`Remove “${displayTitle(item)}” from this project`}>
         <X size={14} />
       </button>
     </li>

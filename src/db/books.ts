@@ -1,7 +1,7 @@
 import { db } from './db';
-import type { Book, BookEntry, BookType } from '../domain/types';
+import type { Book, BookEntry, BookType, ProjectKind } from '../domain/types';
 import { newId } from '../domain/text';
-import { COVER_COLOURS } from '../domain/constants';
+import { COVER_COLOURS, PROJECT_KIND_META } from '../domain/constants';
 import { acknowledgementsTemplate, copyrightTemplate, dedicationTemplate } from '../print/design';
 
 export interface NewBook {
@@ -10,6 +10,9 @@ export interface NewBook {
   description?: string;
   templateId: string | null;
   type?: BookType;
+  /** Defaults to a book. Other kinds skip templates and print pages. */
+  kind?: ProjectKind;
+  shelf?: string;
   /** Name for the title and copyright pages. */
   author?: string;
   /** Start with the copyright page template (defaults to the template's setting). */
@@ -22,21 +25,25 @@ export interface NewBook {
 
 export async function createBook(input: NewBook): Promise<string> {
   return db.transaction('rw', db.books, db.sections, db.templates, async () => {
-    const tpl = input.templateId ? await db.templates.get(input.templateId) : undefined;
+    const kind = input.kind ?? 'book';
+    const isBook = kind === 'book';
+    const tpl = isBook && input.templateId ? await db.templates.get(input.templateId) : undefined;
     const now = Date.now();
     const count = await db.books.count();
-    const title = input.title.trim() || 'Untitled book';
+    const title = input.title.trim() || (isBook ? 'Untitled book' : 'Untitled project');
     const type = input.type ?? tpl?.bookType ?? 'custom';
     const author = input.author?.trim() ?? '';
-    const withCopyright = input.copyrightPage ?? tpl?.copyrightPage ?? true;
-    const withDedication = input.dedicationPage ?? tpl?.dedicationPage ?? false;
-    const withAcks = input.acknowledgementsPage ?? tpl?.acknowledgementsPage ?? false;
+    const withCopyright = isBook && (input.copyrightPage ?? tpl?.copyrightPage ?? true);
+    const withDedication = isBook && (input.dedicationPage ?? tpl?.dedicationPage ?? false);
+    const withAcks = isBook && (input.acknowledgementsPage ?? tpl?.acknowledgementsPage ?? false);
     const book: Book = {
       id: newId(),
       title,
       subtitle: input.subtitle?.trim() ?? '',
       description: input.description?.trim() ?? '',
       type,
+      kind,
+      shelf: input.shelf?.trim() ?? '',
       templateId: tpl?.id ?? null,
       cover: COVER_COLOURS[count % COVER_COLOURS.length],
       notes: '',
@@ -44,7 +51,7 @@ export async function createBook(input: NewBook): Promise<string> {
       createdAt: now,
       updatedAt: now,
     };
-    if (author || withCopyright || withDedication || withAcks)
+    if (isBook && (author || withCopyright || withDedication || withAcks))
       book.design = {
         author,
         ...(withCopyright ? { copyright: copyrightTemplate({ title, type }, author) } : {}),
@@ -53,7 +60,7 @@ export async function createBook(input: NewBook): Promise<string> {
       };
     await db.books.add(book);
     await db.sections.bulkAdd(
-      (tpl?.sections ?? []).map((title, order) => ({
+      (tpl?.sections ?? (isBook ? [] : PROJECT_KIND_META[kind].sections)).map((title, order) => ({
         id: newId(),
         bookId: book.id,
         title,
@@ -69,9 +76,18 @@ export async function createBook(input: NewBook): Promise<string> {
 
 export async function updateBook(
   id: string,
-  patch: Partial<Pick<Book, 'title' | 'subtitle' | 'description' | 'cover' | 'notes' | 'type' | 'archived' | 'coverAssetId' | 'design'>>,
+  patch: Partial<Pick<Book, 'title' | 'subtitle' | 'description' | 'cover' | 'notes' | 'type' | 'kind' | 'shelf' | 'archived' | 'coverAssetId' | 'design'>>,
 ): Promise<void> {
   await db.books.update(id, { ...patch, updatedAt: Date.now() });
+}
+
+/** Renames a shelf on every project that sits on it ('' takes them off the shelf). */
+export async function renameShelf(from: string, to: string): Promise<void> {
+  const name = to.trim();
+  await db.transaction('rw', db.books, async () => {
+    const now = Date.now();
+    await db.books.filter((b) => (b.shelf ?? '') === from).modify({ shelf: name, updatedAt: now });
+  });
 }
 
 /** Removes the book's structure only. Every piece of writing stays in the Library. */

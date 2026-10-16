@@ -1,4 +1,4 @@
-import type { BookType, ContentType, Status } from './types';
+import type { Book, BookType, ContentType, ProjectKind, Status } from './types';
 
 export const STATUSES: Status[] = ['seed', 'developing', 'polished'];
 
@@ -28,6 +28,7 @@ export const STATUS_META: Record<
 
 export const CONTENT_TYPES: ContentType[] = [
   'poem',
+  'song',
   'fragment',
   'idea',
   'reflection',
@@ -44,6 +45,7 @@ export const CONTENT_TYPES: ContentType[] = [
 
 export const TYPE_LABEL: Record<ContentType, string> = {
   poem: 'Poem',
+  song: 'Song',
   fragment: 'Fragment',
   idea: 'Idea',
   reflection: 'Reflection',
@@ -65,6 +67,25 @@ export const BOOK_TYPE_LABEL: Record<BookType, string> = {
   codex: 'Codex',
   custom: 'Custom',
 };
+
+export const PROJECT_KINDS: ProjectKind[] = ['book', 'album', 'setlist', 'ideas', 'custom'];
+
+/** numbered: pieces show their place (track 1, 2…). noun: what a piece is called in counts. */
+export const PROJECT_KIND_META: Record<ProjectKind, { label: string; numbered: boolean; sections: string[]; noun: string }> = {
+  book: { label: 'Book', numbered: false, sections: [], noun: 'piece' },
+  album: { label: 'Album', numbered: true, sections: ['Tracks'], noun: 'track' },
+  setlist: { label: 'Set list', numbered: true, sections: ['Set 1'], noun: 'song' },
+  ideas: { label: 'Ideas', numbered: false, sections: [], noun: 'idea' },
+  custom: { label: 'Custom', numbered: false, sections: [], noun: 'piece' },
+};
+
+export function projectKind(b: Pick<Book, 'kind'>): ProjectKind {
+  return b.kind && b.kind in PROJECT_KIND_META ? b.kind : 'book';
+}
+
+export function isBookProject(b: Pick<Book, 'kind'>): boolean {
+  return projectKind(b) === 'book';
+}
 
 export const COVER_COLOURS = ['clay', 'sea', 'moss', 'dusk', 'sand', 'ink'] as const;
 

@@ -3,8 +3,10 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { BookImage, BookOpenText, Download, Settings2, Sparkles, ArrowLeft, LayoutTemplate } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { computeBookProgress } from '../domain/progress';
-import { BOOK_TYPE_LABEL, COVER_COLOURS } from '../domain/constants';
+import { BOOK_TYPE_LABEL, COVER_COLOURS, PROJECT_KIND_META, projectKind } from '../domain/constants';
 import type { Book, BookType } from '../domain/types';
+import { shelfNames } from '../domain/projects';
+import { ProjectKindPicker } from '../components/ProjectKindPicker';
 import { BookDashboard } from '../components/book/BookDashboard';
 import { StructureBoard } from '../components/book/StructureBoard';
 import { MaterialShelf, relevantToBook } from '../components/book/MaterialShelf';
@@ -42,39 +44,48 @@ export function BookBuilder() {
   if (!lib) return <Spinner />;
   if (!data)
     return (
-      <EmptyState title="Book not found" action={<Link to="/books" className="btn">All books</Link>}>
+      <EmptyState title="Project not found" action={<Link to="/projects" className="btn">All projects</Link>}>
         It may have been deleted. Your writing is still in the Library.
       </EmptyState>
     );
 
   const { book, sections, entries, progress, contentIds, relevantOrphans } = data;
   const trayIds = entries.filter((e) => !e.sectionId).map((e) => e.contentId);
+  const kind = projectKind(book);
+  const isBook = kind === 'book';
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-6 md:px-8 md:pt-10">
-      <Link to="/books" className="btn-ghost -ml-3">
-        <ArrowLeft size={16} /> Books
+      <Link to="/projects" className="btn-ghost -ml-3">
+        <ArrowLeft size={16} /> Projects
       </Link>
       <header className="mt-3 flex flex-wrap items-start gap-4">
         <div className="h-20 w-2 shrink-0 rounded-full" style={{ background: coverColour(book.cover) }} aria-hidden />
-        <div className="min-w-0 flex-1">
-          <p className="eyebrow">{BOOK_TYPE_LABEL[book.type]}</p>
+        <div className="min-w-0 flex-1 basis-60">
+          <p className="eyebrow">
+            {isBook ? BOOK_TYPE_LABEL[book.type] : PROJECT_KIND_META[kind].label}
+            {book.shelf ? ` · ${book.shelf}` : ''}
+          </p>
           <h1 className="page-title">{book.title}</h1>
           {book.subtitle && <p className="mt-1 font-serif text-lg text-ink-2 italic">{book.subtitle}</p>}
           {book.description && <p className="mt-2 max-w-2xl text-sm text-ink-2">{book.description}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link to={`/books/${book.id}/print`} className="btn-primary">
-            <LayoutTemplate size={16} /> Design & print
-          </Link>
-          <Link to={`/books/${book.id}/cover`} className="btn">
-            <BookImage size={16} /> Cover
-          </Link>
-          <Link to={`/books/${book.id}/read`} className="btn">
+          {isBook && (
+            <>
+              <Link to={`/projects/${book.id}/print`} className="btn-primary">
+                <LayoutTemplate size={16} /> Design & print
+              </Link>
+              <Link to={`/projects/${book.id}/cover`} className="btn">
+                <BookImage size={16} /> Cover
+              </Link>
+            </>
+          )}
+          <Link to={`/projects/${book.id}/read`} className="btn">
             <BookOpenText size={16} /> Read
           </Link>
           <ExportMenu book={book} />
-          <button type="button" className="btn" onClick={() => setEditOpen(true)} aria-label="Book settings">
+          <button type="button" className="btn" onClick={() => setEditOpen(true)} aria-label="Project settings">
             <Settings2 size={16} />
           </button>
         </div>
@@ -92,7 +103,7 @@ export function BookBuilder() {
         </summary>
         <div className="px-4 pb-4">
           <div className="mb-3 flex justify-end">
-            <Link to={`/books/${book.id}/contents`} className="btn-ghost px-2 py-1 text-xs">
+            <Link to={`/projects/${book.id}/contents`} className="btn-ghost px-2 py-1 text-xs">
               <Maximize2 size={13} /> Open as a page
             </Link>
           </div>
@@ -114,6 +125,7 @@ export function BookBuilder() {
           entries={entries}
           contentById={lib.contentById}
           sectionProgress={progress.sections}
+          numbered={PROJECT_KIND_META[kind].numbered}
           traySlot={trayIds.length >= 2 ? <StructureSuggest bookId={book.id} contentIds={trayIds} entries={entries} /> : null}
           shelf={<MaterialShelf bookId={book.id} bookTitle={book.title} items={lib.items} bookContentIds={contentIds} ctx={lib.ctx} />}
         />
@@ -136,7 +148,7 @@ function ExportMenu({ book }: { book: Book }) {
       <button type="button" className="btn" onClick={() => setOpen(true)}>
         <Download size={16} /> Export
       </button>
-      <Modal open={open} onClose={() => setOpen(false)} title="Export this book">
+      <Modal open={open} onClose={() => setOpen(false)} title="Export">
         <div className="space-y-3">
           <button
             type="button"
@@ -155,10 +167,12 @@ function ExportMenu({ book }: { book: Book }) {
           >
             Structured data (.json)
           </button>
-          <Link to={`/books/${book.id}/print`} className="btn w-full justify-start">
-            Print-ready PDF — designed pages (Design & print)
-          </Link>
-          <Link to={`/books/${book.id}/read?print=1`} className="btn w-full justify-start">
+          {projectKind(book) === 'book' && (
+            <Link to={`/projects/${book.id}/print`} className="btn w-full justify-start">
+              Print-ready PDF — designed pages (Design & print)
+            </Link>
+          )}
+          <Link to={`/projects/${book.id}/read?print=1`} className="btn w-full justify-start">
             Simple reading copy (print from Read view)
           </Link>
         </div>
@@ -228,21 +242,29 @@ function BookSettings({ book, onClose }: { book: Book; onClose: () => void }) {
     description: book.description,
     cover: book.cover,
     type: book.type,
+    kind: projectKind(book),
+    shelf: book.shelf ?? '',
     notes: book.notes,
   });
+  const lib = useLibrary();
+  const shelves = lib ? shelfNames(lib.books) : [];
+  const isBook = form.kind === 'book';
   const [tplName, setTplName] = useState('');
   const set = (p: Partial<typeof form>) => setForm((f) => ({ ...f, ...p }));
 
   return (
-    <Modal open onClose={onClose} title="Book settings" wide>
+    <Modal open onClose={onClose} title="Settings" wide>
       <form
         className="grid gap-4 sm:grid-cols-2"
         onSubmit={async (e) => {
           e.preventDefault();
-          await updateBook(book.id, form);
+          await updateBook(book.id, { ...form, shelf: form.shelf.trim() });
           onClose();
         }}
       >
+        <div className="sm:col-span-2">
+          <ProjectKindPicker value={form.kind} onChange={(k) => set({ kind: k })} />
+        </div>
         <div className="sm:col-span-2">
           <label className="label" htmlFor="bs-title">
             Title
@@ -262,19 +284,32 @@ function BookSettings({ book, onClose }: { book: Book; onClose: () => void }) {
           <textarea id="bs-desc" className="input" rows={3} value={form.description} onChange={(e) => set({ description: e.target.value })} />
         </div>
         <div>
-          <label className="label" htmlFor="bs-type">
-            Type
+          <label className="label" htmlFor="bs-shelf">
+            Shelf
           </label>
-          <select id="bs-type" className="input" value={form.type} onChange={(e) => set({ type: e.target.value as BookType })}>
-            {Object.entries(BOOK_TYPE_LABEL).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
+          <input id="bs-shelf" className="input" list="bs-shelves" value={form.shelf} onChange={(e) => set({ shelf: e.target.value })} placeholder="None" />
+          <datalist id="bs-shelves">
+            {shelves.map((s) => (
+              <option key={s} value={s} />
             ))}
-          </select>
+          </datalist>
         </div>
+        {isBook && (
+          <div>
+            <label className="label" htmlFor="bs-type">
+              Book type
+            </label>
+            <select id="bs-type" className="input" value={form.type} onChange={(e) => set({ type: e.target.value as BookType })}>
+              {Object.entries(BOOK_TYPE_LABEL).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <fieldset>
-          <legend className="label">Cover</legend>
+          <legend className="label">Colour</legend>
           <div className="flex gap-2">
             {COVER_COLOURS.map((c) => (
               <button
@@ -306,20 +341,22 @@ function BookSettings({ book, onClose }: { book: Book; onClose: () => void }) {
       </form>
 
       <div className="mt-8 space-y-4 border-t border-line pt-6">
-        <form
-          className="flex gap-2"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            await templateFromBook(book.id, tplName || `${book.title} structure`);
-            setTplName('');
-            toast('Saved as a template');
-          }}
-        >
-          <input className="input" placeholder="Template name" value={tplName} onChange={(e) => setTplName(e.target.value)} aria-label="Template name" />
-          <button type="submit" className="btn shrink-0">
-            Save structure as template
-          </button>
-        </form>
+        {projectKind(book) === 'book' && (
+          <form
+            className="flex gap-2"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              await templateFromBook(book.id, tplName || `${book.title} structure`);
+              setTplName('');
+              toast('Saved as a template');
+            }}
+          >
+            <input className="input" placeholder="Template name" value={tplName} onChange={(e) => setTplName(e.target.value)} aria-label="Template name" />
+            <button type="submit" className="btn shrink-0">
+              Save structure as template
+            </button>
+          </form>
+        )}
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -329,7 +366,7 @@ function BookSettings({ book, onClose }: { book: Book; onClose: () => void }) {
               onClose();
             }}
           >
-            {book.archived ? 'Unarchive book' : 'Archive book'}
+            {book.archived ? 'Unarchive' : 'Archive'}
           </button>
           <button
             type="button"
@@ -337,16 +374,16 @@ function BookSettings({ book, onClose }: { book: Book; onClose: () => void }) {
             onClick={async () => {
               const ok = await confirm({
                 title: `Delete “${book.title}”?`,
-                message: 'The book’s structure (sections and placements) will be removed. Every piece of writing stays safely in your Library.',
-                confirmLabel: 'Delete book',
+                message: 'Its sections and placements will be removed. Every piece of writing stays safely in your Library.',
+                confirmLabel: 'Delete project',
                 danger: true,
               });
               if (!ok) return;
               await deleteBook(book.id);
-              nav('/books');
+              nav('/projects');
             }}
           >
-            Delete book
+            Delete project
           </button>
         </div>
       </div>

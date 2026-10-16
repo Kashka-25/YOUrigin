@@ -104,7 +104,7 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
       });
       reset();
       onClose();
-      if (bookId) nav(`/books/${bookId}`);
+      if (bookId) nav(`/projects/${bookId}`);
     } finally {
       setBusy(false);
     }
