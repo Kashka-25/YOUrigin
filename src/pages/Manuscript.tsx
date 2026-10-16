@@ -41,14 +41,14 @@ export function Manuscript() {
   }, [data, params]);
 
   if (!lib) return <Spinner />;
-  if (!data) return <EmptyState title="Book not found" />;
+  if (!data) return <EmptyState title="Project not found" />;
   const { book, parts } = data;
   const nonEmpty = parts.filter((p) => p.items.length);
 
   return (
     <div className="min-h-dvh bg-card">
       <div className="no-print sticky top-0 z-20 flex items-center gap-2 border-b border-line bg-card/95 px-4 py-2 backdrop-blur">
-        <Link to={`/books/${book.id}`} className="btn-ghost">
+        <Link to={`/projects/${book.id}`} className="btn-ghost">
           <ArrowLeft size={16} /> Builder
         </Link>
         <div className="ml-auto flex items-center gap-1">

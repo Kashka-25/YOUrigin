@@ -24,3 +24,8 @@ export function shelfNames(projects: Book[]): string[] {
     .map((g) => g.shelf)
     .filter(Boolean);
 }
+
+/** "3 songs", "1 track". */
+export function countLabel(n: number, noun: string): string {
+  return `${n} ${noun}${n === 1 ? '' : 's'}`;
+}

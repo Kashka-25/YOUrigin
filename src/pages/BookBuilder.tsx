@@ -42,7 +42,7 @@ export function BookBuilder() {
   if (!lib) return <Spinner />;
   if (!data)
     return (
-      <EmptyState title="Book not found" action={<Link to="/books" className="btn">All books</Link>}>
+      <EmptyState title="Project not found" action={<Link to="/projects" className="btn">All projects</Link>}>
         It may have been deleted. Your writing is still in the Library.
       </EmptyState>
     );
@@ -52,7 +52,7 @@ export function BookBuilder() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-6 md:px-8 md:pt-10">
-      <Link to="/books" className="btn-ghost -ml-3">
+      <Link to="/projects" className="btn-ghost -ml-3">
         <ArrowLeft size={16} /> Books
       </Link>
       <header className="mt-3 flex flex-wrap items-start gap-4">
@@ -64,13 +64,13 @@ export function BookBuilder() {
           {book.description && <p className="mt-2 max-w-2xl text-sm text-ink-2">{book.description}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link to={`/books/${book.id}/print`} className="btn-primary">
+          <Link to={`/projects/${book.id}/print`} className="btn-primary">
             <LayoutTemplate size={16} /> Design & print
           </Link>
-          <Link to={`/books/${book.id}/cover`} className="btn">
+          <Link to={`/projects/${book.id}/cover`} className="btn">
             <BookImage size={16} /> Cover
           </Link>
-          <Link to={`/books/${book.id}/read`} className="btn">
+          <Link to={`/projects/${book.id}/read`} className="btn">
             <BookOpenText size={16} /> Read
           </Link>
           <ExportMenu book={book} />
@@ -92,7 +92,7 @@ export function BookBuilder() {
         </summary>
         <div className="px-4 pb-4">
           <div className="mb-3 flex justify-end">
-            <Link to={`/books/${book.id}/contents`} className="btn-ghost px-2 py-1 text-xs">
+            <Link to={`/projects/${book.id}/contents`} className="btn-ghost px-2 py-1 text-xs">
               <Maximize2 size={13} /> Open as a page
             </Link>
           </div>
@@ -155,10 +155,10 @@ function ExportMenu({ book }: { book: Book }) {
           >
             Structured data (.json)
           </button>
-          <Link to={`/books/${book.id}/print`} className="btn w-full justify-start">
+          <Link to={`/projects/${book.id}/print`} className="btn w-full justify-start">
             Print-ready PDF — designed pages (Design & print)
           </Link>
-          <Link to={`/books/${book.id}/read?print=1`} className="btn w-full justify-start">
+          <Link to={`/projects/${book.id}/read?print=1`} className="btn w-full justify-start">
             Simple reading copy (print from Read view)
           </Link>
         </div>
@@ -343,7 +343,7 @@ function BookSettings({ book, onClose }: { book: Book; onClose: () => void }) {
               });
               if (!ok) return;
               await deleteBook(book.id);
-              nav('/books');
+              nav('/projects');
             }}
           >
             Delete book

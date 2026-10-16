@@ -30,7 +30,7 @@ export function CoverDesigner() {
   const [panel, setPanel] = useState(() => window.innerWidth >= 1024);
 
   if (!lib) return <Spinner />;
-  if (!book) return <EmptyState title="Book not found" action={<Link to="/books" className="btn">All books</Link>} />;
+  if (!book) return <EmptyState title="Project not found" action={<Link to="/projects" className="btn">All projects</Link>} />;
 
   const design = resolveDesign(book);
   const cover = resolveCover(design);
@@ -42,7 +42,7 @@ export function CoverDesigner() {
     <div className="cover-designer min-h-dvh bg-paper-2">
       <PageSizeForPrint g={g} />
       <div className="no-print sticky top-0 z-30 flex flex-wrap items-center gap-2 border-b border-line bg-card/95 px-3 py-2 backdrop-blur">
-        <Link to={`/books/${book.id}/print`} className="btn-ghost">
+        <Link to={`/projects/${book.id}/print`} className="btn-ghost">
           <ArrowLeft size={16} /> Pages
         </Link>
         <p className="min-w-0 flex-1 truncate font-serif text-lg">Cover · {book.title}</p>
@@ -55,7 +55,7 @@ export function CoverDesigner() {
         <button type="button" className={`btn ${panel ? 'border-accent text-accent' : ''}`} onClick={() => setPanel((p) => !p)} aria-expanded={panel}>
           <SlidersHorizontal size={15} /> Design
         </button>
-        <Link to={`/books/${book.id}/print?check=1`} className="btn">
+        <Link to={`/projects/${book.id}/print?check=1`} className="btn">
           <ClipboardCheck size={15} /> Check for KDP
         </Link>
         <button type="button" className="btn-primary" onClick={() => window.print()}>
@@ -356,7 +356,7 @@ function CoverPanel({
       <Section title="Size & spine" open>
         <p className="text-xs text-ink-2">
           Trim {g.trimW.toFixed(3)}″ × {g.trimH.toFixed(3)}″ (change it in{' '}
-          <Link to={`/books/${book.id}/print`} className="underline">
+          <Link to={`/projects/${book.id}/print`} className="underline">
             <LayoutTemplate size={11} className="inline" /> Design & print
           </Link>
           ). Full cover {fmtIn(g.totalW)} × {fmtIn(g.totalH)}.

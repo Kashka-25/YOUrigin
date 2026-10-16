@@ -159,17 +159,17 @@ export function PrintLayout() {
   useEffect(() => () => document.querySelectorAll('style[data-yourigin-print]').forEach((el) => el.remove()), []);
 
   if (!lib || !assets) return <Spinner />;
-  if (!book || !design) return <EmptyState title="Book not found" action={<Link to="/books" className="btn">All books</Link>} />;
+  if (!book || !design) return <EmptyState title="Project not found" action={<Link to="/projects" className="btn">All projects</Link>} />;
 
   const save = (patch: Partial<BookDesign>) => void updateBook(book.id, { design: { ...(book.design ?? {}), ...patch } });
 
   return (
     <div className="print-layout min-h-dvh bg-paper-2">
       <div className="no-print sticky top-0 z-30 flex flex-wrap items-center gap-2 border-b border-line bg-card/95 px-3 py-2 backdrop-blur">
-        <Link to={`/books/${book.id}`} className="btn-ghost">
+        <Link to={`/projects/${book.id}`} className="btn-ghost">
           <ArrowLeft size={16} /> Builder
         </Link>
-        <Link to={`/books/${book.id}/read`} className="btn-ghost hidden sm:inline-flex">
+        <Link to={`/projects/${book.id}/read`} className="btn-ghost hidden sm:inline-flex">
           <BookOpenText size={16} /> Read
         </Link>
         <p className="min-w-0 flex-1 truncate font-serif text-lg">{book.title}</p>
@@ -194,7 +194,7 @@ export function PrintLayout() {
         <button type="button" className={`btn ${panel === 'check' ? 'border-accent text-accent' : ''}`} onClick={() => setPanel((p) => (p === 'check' ? null : 'check'))} aria-expanded={panel === 'check'}>
           <ClipboardCheck size={15} /> Check for KDP
         </button>
-        <Link to={`/books/${book.id}/cover`} className="btn">
+        <Link to={`/projects/${book.id}/cover`} className="btn">
           <BookImage size={15} /> Cover
         </Link>
         <button type="button" className="btn-primary" onClick={() => window.print()} disabled={rendering}>

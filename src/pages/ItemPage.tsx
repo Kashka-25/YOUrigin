@@ -102,7 +102,7 @@ function Editor({ item }: { item: ContentItem }) {
     <div className="mx-auto max-w-6xl px-4 pt-6 md:px-8 md:pt-10">
       <div className="chrome mb-4 flex items-center justify-between gap-3">
         {order ? (
-          <Link to={`/books/${order.book.id}`} className="btn-ghost -ml-3 min-w-0">
+          <Link to={`/projects/${order.book.id}`} className="btn-ghost -ml-3 min-w-0">
             <ArrowLeft size={16} /> <span className="truncate">{order.book.title}</span>
           </Link>
         ) : (
@@ -127,7 +127,7 @@ function Editor({ item }: { item: ContentItem }) {
           ) : (
             <span className="px-2 text-muted">Start of book</span>
           )}
-          <Link to={`/books/${order.book.id}/contents`} className="mx-auto shrink-0 text-xs text-muted hover:text-ink">
+          <Link to={`/projects/${order.book.id}/contents`} className="mx-auto shrink-0 text-xs text-muted hover:text-ink">
             {at + 1} of {order.flat.length}
           </Link>
           {next ? (
@@ -255,7 +255,7 @@ function Editor({ item }: { item: ContentItem }) {
                   const section = lib.sections.find((s) => s.id === e.sectionId);
                   return (
                     <li key={e.id} className="flex items-center justify-between gap-2 text-sm">
-                      <Link to={`/books/${e.bookId}`} className="min-w-0 truncate hover:underline">
+                      <Link to={`/projects/${e.bookId}`} className="min-w-0 truncate hover:underline">
                         <span className="font-serif text-base">{lib.ctx.bookTitle.get(e.bookId)}</span>
                         <span className="text-muted"> · {section?.title ?? 'Tray'}</span>
                       </Link>

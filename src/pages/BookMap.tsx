@@ -180,7 +180,7 @@ function FocusPanel({ node, neighbours, onFocus }: { node: GraphNode; neighbours
       : node.kind === 'book'
         ? lib.entries.filter((e) => e.bookId === rawId).map((e) => lib.contentById.get(e.contentId)!).filter(Boolean)
         : (lib.collections.find((c) => c.id === rawId)?.contentIds ?? []).map((id) => lib.contentById.get(id)!).filter(Boolean);
-  const link = node.kind === 'tag' ? `/library?tags=${rawId}` : node.kind === 'book' ? `/books/${rawId}` : `/collections/${rawId}`;
+  const link = node.kind === 'tag' ? `/library?tags=${rawId}` : node.kind === 'book' ? `/projects/${rawId}` : `/collections/${rawId}`;
   return (
     <div className="panel p-4">
       <p className="eyebrow">{node.kind}</p>

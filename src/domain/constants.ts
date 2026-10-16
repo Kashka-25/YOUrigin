@@ -70,12 +70,13 @@ export const BOOK_TYPE_LABEL: Record<BookType, string> = {
 
 export const PROJECT_KINDS: ProjectKind[] = ['book', 'album', 'setlist', 'ideas', 'custom'];
 
-export const PROJECT_KIND_META: Record<ProjectKind, { label: string; numbered: boolean; sections: string[] }> = {
-  book: { label: 'Book', numbered: false, sections: [] },
-  album: { label: 'Album', numbered: true, sections: ['Tracks'] },
-  setlist: { label: 'Set list', numbered: true, sections: ['Set 1'] },
-  ideas: { label: 'Ideas', numbered: false, sections: [] },
-  custom: { label: 'Custom', numbered: false, sections: [] },
+/** numbered: pieces show their place (track 1, 2…). noun: what a piece is called in counts. */
+export const PROJECT_KIND_META: Record<ProjectKind, { label: string; numbered: boolean; sections: string[]; noun: string }> = {
+  book: { label: 'Book', numbered: false, sections: [], noun: 'piece' },
+  album: { label: 'Album', numbered: true, sections: ['Tracks'], noun: 'track' },
+  setlist: { label: 'Set list', numbered: true, sections: ['Set 1'], noun: 'song' },
+  ideas: { label: 'Ideas', numbered: false, sections: [], noun: 'idea' },
+  custom: { label: 'Custom', numbered: false, sections: [], noun: 'piece' },
 };
 
 export function projectKind(b: Pick<Book, 'kind'>): ProjectKind {
