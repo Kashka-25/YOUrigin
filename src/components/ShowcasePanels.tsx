@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2, Plus, X } from 'lucide-react';
 import { isSyncEnabled } from '../sync/runtime';
-import { loadProfile, saveProfile, showcaseSignIn, showcaseSignOut, useShowcaseSession } from '../showcase/api';
+import { loadProfile, loadYouProfile, saveProfile, showcaseSignIn, showcaseSignOut, useShowcaseSession } from '../showcase/api';
 import { LIMITS, LINK_KINDS, validateProfile, type ArtistProfile, type LinkKind } from '../showcase/model';
 import { useToast } from './Toast';
 
@@ -64,12 +64,19 @@ export function ArtistProfilePanel() {
   const [p, setP] = useState<ArtistProfile | null>(null);
   const [busy, setBusy] = useState(false);
   const [problems, setProblems] = useState<string[]>([]);
+  const [fromYou, setFromYou] = useState(false);
   const uid = session?.user.id;
 
   useEffect(() => {
     if (!uid) return;
     loadProfile()
-      .then((x) => setP(x ?? { ...EMPTY }))
+      .then(async (x) => {
+        if (x) return setP(x);
+        // New here: start from your YOU profile, so you're the same person in both apps.
+        const you = await loadYouProfile();
+        setFromYou(Boolean(you?.name || you?.bio));
+        setP({ ...EMPTY, displayName: (you?.name ?? '').slice(0, LIMITS.name), bio: (you?.bio ?? '').slice(0, LIMITS.bio) });
+      })
       .catch((e) => {
         setP({ ...EMPTY });
         toast(e instanceof Error ? e.message : String(e));
@@ -103,13 +110,14 @@ export function ArtistProfilePanel() {
       }}
     >
       <p className="text-sm text-ink-2">
-        Signed in as {session.user.email}.{' '}
+        Signed in with your YOU account, {session.user.email}. This is one artist profile: you can also edit it in YOU under Your Own Universe.{' '}
         {!isSyncEnabled() && (
           <button type="button" className="underline" onClick={() => void showcaseSignOut()}>
             Sign out
           </button>
         )}
       </p>
+      {fromYou && <p className="rounded-xl bg-paper-2 p-2.5 text-sm text-ink-2">Filled in from your YOU profile. Change anything, then save.</p>}
       <label className="block">
         <span className="label">Credited as</span>
         <input className="input" maxLength={LIMITS.name} value={p.displayName} onChange={(e) => setP({ ...p, displayName: e.target.value })} placeholder="Your artist name" />

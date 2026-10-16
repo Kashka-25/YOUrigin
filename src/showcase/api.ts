@@ -101,6 +101,18 @@ export async function loadProfile(): Promise<ArtistProfile | null> {
   return { displayName: data.display_name, bio: data.bio ?? '', links: Array.isArray(data.links) ? data.links : [], kronkHandle: data.kronk_handle ?? '' };
 }
 
+/**
+ * Your YOU profile (same account), used to start your artist profile so
+ * there's one of you across both apps.
+ */
+export async function loadYouProfile(): Promise<{ name: string; bio: string } | null> {
+  const c = await getClient();
+  const uid = await userId();
+  const { data, error } = await c.from('profiles').select('name,bio').eq('user_id', uid).maybeSingle();
+  if (error) return null;
+  return data ? { name: (data.name ?? '').trim(), bio: (data.bio ?? '').trim() } : null;
+}
+
 export async function saveProfile(p: ArtistProfile): Promise<void> {
   const c = await getClient();
   const uid = await userId();
