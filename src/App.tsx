@@ -20,6 +20,7 @@ import { Orphans } from './pages/Orphans';
 import { Collections, CollectionPage } from './pages/Collections';
 import { Trash } from './pages/Trash';
 import { Settings } from './pages/Settings';
+import { Spelling } from './pages/Spelling';
 import { EmptyState, Spinner } from './components/ui';
 
 // The print designer (and its page-layout engine) only loads when opened.
@@ -115,6 +116,7 @@ export default function App() {
                       <Route path="/collections/:id" element={<CollectionPage />} />
                       <Route path="/trash" element={<Trash />} />
                       <Route path="/settings" element={<Settings />} />
+                      <Route path="/spelling" element={<Spelling />} />
                       <Route path="*" element={<EmptyState title="Nothing here" />} />
                     </Routes>
                   </AppShell>

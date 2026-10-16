@@ -36,8 +36,9 @@ import { isEditNote, resolveEditCategory } from '../sync/buildNotes';
 import type { ImageLayout } from '../domain/types';
 import type { ContentItem } from '../domain/types';
 import { WordPanel } from '../components/WordPanel';
-import { fitWord, wordsDb } from '../words/store';
+import { fitWord, isWordPack, wordsDb } from '../words/store';
 import { wordAt, type Ending, type Range } from '../words/morph';
+import { selectAndReveal } from '../words/caret';
 
 export function ItemPage() {
   const { id } = useParams();
@@ -70,7 +71,7 @@ function Editor({ item }: { item: ContentItem }) {
   const [focus, setFocus] = useFocusMode();
   const [bodyEl, setBodyEl] = useState<HTMLTextAreaElement | null>(null);
   const [lookup, setLookup] = useState<Range | null>(null);
-  const hasWords = useLiveQuery(() => wordsDb.packs.count(), []);
+  const hasWords = useLiveQuery(async () => (await wordsDb.packs.toArray()).some((p) => isWordPack(p.id)), []);
   const latest = useRef({ title, body, notes });
   useEffect(() => {
     latest.current = { title, body, notes };
@@ -91,6 +92,13 @@ function Editor({ item }: { item: ContentItem }) {
     if (patch.notes !== undefined) setNotes(patch.notes);
     schedule(next);
   };
+
+  // Arriving from Spelling: select the word that was found.
+  const sel = params.get('sel');
+  useEffect(() => {
+    const [a, b] = (sel ?? '').split('-').map(Number);
+    if (bodyEl && sel && b >= a) selectAndReveal(bodyEl, a, b);
+  }, [bodyEl, sel]);
 
   const openLookup = useCallback(() => {
     if (!bodyEl) return;
@@ -224,7 +232,10 @@ function Editor({ item }: { item: ContentItem }) {
           <p className="mt-4 text-xs text-muted">
             {wordCount(body)} words · gathered {new Date(item.createdAt).toLocaleDateString()}
             {item.source.kind === 'import' && item.source.fileName ? ` · imported from ${item.source.fileName}` : ''}
-            {item.source.kind === 'ai-variant' ? ' · AI-assisted variant' : ''}
+            {item.source.kind === 'ai-variant' ? ' · AI-assisted variant' : ''} ·{' '}
+            <Link to={`/spelling?in=piece:${item.id}`} className="underline-offset-2 hover:text-ink hover:underline" onClick={() => void flush()}>
+              Check spelling
+            </Link>
           </p>
         </div>
 

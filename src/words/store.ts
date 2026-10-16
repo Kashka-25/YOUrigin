@@ -8,6 +8,8 @@ import { baseForms, inflect, matchCase, pickForm, type Ending } from './morph';
  */
 export type PackInfo = {
   id: string;
+  /** words: meanings and synonyms. spelling: a word list for the spell checker (one at a time). */
+  kind: 'words' | 'spelling';
   language: string;
   name: string;
   file: string;
@@ -20,6 +22,7 @@ export type PackInfo = {
 export const PACKS: PackInfo[] = [
   {
     id: 'en-wordnet',
+    kind: 'words',
     language: 'English',
     name: 'Dictionary and synonyms',
     file: 'en-wordnet.json.gz',
@@ -30,6 +33,7 @@ export const PACKS: PackInfo[] = [
   },
   {
     id: 'en-moby',
+    kind: 'words',
     language: 'English',
     name: 'More synonyms',
     file: 'en-moby.json.gz',
@@ -38,7 +42,34 @@ export const PACKS: PackInfo[] = [
     credit: 'Moby Thesaurus II, public domain',
     creditUrl: 'https://www.gutenberg.org/ebooks/3202',
   },
+  {
+    id: 'en-us-spelling',
+    kind: 'spelling',
+    language: 'English (US)',
+    name: 'Spelling',
+    file: 'en-us-spelling.json.gz',
+    mb: 0.45,
+    version: 1,
+    credit: 'SCOWL, © Kevin Atkinson',
+    creditUrl: 'https://github.com/en-wl/wordlist',
+  },
+  {
+    id: 'en-gb-spelling',
+    kind: 'spelling',
+    language: 'English (UK)',
+    name: 'Spelling',
+    file: 'en-gb-spelling.json.gz',
+    mb: 0.46,
+    version: 1,
+    credit: 'SCOWL, © Kevin Atkinson',
+    creditUrl: 'https://github.com/en-wl/wordlist',
+  },
 ];
+
+const WORD_PACKS = new Set(PACKS.filter((p) => p.kind === 'words').map((p) => p.id));
+const SPELLING_PACKS = new Set(PACKS.filter((p) => p.kind === 'spelling').map((p) => p.id));
+export const isWordPack = (id: string) => WORD_PACKS.has(id);
+export const isSpellingPack = (id: string) => SPELLING_PACKS.has(id);
 
 export type Sense = { pos: string; def: string; ex: string; syn: string[] };
 /** forms: what this word is a form of (went → go + ed). irr: this word's irregular forms (go → ed → went, gone). */
@@ -51,13 +82,18 @@ export type WordRow = {
   more?: string[];
 };
 export type InstalledPack = { id: string; version: number; installedAt: number };
+/** A spelling pack: correct words, and correct words never to suggest, one per line. */
+export type WordList = { pack: string; w: string; n: string };
 
 export class WordsDB extends Dexie {
   packs!: Table<InstalledPack, string>;
   entries!: Table<WordRow, [string, string]>;
+  lists!: Table<WordList, string>;
   constructor(name = 'yourigin-words') {
     super(name);
     this.version(1).stores({ packs: 'id', entries: '[pack+word]' });
+    // v2: spelling word lists, one row per pack.
+    this.version(2).stores({ lists: 'pack' });
   }
 }
 
@@ -136,7 +172,16 @@ export async function installPack(
   if (!res.ok) throw new Error(`Download failed (${res.status})`);
   const total = Number(res.headers.get('content-length')) || p.mb * 1e6;
   const bytes = await readAll(res, (n) => onProgress(Math.min(n / total, 1) * 0.5));
-  const rows = packRows(p.id, JSON.parse(await gunzipText(bytes)));
+  const data = JSON.parse(await gunzipText(bytes));
+  if (p.kind === 'spelling') {
+    // One spelling pack at a time: US or UK.
+    for (const other of SPELLING_PACKS) if (other !== p.id) await removePack(other, target);
+    await target.lists.put({ pack: p.id, w: data.w, n: data.n });
+    onProgress(1);
+    await target.packs.put({ id: p.id, version: p.version, installedAt: Date.now() });
+    return;
+  }
+  const rows = packRows(p.id, data);
   await clearRows(target, p.id);
   const CHUNK = 5000;
   for (let i = 0; i < rows.length; i += CHUNK) {
@@ -152,6 +197,7 @@ function clearRows(target: WordsDB, id: string) {
 
 export async function removePack(id: string, target: WordsDB = wordsDb): Promise<void> {
   await target.packs.delete(id);
+  await target.lists.delete(id);
   await clearRows(target, id);
 }
 
@@ -163,7 +209,7 @@ export type Lookup = { word: string; ending: Ending; senses: Sense[]; more: stri
  * swap can put the same ending back.
  */
 export async function lookUp(query: string, target: WordsDB = wordsDb): Promise<Lookup[]> {
-  const installed = (await target.packs.toArray()).map((p) => p.id);
+  const installed = (await target.packs.toArray()).map((p) => p.id).filter(isWordPack);
   if (!installed.length) return [];
   const found: Lookup[] = [];
   const tried = new Set<string>();

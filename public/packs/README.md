@@ -16,3 +16,11 @@ no wording was changed.
 
 Related words from **Moby Thesaurus II** by Grady Ward, placed in the public
 domain (Project Gutenberg eBook #3202).
+
+## en-us-spelling.json.gz, en-gb-spelling.json.gz
+
+Spelling word lists from **SCOWL** (Hunspell en_US-large and en_GB-large),
+Copyright 2000-2026 by Kevin Atkinson, https://github.com/en-wl/wordlist,
+with word forms spelled out by `scripts/build-spelling-packs.mjs`. The full
+copyright and permission notices are in en-us-spelling-README.txt and
+en-gb-spelling-README.txt.

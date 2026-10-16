@@ -289,6 +289,7 @@ export function Settings() {
       <Section title="Dictionary and thesaurus" id="s-words">
         <p className="text-[15px] leading-relaxed text-ink-2">
           Download once and it works offline. In a piece, select a word and tap <BookA size={15} className="inline align-[-2px]" aria-label="the book button" /> to see its meanings and swap in a synonym.
+          With a spelling pack, <em>Spelling</em> in the menu checks a whole book at once.
         </p>
         <WordPacks />
       </Section>

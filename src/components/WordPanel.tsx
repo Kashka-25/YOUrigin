@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Search, X } from 'lucide-react';
-import { lookUp, wordsDb, type Lookup } from '../words/store';
+import { isWordPack, lookUp, wordsDb, type Lookup } from '../words/store';
 import type { Ending } from '../words/morph';
 
 const POS: Record<string, string> = { n: 'noun', v: 'verb', a: 'adj', r: 'adv' };
@@ -14,7 +14,7 @@ export function WordPanel({ query, onSwap, onClose }: { query: string; onSwap: (
   const [q, setQ] = useState(query);
   const [asked, setAsked] = useState(query);
   const [result, setResult] = useState<{ for: string; packs: number; found: Lookup[] } | null>(null);
-  const packs = useLiveQuery(() => wordsDb.packs.count(), []);
+  const packs = useLiveQuery(async () => (await wordsDb.packs.toArray()).filter((p) => isWordPack(p.id)).length, []);
 
   useEffect(() => {
     let live = true;

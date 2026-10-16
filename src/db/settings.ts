@@ -15,6 +15,8 @@ export interface Settings {
   lastBackupAt: number | null;
   /** Which tag or collection holds edit notes for Notion: '' = find by name, 'off', 'tag:<id>' or 'collection:<id>'. */
   editNotesCategory: string;
+  /** Words the spell checker should accept (names, invented words). */
+  spellingWords: string[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -28,6 +30,7 @@ export const DEFAULT_SETTINGS: Settings = {
   captureDraft: '',
   lastBackupAt: null,
   editNotesCategory: '',
+  spellingWords: [],
 };
 
 /** Keys that must never leave this device in an export. */

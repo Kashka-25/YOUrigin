@@ -11,6 +11,7 @@ import {
   Search,
   Settings,
   Sprout,
+  SpellCheck,
   Trash2,
   WifiOff,
 } from 'lucide-react';
@@ -32,6 +33,7 @@ const PRIMARY = [
 
 const SECONDARY = [
   { to: '/collections', label: 'Collections', icon: FolderOpen },
+  { to: '/spelling', label: 'Spelling', icon: SpellCheck },
   { to: '/settings', label: 'Settings & backup', icon: Settings },
   { to: '/trash', label: 'Trash', icon: Trash2 },
 ];
