@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Download, HardDrive, Laptop, Monitor, Smartphone, TabletSmartphone, Upload } from 'lucide-react';
+import { BookA, Download, HardDrive, Laptop, Monitor, Smartphone, TabletSmartphone, Upload } from 'lucide-react';
 import { setSetting, useSettings } from '../db/settings';
 import { StatusPicker, TypeSelect, Spinner } from '../components/ui';
 import { exportBackup, isBackup, mergeBackup, replaceWithBackup } from '../db/backup';
@@ -11,6 +11,7 @@ import { hasSample, loadSample, removeSample } from '../db/sample';
 import { requestPersistentStorage } from '../db/db';
 import { useInstallPrompt } from '../pwa';
 import { SyncPanel } from '../components/SyncPanel';
+import { WordPacks } from '../components/WordPacks';
 import { isEditNote, needsSending, resolveEditCategory, sendEditNote } from '../sync/buildNotes';
 
 function Section({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {
@@ -285,6 +286,13 @@ export function Settings() {
         <p className="text-sm text-muted">Open the app once while online after installing; from then on it works offline on every device.</p>
       </Section>
 
+      <Section title="Dictionary and thesaurus" id="s-words">
+        <p className="text-[15px] leading-relaxed text-ink-2">
+          Download once and it works offline. In a piece, select a word and tap <BookA size={15} className="inline align-[-2px]" aria-label="the book button" /> to see its meanings and swap in a synonym.
+        </p>
+        <WordPacks />
+      </Section>
+
       <Section title="Capture defaults" id="s-capture">
         <div>
           <span className="label">New pieces start as</span>
@@ -454,6 +462,10 @@ export function Settings() {
             <kbd>Ctrl/⌘ Enter</kbd>
           </dt>
           <dd className="text-ink-2">Capture</dd>
+          <dt>
+            <kbd>Alt L</kbd>
+          </dt>
+          <dd className="text-ink-2">Look up the word at the cursor</dd>
           <dt>
             <kbd>Space</kbd> then arrows
           </dt>

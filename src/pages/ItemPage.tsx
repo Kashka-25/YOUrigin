@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Archive, ArrowLeft, BookPlus, ChevronDown, ChevronLeft, ChevronRight, FolderPlus, List, Maximize2, Minimize2, Trash2, X } from 'lucide-react';
+import { Archive, ArrowLeft, BookA, BookPlus, ChevronDown, ChevronLeft, ChevronRight, FolderPlus, List, Maximize2, Minimize2, Trash2, X } from 'lucide-react';
 import { ContentsList, useBookOrder } from '../components/book/ContentsList';
 import { SpaceControl } from '../components/book/SpaceControl';
 import { displayTitle } from '../domain/text';
@@ -35,6 +35,9 @@ import { useSettings } from '../db/settings';
 import { isEditNote, resolveEditCategory } from '../sync/buildNotes';
 import type { ImageLayout } from '../domain/types';
 import type { ContentItem } from '../domain/types';
+import { WordPanel } from '../components/WordPanel';
+import { fitWord, wordsDb } from '../words/store';
+import { wordAt, type Ending, type Range } from '../words/morph';
 
 export function ItemPage() {
   const { id } = useParams();
@@ -65,6 +68,13 @@ function Editor({ item }: { item: ContentItem }) {
   const [notes, setNotes] = useState(item.notes);
   const [assign, setAssign] = useState<'book' | 'collection' | null>(null);
   const [focus, setFocus] = useFocusMode();
+  const [bodyEl, setBodyEl] = useState<HTMLTextAreaElement | null>(null);
+  const [lookup, setLookup] = useState<Range | null>(null);
+  const hasWords = useLiveQuery(() => wordsDb.packs.count(), []);
+  const latest = useRef({ title, body, notes });
+  useEffect(() => {
+    latest.current = { title, body, notes };
+  });
 
   const save = useCallback(
     async (v: { title: string; body: string; notes: string }) => {
@@ -80,6 +90,44 @@ function Editor({ item }: { item: ContentItem }) {
     if (patch.body !== undefined) setBody(patch.body);
     if (patch.notes !== undefined) setNotes(patch.notes);
     schedule(next);
+  };
+
+  const openLookup = useCallback(() => {
+    if (!bodyEl) return;
+    const at = bodyEl.selectionStart;
+    setLookup(wordAt(bodyEl.value, at, bodyEl.selectionEnd) ?? { start: at, end: at, text: '' });
+  }, [bodyEl]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyL') {
+        e.preventDefault();
+        openLookup();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [openLookup]);
+
+  /** Puts a synonym in place of the looked-up word, with the same ending and capitals. */
+  const swap = async (word: string, ending: Ending) => {
+    if (!lookup) return;
+    const r = lookup;
+    const text = r.text ? await fitWord(word, ending, r.text) : word;
+    const put = (from: string, to: string) => {
+      const cur = latest.current;
+      if (cur.body.slice(r.start, r.start + from.length) !== from) return;
+      const nextBody = cur.body.slice(0, r.start) + to + cur.body.slice(r.start + from.length);
+      setBody(nextBody);
+      schedule({ ...cur, body: nextBody });
+      requestAnimationFrame(() => {
+        bodyEl?.focus({ preventScroll: true });
+        bodyEl?.setSelectionRange(r.start, r.start + to.length);
+      });
+    };
+    put(r.text, text);
+    setLookup(null);
+    if (r.text) toast(`${r.text} → ${text}`, { undo: () => put(text, r.text) });
   };
 
   // If a restore or AI replacement changes the stored text, follow it.
@@ -170,6 +218,7 @@ function Editor({ item }: { item: ContentItem }) {
             value={body}
             onChange={(v) => edit({ body: v })}
             onBlur={() => void flush()}
+            inputRef={setBodyEl}
             className="writing mt-5 w-full resize-none bg-transparent text-[1.15rem] leading-[1.8] text-ink focus:outline-none focus-visible:outline-none"
           />
           <p className="mt-4 text-xs text-muted">
@@ -353,6 +402,22 @@ function Editor({ item }: { item: ContentItem }) {
         </button>
       )}
 
+      {item.type !== 'image' && !lookup && !!hasWords && (
+        <button
+          type="button"
+          onPointerDown={(e) => e.preventDefault()}
+          onClick={openLookup}
+          className={`no-print fixed right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-line bg-card/80 text-muted shadow-md backdrop-blur hover:text-ink ${
+            focus ? 'bottom-[calc(1rem+env(safe-area-inset-bottom))]' : 'bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-4'
+          }`}
+          aria-label="Look up the selected word"
+          title="Look up word (Alt L)"
+        >
+          <BookA size={17} />
+        </button>
+      )}
+      {lookup && <WordPanel key={`${lookup.start}:${lookup.text}`} query={lookup.text} onSwap={(w, e) => void swap(w, e)} onClose={() => setLookup(null)} />}
+
       {assign && <AssignDialog open mode={assign} contentIds={[item.id]} onClose={() => setAssign(null)} />}
     </div>
   );
@@ -364,14 +429,23 @@ function AutoTextarea({
   className,
   id,
   onBlur,
+  inputRef,
 }: {
   value: string;
   onChange: (v: string) => void;
   className: string;
   id: string;
   onBlur?: () => void;
+  inputRef?: (el: HTMLTextAreaElement | null) => void;
 }) {
   const [el, setEl] = useState<HTMLTextAreaElement | null>(null);
   useAutoGrow(el, value, 300);
-  return <textarea id={id} ref={setEl} value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} className={className} spellCheck />;
+  const ref = useCallback(
+    (x: HTMLTextAreaElement | null) => {
+      setEl(x);
+      inputRef?.(x);
+    },
+    [inputRef],
+  );
+  return <textarea id={id} ref={ref} value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} className={className} spellCheck />;
 }
