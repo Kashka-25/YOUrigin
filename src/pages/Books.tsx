@@ -16,6 +16,7 @@ const TITLE_HINT: Record<ProjectKind, string> = {
   book: 'YOU — Water',
   album: 'Album title',
   setlist: 'Friday at the Lantern',
+  series: 'Tidal studies',
   ideas: 'App ideas',
   custom: 'Title',
 };

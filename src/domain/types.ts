@@ -54,6 +54,19 @@ export interface ContentItem extends Syncable {
   assetId?: string;
   /** For type 'image': how it sits on the page in print. */
   imageLayout?: ImageLayout;
+  /** For type 'image': details about the artwork (all optional). */
+  art?: ArtDetails;
+  /** For type 'image': a reference or inspiration image, not the artist's own work. */
+  inspiration?: boolean;
+  /** For type 'image': progress shots, oldest first (asset ids). The finished work is assetId. */
+  processAssetIds?: string[];
+}
+
+export interface ArtDetails {
+  medium?: string;
+  size?: string;
+  /** Free text: "2026", "March 2026", "2026-03-14". */
+  madeOn?: string;
 }
 
 export type ImageLayout = 'full-bleed' | 'full-page' | 'inline';
@@ -89,7 +102,7 @@ export interface Collection extends Syncable {
 export type BookType = 'journal' | 'poetry' | 'essay' | 'codex' | 'custom';
 
 /** What a project is for. Only books get print, cover and manuscript tools. */
-export type ProjectKind = 'book' | 'album' | 'setlist' | 'ideas' | 'custom';
+export type ProjectKind = 'book' | 'album' | 'setlist' | 'series' | 'ideas' | 'custom';
 
 /** A project (stored in the `books` table, so sync and old backups carry on unchanged). */
 export interface Book extends Syncable {
@@ -213,7 +226,8 @@ export interface BookEntry extends Syncable {
   space?: EntrySpace;
 }
 
-export type RelationshipKind = 'related' | 'echoes' | 'continues' | 'variant';
+/** 'idea': the idea behind an artwork (from = artwork, to = the note). */
+export type RelationshipKind = 'related' | 'echoes' | 'continues' | 'variant' | 'idea';
 
 export interface Relationship extends Syncable {
   fromId: string;

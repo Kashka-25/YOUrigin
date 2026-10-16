@@ -68,13 +68,14 @@ export const BOOK_TYPE_LABEL: Record<BookType, string> = {
   custom: 'Custom',
 };
 
-export const PROJECT_KINDS: ProjectKind[] = ['book', 'album', 'setlist', 'ideas', 'custom'];
+export const PROJECT_KINDS: ProjectKind[] = ['book', 'album', 'setlist', 'series', 'ideas', 'custom'];
 
-/** numbered: pieces show their place (track 1, 2…). noun: what a piece is called in counts. */
-export const PROJECT_KIND_META: Record<ProjectKind, { label: string; numbered: boolean; sections: string[]; noun: string }> = {
+/** numbered: pieces show their place (track 1, 2…). noun: what a piece is called in counts. gallery: sections show as picture grids. */
+export const PROJECT_KIND_META: Record<ProjectKind, { label: string; numbered: boolean; sections: string[]; noun: string; gallery?: boolean }> = {
   book: { label: 'Book', numbered: false, sections: [], noun: 'piece' },
   album: { label: 'Album', numbered: true, sections: ['Tracks'], noun: 'track' },
   setlist: { label: 'Set list', numbered: true, sections: ['Set 1'], noun: 'song' },
+  series: { label: 'Series', numbered: false, sections: [], noun: 'artwork', gallery: true },
   ideas: { label: 'Ideas', numbered: false, sections: [], noun: 'idea' },
   custom: { label: 'Custom', numbered: false, sections: [], noun: 'piece' },
 };

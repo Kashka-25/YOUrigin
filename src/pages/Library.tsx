@@ -6,6 +6,7 @@ import { EMPTY_FILTERS, filterItems, type LibraryFilters, type SortKey } from '.
 import type { ContentType, Status } from '../domain/types';
 import { CONTENT_TYPES, STATUSES, STATUS_META, TYPE_LABEL } from '../domain/constants';
 import { ItemCard } from '../components/ItemCard';
+import { GalleryView } from '../components/art/GalleryView';
 import { BulkBar } from '../components/BulkBar';
 import { EmptyState, Spinner, TagChip } from '../components/ui';
 import { ImportDialog } from '../components/ImportDialog';
@@ -13,9 +14,10 @@ import { download, libraryToMarkdown, today } from '../io/export';
 
 const PAGE = 100;
 
-type View = 'all' | 'collections' | 'tags';
+type View = 'all' | 'gallery' | 'collections' | 'tags';
 const VIEWS: { id: View; label: string }[] = [
   { id: 'all', label: 'All notes' },
+  { id: 'gallery', label: 'Gallery' },
   { id: 'collections', label: 'Collections' },
   { id: 'tags', label: 'Tags' },
 ];
@@ -124,7 +126,7 @@ export function Library() {
         </div>
       </div>
 
-      <div className="mt-5 inline-flex rounded-full border border-line p-1" role="tablist" aria-label="Library view">
+      <div className="mt-5 inline-flex max-w-full overflow-x-auto rounded-full border border-line p-1" role="tablist" aria-label="Library view">
         {VIEWS.map((v) => (
           <button
             key={v.id}
@@ -132,12 +134,14 @@ export function Library() {
             role="tab"
             aria-selected={view === v.id}
             onClick={() => showView(v.id)}
-            className={`rounded-full px-4 py-1.5 text-sm ${view === v.id ? 'bg-accent font-semibold text-accent-ink' : 'text-ink-2 hover:text-ink'}`}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-sm sm:px-4 ${view === v.id ? 'bg-accent font-semibold text-accent-ink' : 'text-ink-2 hover:text-ink'}`}
           >
             {v.label}
           </button>
         ))}
       </div>
+
+      {view === 'gallery' && <GalleryView />}
 
       {view === 'collections' && (
         lib.collections.length === 0 ? (

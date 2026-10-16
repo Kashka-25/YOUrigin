@@ -15,7 +15,14 @@ import { StatusBadge } from './ui';
 export function RelationsPanel({ item }: { item: ContentItem }) {
   const lib = useLibrary();
   const links = useLiveQuery(
-    () => db.relationships.where('fromId').equals(item.id).or('toId').equals(item.id).toArray(),
+    () =>
+      db.relationships
+        .where('fromId')
+        .equals(item.id)
+        .or('toId')
+        .equals(item.id)
+        .filter((r) => !(r.kind === 'idea' && r.fromId === item.id))
+        .toArray(),
     [item.id],
   );
   const [related, setRelated] = useState<Related[]>([]);
@@ -48,7 +55,7 @@ export function RelationsPanel({ item }: { item: ContentItem }) {
                 <Link to={`/item/${other.id}`} className="min-w-0 truncate font-serif text-base hover:underline">
                   {displayTitle(other)}
                 </Link>
-                <span className="text-xs text-muted">{l.kind}</span>
+                <span className="text-xs text-muted">{l.kind === 'idea' ? 'idea behind' : l.kind}</span>
                 <button type="button" className="btn-ghost p-1" aria-label="Remove connection" onClick={() => void unlink(l.id)}>
                   <Unlink size={14} />
                 </button>

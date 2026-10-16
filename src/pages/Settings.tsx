@@ -307,7 +307,31 @@ export function Settings() {
         </div>
       </Section>
 
-      <Section title="Appearance" id="s-look">
+      <Section title="What you mainly make" id="s-craft">
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="What you mainly make">
+          {(
+            [
+              ['words', 'Words'],
+              ['art', 'Art'],
+              ['both', 'Both'],
+            ] as const
+          ).map(([v, label]) => (
+            <button
+              key={v}
+              type="button"
+              role="radio"
+              aria-checked={s.craft === v}
+              className={`rounded-full border px-4 py-1.5 text-sm ${s.craft === v ? 'border-accent bg-accent text-accent-ink' : 'border-line'}`}
+              onClick={() => void setSetting('craft', v)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="text-sm text-muted">Art puts the Gallery in the bottom bar. Both adds it to the menu.</p>
+      </Section>
+
+            <Section title="Appearance" id="s-look">
         <div className="flex gap-2" role="radiogroup" aria-label="Theme">
           {(['system', 'light', 'dark'] as const).map((t) => (
             <button

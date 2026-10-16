@@ -4,6 +4,7 @@ import { createMany } from './content';
 import { addToBook } from './books';
 import { shrinkImage, type ShrunkImage } from '../io/images';
 import { newId } from '../domain/text';
+import { assetInUse } from './assetUse';
 import type { Asset } from '../domain/types';
 
 export const IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp,image/gif,image/heic,image/heif,image/svg+xml';
@@ -55,11 +56,7 @@ export async function addImagePieces(files: File[], bookId?: string): Promise<{ 
 /** Removes an asset only if nothing (a piece, a cover, a section opener) still uses it. */
 export async function removeAssetIfUnused(assetId: string | undefined): Promise<void> {
   if (!assetId) return;
-  const used =
-    (await db.content.filter((c) => c.assetId === assetId).count()) +
-    (await db.books.filter((b) => b.coverAssetId === assetId).count()) +
-    (await db.sections.filter((s) => s.imageAssetId === assetId).count());
-  if (!used) await db.assets.delete(assetId);
+  if (!(await assetInUse(assetId))) await db.assets.delete(assetId);
 }
 
 export function useAsset(id: string | undefined): Asset | undefined {

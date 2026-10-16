@@ -5,6 +5,7 @@ import {
   Feather,
   FolderOpen,
   Hash,
+  Images,
   Library,
   Menu,
   Network,
@@ -20,9 +21,12 @@ import { SearchPalette } from './SearchPalette';
 import { useLibrary } from '../hooks/useLibrary';
 import { isOrphan } from '../domain/query';
 import { Modal } from './Modal';
+import { useSettings } from '../db/settings';
 import { SyncBadge } from './SyncBadge';
 
-const PRIMARY = [
+type NavDef = { to: string; label: string; icon: typeof Feather; end?: boolean };
+
+const PRIMARY: NavDef[] = [
   { to: '/', label: 'Gathering', icon: Feather, end: true },
   { to: '/library', label: 'Library', icon: Library },
   { to: '/map', label: 'Book Map', icon: Network },
@@ -30,6 +34,8 @@ const PRIMARY = [
   { to: '/tags', label: 'Tags', icon: Hash },
   { to: '/orphans', label: 'Orphans', icon: Sprout },
 ];
+
+const GALLERY: NavDef = { to: '/library?view=gallery', label: 'Gallery', icon: Images };
 
 const SECONDARY = [
   { to: '/collections', label: 'Collections', icon: FolderOpen },
@@ -65,6 +71,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const online = useOnline();
   const [searchOpen, setSearchOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const craft = useSettings()?.craft ?? 'words';
+  // Gallery is a Library view, so the two share a path; tell them apart by ?view.
+  const galleryOn = loc.pathname === '/library' && new URLSearchParams(loc.search).get('view') === 'gallery';
+  const activeFor = (to: string, isActive: boolean) => (to === GALLERY.to ? galleryOn : to === '/library' ? isActive && !galleryOn : isActive);
+  const sidebar = craft === 'words' ? PRIMARY : [PRIMARY[0], PRIMARY[1], GALLERY, ...PRIMARY.slice(2)];
+  const bottom = craft === 'art' ? [PRIMARY[0], PRIMARY[1], GALLERY, PRIMARY[3]] : [PRIMARY[0], PRIMARY[1], PRIMARY[3], PRIMARY[5]];
+  const more =
+    craft === 'art' ? [PRIMARY[5], PRIMARY[2], PRIMARY[4], ...SECONDARY] : craft === 'both' ? [GALLERY, PRIMARY[2], PRIMARY[4], ...SECONDARY] : [PRIMARY[2], PRIMARY[4], ...SECONDARY];
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -100,7 +114,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       end={item.end}
       className={({ isActive }) =>
         `flex items-center gap-3 rounded-xl px-3 py-2 text-[15px] transition-colors ${
-          isActive ? 'bg-paper-2 font-semibold text-ink' : 'text-ink-2 hover:bg-paper-2 hover:text-ink'
+          activeFor(item.to, isActive) ? 'bg-paper-2 font-semibold text-ink' : 'text-ink-2 hover:bg-paper-2 hover:text-ink'
         }`
       }
     >
@@ -128,7 +142,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <kbd className="rounded border border-line px-1.5 text-[11px]">Ctrl K</kbd>
         </button>
         <nav aria-label="Main" className="mt-5 space-y-0.5">
-          {PRIMARY.map((i) => navItem(i, i.to === '/orphans' ? orphanCount : undefined))}
+          {sidebar.map((i) => navItem(i, i.to === '/orphans' ? orphanCount : undefined))}
         </nav>
         {recentProjects.length > 0 && (
           <div className="mt-6">
@@ -181,12 +195,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         aria-label="Main"
         className="no-print chrome fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
       >
-        {[PRIMARY[0], PRIMARY[1], PRIMARY[3], PRIMARY[5]].map((item) => (
+        {bottom.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.end}
-            className={({ isActive }) => `relative flex flex-col items-center gap-0.5 py-2 text-[11px] ${isActive ? 'font-semibold text-accent' : 'text-ink-2'}`}
+            className={({ isActive }) => `relative flex flex-col items-center gap-0.5 py-2 text-[11px] ${activeFor(item.to, isActive) ? 'font-semibold text-accent' : 'text-ink-2'}`}
           >
             <item.icon size={21} aria-hidden />
             {item.label === 'Gathering' ? 'Gather' : item.label}
@@ -203,7 +217,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <Modal open={moreOpen} onClose={() => setMoreOpen(false)} title="More">
         <nav className="space-y-0.5" aria-label="More">
-          {[PRIMARY[2], PRIMARY[4], ...SECONDARY].map((i) => navItem(i))}
+          {more.map((i) => navItem(i, i.to === '/orphans' ? orphanCount : undefined))}
         </nav>
       </Modal>
 

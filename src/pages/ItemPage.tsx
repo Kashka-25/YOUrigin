@@ -30,6 +30,9 @@ import { RelationsPanel } from '../components/RelationsPanel';
 import { HistoryPanel } from '../components/HistoryPanel';
 import { wordCount } from '../domain/text';
 import { AssetImage } from '../components/AssetImage';
+import { ArtPanel } from '../components/art/ArtPanel';
+import { ArtViewer } from '../components/art/ArtViewer';
+import { artCaption } from '../components/art/art';
 import { EditNotePanel } from '../components/EditNotePanel';
 import { useSettings } from '../db/settings';
 import { isEditNote, resolveEditCategory } from '../sync/buildNotes';
@@ -69,6 +72,7 @@ function Editor({ item }: { item: ContentItem }) {
   const [notes, setNotes] = useState(item.notes);
   const [assign, setAssign] = useState<'book' | 'collection' | null>(null);
   const [focus, setFocus] = useFocusMode();
+  const [viewing, setViewing] = useState(false);
   const [bodyEl, setBodyEl] = useState<HTMLTextAreaElement | null>(null);
   const [lookup, setLookup] = useState<Range | null>(null);
   const hasWords = useLiveQuery(async () => (await wordsDb.packs.toArray()).some((p) => isWordPack(p.id)), []);
@@ -216,7 +220,12 @@ function Editor({ item }: { item: ContentItem }) {
             className="w-full bg-transparent font-serif text-3xl leading-tight text-ink placeholder:text-muted/60 focus:outline-none focus-visible:outline-none md:text-4xl"
           />
           {item.type === 'image' && item.assetId && (
-            <AssetImage id={item.assetId} alt={title} className="mt-5 max-h-[70dvh] w-auto max-w-full rounded-xl border border-line" />
+            <button type="button" onClick={() => setViewing(true)} className="mt-5 block max-w-full" aria-label="View full screen">
+              <AssetImage id={item.assetId} alt={title} className="max-h-[70dvh] w-auto max-w-full rounded-xl border border-line" />
+            </button>
+          )}
+          {viewing && item.assetId && (
+            <ArtViewer slides={[{ assetId: item.assetId, title: title || 'Untitled', caption: artCaption(item) }]} index={0} onIndex={() => {}} onClose={() => setViewing(false)} />
           )}
           <label htmlFor="item-body" className={item.type === 'image' ? 'label mt-5' : 'sr-only'}>
             {item.type === 'image' ? 'Caption (optional)' : 'Writing'}
@@ -268,6 +277,7 @@ function Editor({ item }: { item: ContentItem }) {
             const entry = lib.entries.find((e) => e.bookId === order.book.id && e.contentId === item.id);
             return entry && item.type !== 'image' ? <SpaceControl entry={entry} item={item} /> : null;
           })()}
+          {item.type === 'image' && <ArtPanel item={item} />}
           {item.type === 'image' && (
             <section>
               <label className="label" htmlFor="item-layout">

@@ -17,6 +17,8 @@ export interface Settings {
   editNotesCategory: string;
   /** Words the spell checker should accept (names, invented words). */
   spellingWords: string[];
+  /** What you mainly make. Art puts the Gallery in the bottom bar. */
+  craft: 'words' | 'art' | 'both';
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -31,6 +33,7 @@ export const DEFAULT_SETTINGS: Settings = {
   lastBackupAt: null,
   editNotesCategory: '',
   spellingWords: [],
+  craft: 'words',
 };
 
 /** Keys that must never leave this device in an export. */

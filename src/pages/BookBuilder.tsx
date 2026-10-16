@@ -20,6 +20,7 @@ import { providerFor, type ProposedSection } from '../ai';
 import { useSettings } from '../db/settings';
 import { displayTitle } from '../domain/text';
 import { ContentsList } from '../components/book/ContentsList';
+import { ArtGrid } from '../components/art/ArtGrid';
 import { ChevronDown, Maximize2 } from 'lucide-react';
 
 export function BookBuilder() {
@@ -116,6 +117,25 @@ export function BookBuilder() {
           <Sparkles size={14} className="mr-1 inline text-ai" aria-hidden />
           {relevantOrphans.length} unclaimed piece{relevantOrphans.length === 1 ? '' : 's'} may belong here — see <em>Relevant</em> on the material shelf.
         </p>
+      )}
+
+      {PROJECT_KIND_META[kind].gallery && (
+        <section className="mt-8 space-y-8" aria-label="Gallery">
+          {[...sections.map((sec) => ({ key: sec.id, title: sec.title, id: sec.id as string | null })), { key: 'tray', title: 'Not placed yet', id: null }].map((g) => {
+            const items = entries
+              .filter((e) => e.sectionId === g.id)
+              .sort((a, b) => a.order - b.order)
+              .map((e) => lib.contentById.get(e.contentId))
+              .filter((i): i is NonNullable<typeof i> => !!i && i.type === 'image' && !!i.assetId && !i.deletedAt);
+            if (!items.length) return null;
+            return (
+              <div key={g.key}>
+                <h2 className="mb-3 font-serif text-2xl">{g.title}</h2>
+                <ArtGrid items={items} />
+              </div>
+            );
+          })}
+        </section>
       )}
 
       <div className="mt-8">
