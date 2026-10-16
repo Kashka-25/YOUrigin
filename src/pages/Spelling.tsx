@@ -17,7 +17,7 @@ type Hit = { item: ContentItem; field: 'title' | 'body'; start: number; end: num
 type Group = { key: string; hits: Hit[] };
 const PAGE = 25;
 
-/** Spell check a whole book, collection, piece or the library at once. */
+/** Spell check a whole project, collection, piece or the library at once. */
 export function Spelling() {
   const lib = useLibrary();
   const settings = useSettings();
@@ -118,7 +118,7 @@ export function Spelling() {
         <option value="all">All pieces</option>
         {scope.startsWith('piece:') && <option value={scope}>{items[0] ? displayTitle(items[0]) : 'This piece'}</option>}
         {lib.books.length > 0 && (
-          <optgroup label="Books">
+          <optgroup label="Projects">
             {lib.books.map((b) => (
               <option key={b.id} value={`book:${b.id}`}>
                 {b.title}
