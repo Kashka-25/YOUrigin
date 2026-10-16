@@ -21,6 +21,7 @@ import { Collections, CollectionPage } from './pages/Collections';
 import { Trash } from './pages/Trash';
 import { Settings } from './pages/Settings';
 import { Spelling } from './pages/Spelling';
+import { Shared } from './pages/Shared';
 import { EmptyState, Spinner } from './components/ui';
 
 // The print designer (and its page-layout engine) only loads when opened.
@@ -124,6 +125,7 @@ export default function App() {
                       <Route path="/trash" element={<Trash />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/spelling" element={<Spelling />} />
+                      <Route path="/shared" element={<Shared />} />
                       <Route path="*" element={<EmptyState title="Nothing here" />} />
                     </Routes>
                   </AppShell>

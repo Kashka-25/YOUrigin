@@ -11,6 +11,7 @@ import {
   Network,
   Search,
   Settings,
+  Share2,
   Sprout,
   SpellCheck,
   Trash2,
@@ -40,6 +41,7 @@ const GALLERY: NavDef = { to: '/library?view=gallery', label: 'Gallery', icon: I
 const SECONDARY = [
   { to: '/collections', label: 'Collections', icon: FolderOpen },
   { to: '/spelling', label: 'Spelling', icon: SpellCheck },
+  { to: '/shared', label: 'Shared to YOU', icon: Share2 },
   { to: '/settings', label: 'Settings & backup', icon: Settings },
   { to: '/trash', label: 'Trash', icon: Trash2 },
 ];

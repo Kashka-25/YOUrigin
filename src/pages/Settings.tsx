@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { BookA, Download, HardDrive, Laptop, Monitor, Smartphone, TabletSmartphone, Upload } from 'lucide-react';
 import { setSetting, useSettings } from '../db/settings';
 import { StatusPicker, TypeSelect, Spinner } from '../components/ui';
@@ -12,6 +13,7 @@ import { requestPersistentStorage } from '../db/db';
 import { useInstallPrompt } from '../pwa';
 import { SyncPanel } from '../components/SyncPanel';
 import { WordPacks } from '../components/WordPacks';
+import { ArtistProfilePanel } from '../components/ShowcasePanels';
 import { isEditNote, needsSending, resolveEditCategory, sendEditNote } from '../sync/buildNotes';
 
 function Section({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {
@@ -37,6 +39,11 @@ export function Settings() {
   const [key, setKey] = useState<string | null>(null);
   const [sendingAll, setSendingAll] = useState(false);
   const install = useInstallPrompt();
+  const { hash } = useLocation();
+  // Links like /settings#s-artist open at that section.
+  useEffect(() => {
+    if (hash) document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' });
+  }, [hash]);
 
   useEffect(() => {
     void (async () => {
@@ -284,6 +291,15 @@ export function Settings() {
           protected — so download a backup now and then.
         </p>
         <p className="text-sm text-muted">Open the app once while online after installing; from then on it works offline on every device.</p>
+      </Section>
+
+      <Section title="Artist profile: Showcase on YOU" id="s-artist">
+        <p className="text-[15px] leading-relaxed text-ink-2">
+          Share a piece to be displayed on YOU, credited to you, with your links so people can support your work. Set up who you're credited as here,
+          then choose <em>Share to YOU</em> on any piece. Each share is a separate public copy that waits for approval; the rest of your codex stays
+          private.
+        </p>
+        <ArtistProfilePanel />
       </Section>
 
       <Section title="Dictionary and thesaurus" id="s-words">

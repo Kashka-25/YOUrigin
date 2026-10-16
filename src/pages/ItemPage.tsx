@@ -39,6 +39,7 @@ import { isEditNote, resolveEditCategory } from '../sync/buildNotes';
 import type { ImageLayout } from '../domain/types';
 import type { ContentItem } from '../domain/types';
 import { WordPanel } from '../components/WordPanel';
+import { ShareToYouButton } from '../components/ShareToYou';
 import { fitWord, isWordPack, wordsDb } from '../words/store';
 import { wordAt, type Ending, type Range } from '../words/morph';
 import { selectAndReveal } from '../words/caret';
@@ -378,6 +379,7 @@ function Editor({ item }: { item: ContentItem }) {
             />
           </section>
 
+          <ShareToYouButton item={{ ...item, title, body }} />
           <RelationsPanel item={item} />
           <AssistantPanel item={{ ...item, title, body }} />
           <HistoryPanel item={item} />
