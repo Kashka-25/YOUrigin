@@ -305,7 +305,7 @@ export function Library() {
                 </div>
                 <div>
                   <label className="label" htmlFor="f-book">
-                    In book
+                    In project
                   </label>
                   <select id="f-book" className="input" value={filters.bookId ?? ''} onChange={(e) => set({ bookId: e.target.value || null })}>
                     <option value="">Any</option>

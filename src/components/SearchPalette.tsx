@@ -79,7 +79,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
         ref={inputRef}
         data-autofocus
         className="input py-3 text-base"
-        placeholder="Words, #tags, books, collections, types…"
+        placeholder="Words, #tags, projects, collections, types…"
         value={q}
         onChange={(e) => {
           setQ(e.target.value);

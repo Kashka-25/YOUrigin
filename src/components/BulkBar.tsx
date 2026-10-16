@@ -82,7 +82,7 @@ export function BulkBar({
           Untag
         </button>
         <button type="button" className="btn-ghost" onClick={() => setAssign('book')}>
-          <BookPlus size={15} /> Book
+          <BookPlus size={15} /> Project
         </button>
         <button type="button" className="btn-ghost" onClick={() => setAssign('collection')}>
           <FolderPlus size={15} /> Collection

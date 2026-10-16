@@ -75,7 +75,7 @@ export function Orphans() {
                     <FolderPlus size={13} /> Make a collection
                   </button>
                   <button type="button" className="btn-ghost px-3 py-1 text-xs" onClick={() => setAssign({ mode: 'book', ids: c.itemIds })}>
-                    <BookPlus size={13} /> Add to a book
+                    <BookPlus size={13} /> Add to a project
                   </button>
                   <button type="button" className="btn-ghost px-3 py-1 text-xs" onClick={() => setSelected(new Set(c.itemIds))}>
                     Select these
@@ -254,7 +254,7 @@ function OrphanHints({
       )}
       <div className="flex flex-wrap gap-1">
         <button type="button" className="btn-ghost px-2 py-0.5 text-xs" onClick={() => onAssign('book')}>
-          <BookPlus size={13} /> Add to book
+          <BookPlus size={13} /> Add to project
         </button>
         <button type="button" className="btn-ghost px-2 py-0.5 text-xs" onClick={() => onAssign('collection')}>
           <FolderPlus size={13} /> Add to collection
