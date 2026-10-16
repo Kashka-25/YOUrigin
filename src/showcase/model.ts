@@ -149,6 +149,17 @@ export function validateShare(d: ShareDraft): string[] {
   return out;
 }
 
+/** Shortens text to fit, ending at a sentence if one fits, else at a word, never mid-word. */
+export function fitText(text: string, max: number): string {
+  const s = text.trim();
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max);
+  const sentence = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('! '), cut.lastIndexOf('? '), cut.lastIndexOf('.\n'));
+  if (sentence >= max / 2) return cut.slice(0, sentence + 1).trim();
+  const space = cut.slice(0, max - 1).lastIndexOf(' ');
+  return `${cut.slice(0, space > 0 ? space : max - 1).trimEnd()}…`;
+}
+
 export function validateProfile(p: ArtistProfile): string[] {
   const out: string[] = [];
   if (!p.displayName.trim()) out.push('Add the name you want to be credited as.');

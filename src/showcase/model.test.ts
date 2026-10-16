@@ -5,6 +5,7 @@ import {
   newDraft,
   normalizeHandle,
   normalizeUrl,
+  fitText,
   shareKindFor,
   toCreditRows,
   toWorkRow,
@@ -92,6 +93,14 @@ describe('links and handles', () => {
   it('checks the artist profile', () => {
     expect(validateProfile({ displayName: '', bio: '', links: [], kronkHandle: '' })).toEqual(['Add the name you want to be credited as.']);
     expect(validateProfile({ displayName: 'Ana', bio: '', links: [{ kind: 'kofi', label: '', url: 'ko-fi.com/ana' }], kronkHandle: '@ana@kronk.social' })).toEqual([]);
+  });
+});
+
+describe('fitText', () => {
+  it('ends at a sentence, else a word', () => {
+    expect(fitText('Short.', 280)).toBe('Short.');
+    expect(fitText('One sentence here. Another that runs on and on.', 30)).toBe('One sentence here.');
+    expect(fitText('words that keep going without any stop', 20)).toBe('words that keep…');
   });
 });
 

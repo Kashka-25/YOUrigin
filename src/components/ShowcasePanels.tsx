@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Loader2, Plus, X } from 'lucide-react';
 import { isSyncEnabled } from '../sync/runtime';
 import { loadProfile, loadYouProfile, saveProfile, showcaseSignIn, showcaseSignOut, useShowcaseSession } from '../showcase/api';
-import { LIMITS, LINK_KINDS, validateProfile, type ArtistProfile, type LinkKind } from '../showcase/model';
+import { LIMITS, LINK_KINDS, fitText, validateProfile, type ArtistProfile, type LinkKind } from '../showcase/model';
 import { useToast } from './Toast';
 
 /** Sign in with a YOU account, just for sharing. With Sync on, Sync's sign-in is used. */
@@ -75,7 +75,7 @@ export function ArtistProfilePanel() {
         // New here: start from your YOU profile, so you're the same person in both apps.
         const you = await loadYouProfile();
         setFromYou(Boolean(you?.name || you?.bio));
-        setP({ ...EMPTY, displayName: (you?.name ?? '').slice(0, LIMITS.name), bio: (you?.bio ?? '').slice(0, LIMITS.bio) });
+        setP({ ...EMPTY, displayName: fitText(you?.name ?? '', LIMITS.name), bio: fitText(you?.bio ?? '', LIMITS.bio) });
       })
       .catch((e) => {
         setP({ ...EMPTY });
