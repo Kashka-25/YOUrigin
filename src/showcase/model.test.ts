@@ -113,6 +113,16 @@ describe('rows for the server', () => {
     expect(row.source_id).toBe('c1');
   });
 
+  it('written work keeps its own image, alt text and scroll choice', () => {
+    const plain = toWorkRow(words({ altText: 'leaves' }), 'c1', null);
+    expect(plain.words_scroll).toBe(true);
+    expect(plain.alt_text).toBe('');
+    const withImage = toWorkRow(words({ wordsImage: 'keep', wordsScroll: false, altText: ' leaves ' }), 'c1', { path: 'u/c1.webp', width: 1200, height: 800 });
+    expect(withImage.image_path).toBe('u/c1.webp');
+    expect(withImage.words_scroll).toBe(false);
+    expect(withImage.alt_text).toBe('leaves');
+  });
+
   it('cleans credit links and handles', () => {
     expect(toCreditRows('w1', [{ name: ' Ben ', url: 'ben.art', kronkHandle: 'ben@kronk.social' }])).toEqual([
       { work_id: 'w1', role: 'offered_by', name: 'Ben', url: 'https://ben.art/', kronk_handle: '@ben@kronk.social', position: 0 },
