@@ -23,7 +23,10 @@ export default defineConfig({
     }),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon-*.png', 'apple-touch-icon.png'],
+      // Icons are already precached by globPatterns. Listing them again here (or via the
+      // manifest icons) adds a second, pre-optimizer revision of the same URL, and Workbox
+      // then throws on the conflict — the worker activates but caches nothing.
+      includeManifestIcons: false,
       manifest: {
         name: 'YOUrigin — Your Creative Codex',
         short_name: 'YOUrigin',
