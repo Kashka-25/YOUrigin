@@ -19,6 +19,7 @@ import {
   toWorkRow,
   type ArtistProfile,
   type CreditDraft,
+  type DisplayCopy,
   type Placement,
   type SaveMode,
   type ShareDraft,
@@ -36,6 +37,10 @@ export interface SharedWork {
   body: string;
   altText: string;
   imagePath: string | null;
+  imageWidth: number | null;
+  imageHeight: number | null;
+  /** Written work with an image: shown on YOU's scroll (true) or straight on the image. */
+  wordsScroll: boolean;
   placements: Placement[];
   saveMode: SaveMode;
   suggestedAmount: string | null;
@@ -144,18 +149,23 @@ function dataUrlToFile(dataUrl: string, name: string): File {
 }
 
 /** The display-sized copy YOU will show: at most 1600px, WebP where possible. */
-export async function makeDisplayCopy(assetId: string): Promise<{ file: File; width: number; height: number; dataUrl: string }> {
+export async function makeDisplayCopy(assetId: string): Promise<DisplayCopy> {
   const asset = await db.assets.get(assetId);
   if (!asset) throw new Error('This image is missing from this device.');
-  if (asset.mime === 'image/svg+xml') throw new Error('SVG images can’t be shared yet. Export it as PNG or JPEG first.');
-  const shrunk = await shrinkImage(dataUrlToFile(asset.dataUrl, asset.name || 'image'), DISPLAY_MAX_EDGE);
+  return makeDisplayCopyFromFile(dataUrlToFile(asset.dataUrl, asset.name || 'image'));
+}
+
+/** The same display copy from a file chosen on the device (an image behind written work). */
+export async function makeDisplayCopyFromFile(file: File): Promise<DisplayCopy> {
+  if (file.type === 'image/svg+xml') throw new Error('SVG images can’t be shared yet. Export it as PNG or JPEG first.');
+  const shrunk = await shrinkImage(file, DISPLAY_MAX_EDGE);
   if (shrunk.bytes > DISPLAY_MAX_BYTES) throw new Error('This image is still too large to share after shrinking.');
   const ext = shrunk.mime === 'image/webp' ? 'webp' : shrunk.mime === 'image/png' ? 'png' : 'jpg';
   return { file: dataUrlToFile(shrunk.dataUrl, `display.${ext}`), width: shrunk.width, height: shrunk.height, dataUrl: shrunk.dataUrl };
 }
 
 const WORK_FIELDS =
-  'id,source_id,kind,title,body,alt_text,image_path,placements,save_mode,suggested_amount,status,review_note,submitted_at,live_at,kronk_post_url,credits:showcase_credits(name,url,kronk_handle,position)';
+  'id,source_id,kind,title,body,alt_text,image_path,image_width,image_height,words_scroll,placements,save_mode,suggested_amount,status,review_note,submitted_at,live_at,kronk_post_url,credits:showcase_credits(name,url,kronk_handle,position)';
 
 interface WorkRow {
   id: string;
@@ -165,6 +175,9 @@ interface WorkRow {
   body: string;
   alt_text: string;
   image_path: string | null;
+  image_width: number | null;
+  image_height: number | null;
+  words_scroll: boolean | null;
   placements: Placement[];
   save_mode: SaveMode;
   suggested_amount: string | null;
@@ -185,6 +198,9 @@ function fromRow(r: WorkRow): SharedWork {
     body: r.body,
     altText: r.alt_text,
     imagePath: r.image_path,
+    imageWidth: r.image_width,
+    imageHeight: r.image_height,
+    wordsScroll: r.words_scroll ?? true,
     placements: r.placements,
     saveMode: r.save_mode,
     suggestedAmount: r.suggested_amount,
@@ -241,6 +257,14 @@ export async function sharePiece(item: ContentItem, draft: ShareDraft): Promise<
     const up = await c.storage.from(BUCKET).upload(path, copy.file, { contentType: copy.file.type, upsert: false });
     if (up.error) throw new Error(up.error.message);
     image = { path, width: copy.width, height: copy.height };
+  } else if (draft.wordsImage === 'keep' && before?.imagePath) {
+    image = { path: before.imagePath, width: before.imageWidth ?? 0, height: before.imageHeight ?? 0 };
+  } else if (draft.wordsImage && draft.wordsImage !== 'keep') {
+    const copy = draft.wordsImage;
+    const path = `${uid}/${item.id}-${Date.now().toString(36)}.${copy.file.name.split('.').pop()}`;
+    const up = await c.storage.from(BUCKET).upload(path, copy.file, { contentType: copy.file.type, upsert: false });
+    if (up.error) throw new Error(up.error.message);
+    image = { path, width: copy.width, height: copy.height };
   }
 
   const { data, error } = await c
@@ -249,7 +273,7 @@ export async function sharePiece(item: ContentItem, draft: ShareDraft): Promise<
     .select('id')
     .single();
   if (error) {
-    if (image) await c.storage.from(BUCKET).remove([image.path]);
+    if (image && image.path !== before?.imagePath) await c.storage.from(BUCKET).remove([image.path]);
     throw new Error(error.message);
   }
   const workId = (data as { id: string }).id;
@@ -262,7 +286,8 @@ export async function sharePiece(item: ContentItem, draft: ShareDraft): Promise<
     if (ins.error) throw new Error(ins.error.message);
   }
 
-  if (image && before?.imagePath && before.imagePath !== image.path) await c.storage.from(BUCKET).remove([before.imagePath]);
+  // The image shared before goes once it's replaced or taken away.
+  if (before?.imagePath && before.imagePath !== image?.path) await c.storage.from(BUCKET).remove([before.imagePath]);
   return (await findShare(item.id))!;
 }
 

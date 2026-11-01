@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, Loader2, Plus, Share2, X } from 'lucide-react';
+import { ExternalLink, ImagePlus, Loader2, Plus, Share2, X } from 'lucide-react';
 import { Modal } from './Modal';
 import { useToast } from './Toast';
 import { ShowcaseSignIn } from './ShowcasePanels';
-import { findShare, loadProfile, makeDisplayCopy, sharePiece, useShowcaseSession, type SharedWork } from '../showcase/api';
+import { findShare, loadProfile, makeDisplayCopy, makeDisplayCopyFromFile, sharePiece, useShowcaseSession, type SharedWork } from '../showcase/api';
 import {
   LIMITS,
   PLACEMENT_LABELS,
@@ -67,6 +67,8 @@ function ShareDialog({ item, existing, onClose }: { item: ContentItem; existing:
       suggestedAmount: existing.suggestedAmount ?? '',
       credits: existing.credits,
       title: existing.title || d.title,
+      wordsImage: d.kind === 'words' && existing.imagePath ? 'keep' : null,
+      wordsScroll: existing.wordsScroll,
     };
   });
   const [preview, setPreview] = useState<string | null>(null);
@@ -174,7 +176,10 @@ function ShareDialog({ item, existing, onClose }: { item: ContentItem; existing:
             <p className="px-3 py-1.5 text-xs text-muted">Display size only (up to 1600px). Your original stays on this device.</p>
           </div>
         ) : (
-          <blockquote className="max-h-40 overflow-y-auto border-l-2 border-accent pl-3 font-serif text-[15px] whitespace-pre-line text-ink-2">{draft.body}</blockquote>
+          <>
+            <blockquote className="max-h-40 overflow-y-auto border-l-2 border-accent pl-3 font-serif text-[15px] whitespace-pre-line text-ink-2">{draft.body}</blockquote>
+            <WordsImage draft={draft} set={set} />
+          </>
         )}
 
         <label className="block">
@@ -282,5 +287,86 @@ function ShareDialog({ item, existing, onClose }: { item: ContentItem; existing:
     <Modal open onClose={onClose} title="Share to YOU">
       {content}
     </Modal>
+  );
+}
+
+/**
+ * Written work can bring its own image to YOU (Cassidy, Nov 1): it shows
+ * behind the words wherever they're featured. The artist chooses whether
+ * YOU lays the words on its painted scroll, which keeps them easy to read
+ * over a busy image, or straight on the image.
+ */
+function WordsImage({ draft, set }: { draft: ShareDraft; set: (patch: Partial<ShareDraft>) => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const chosen = draft.wordsImage;
+
+  async function choose(file: File | undefined) {
+    if (!file) return;
+    setBusy(true);
+    setError(null);
+    try {
+      set({ wordsImage: await makeDisplayCopyFromFile(file) });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <fieldset className="space-y-3">
+      <legend className="label">An image behind your words (optional)</legend>
+      {chosen ? (
+        <div className="overflow-hidden rounded-xl border border-line bg-paper-2">
+          {chosen === 'keep' ? (
+            <p className="p-3 text-sm text-ink-2">Keeping the image you shared with these words before.</p>
+          ) : (
+            <img src={chosen.dataUrl} alt="" className="mx-auto max-h-48 w-auto object-contain" />
+          )}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5">
+            <span className="text-xs text-muted">Display size only (up to 1600px). Your original stays on this device.</span>
+            <span className="flex gap-1">
+              <label className="btn-ghost cursor-pointer p-1.5 text-xs">
+                Change
+                <input type="file" accept="image/*" className="sr-only" onChange={(e) => choose(e.target.files?.[0])} />
+              </label>
+              <button type="button" className="btn-ghost p-1.5 text-xs" onClick={() => set({ wordsImage: null })}>
+                Remove
+              </button>
+            </span>
+          </div>
+        </div>
+      ) : (
+        <label className="btn cursor-pointer">
+          {busy ? <Loader2 size={15} className="animate-spin" /> : <ImagePlus size={15} />} Add an image
+          <input type="file" accept="image/*" className="sr-only" disabled={busy} onChange={(e) => choose(e.target.files?.[0])} />
+        </label>
+      )}
+      {error && <p className="text-sm text-seed" role="alert">{error}</p>}
+
+      {chosen && (
+        <>
+          <label className="block">
+            <span className="label">Describe the image (for people using screen readers)</span>
+            <input className="input" maxLength={LIMITS.alt} value={draft.altText} onChange={(e) => set({ altText: e.target.value })} placeholder="Sunlight through autumn leaves" />
+          </label>
+          <div className="space-y-1.5">
+            <label className="flex min-h-[36px] items-start gap-2.5 text-sm">
+              <input type="radio" name="words-scroll" className="mt-1" checked={draft.wordsScroll} onChange={() => set({ wordsScroll: true })} />
+              <span>
+                On the scroll <span className="text-muted">— your words on YOU's parchment scroll, laid over the image, easy to read on any picture</span>
+              </span>
+            </label>
+            <label className="flex min-h-[36px] items-start gap-2.5 text-sm">
+              <input type="radio" name="words-scroll" className="mt-1" checked={!draft.wordsScroll} onChange={() => set({ wordsScroll: false })} />
+              <span>
+                Straight on the image <span className="text-muted">— no scroll, just your words with a soft glow; best on calm, open images</span>
+              </span>
+            </label>
+          </div>
+        </>
+      )}
+    </fieldset>
   );
 }

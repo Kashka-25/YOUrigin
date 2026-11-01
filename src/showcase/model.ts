@@ -73,6 +73,21 @@ export interface ShareDraft {
   suggestedAmount: string;
   credits: CreditDraft[];
   rights: boolean;
+  /**
+   * Written work only: an image to show behind the words on YOU (optional).
+   * 'keep' re-uses the image shared before; a display copy is a new one.
+   */
+  wordsImage: 'keep' | DisplayCopy | null;
+  /** Written work with an image: show the words on YOU's scroll (easier to read), or straight on the image. */
+  wordsScroll: boolean;
+}
+
+/** A display-sized copy of an image, ready to upload. */
+export interface DisplayCopy {
+  file: File;
+  width: number;
+  height: number;
+  dataUrl: string;
 }
 
 /**
@@ -101,6 +116,8 @@ export function newDraft(item: ContentItem): ShareDraft | null {
     suggestedAmount: '',
     credits: [],
     rights: false,
+    wordsImage: null,
+    wordsScroll: true,
   };
 }
 
@@ -180,13 +197,14 @@ export function toWorkRow(d: ShareDraft, sourceId: string, image: { path: string
     kind: d.kind,
     title: d.title.trim(),
     body: d.body.trim(),
-    alt_text: d.kind === 'image' ? d.altText.trim() : '',
+    alt_text: d.kind === 'image' || d.wordsImage ? d.altText.trim() : '',
     image_path: image?.path ?? null,
     image_width: image?.width || null,
     image_height: image?.height || null,
     placements: d.placements.filter((p) => placementsFor(d.kind).includes(p)),
     save_mode: d.saveMode,
     suggested_amount: d.saveMode === 'contribution' && d.suggestedAmount.trim() ? d.suggestedAmount.trim() : null,
+    words_scroll: d.kind === 'words' ? d.wordsScroll : true,
     rights_confirmed_at: new Date().toISOString(),
     submitted_at: new Date().toISOString(),
   };
