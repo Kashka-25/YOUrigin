@@ -22,6 +22,7 @@ import { providerFor, type ProposedSection } from '../ai';
 import { useSettings } from '../db/settings';
 import { displayTitle } from '../domain/text';
 import { ContentsList } from '../components/book/ContentsList';
+import { PublishingChecklist } from '../components/book/PublishingChecklist';
 import { ArtGrid } from '../components/art/ArtGrid';
 import { BookOpen, ChevronDown, FileText, Loader2, Maximize2 } from 'lucide-react';
 
@@ -116,6 +117,8 @@ export function BookBuilder() {
           <ContentsList bookId={book.id} compact />
         </div>
       </details>
+
+      {isBook && <PublishingChecklist book={book} />}
 
       {relevantOrphans.length > 0 && (
         <p className="mt-3 text-sm text-ink-2">
