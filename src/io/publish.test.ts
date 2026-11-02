@@ -32,7 +32,7 @@ function input(): PublishInput {
     piece('gone', 'poem', 'Deleted', 'x', { deletedAt: 5 }),
   ];
   return {
-    book: { id: 'b1', title: 'YOU — Water', subtitle: 'A journal', description: '', type: 'poetry', templateId: null, cover: 'clay', notes: '', archived: false, coverAssetId: 'a1', createdAt: 1, updatedAt: 1 },
+    book: { id: '6f1c2b3a-0d4e-4f5a-8b6c-7d8e9f0a1b2c', title: 'YOU — Water', subtitle: 'A journal', description: '', type: 'poetry', templateId: null, cover: 'clay', notes: '', archived: false, coverAssetId: 'a1', createdAt: 1, updatedAt: 1 },
     design: { ...defaultDesign('poetry'), author: 'K. Hart', copyright: '© 2026 K. Hart\nISBN 000', dedication: 'For the sea', acknowledgements: 'Thank you.', toc: true },
     sections: [
       { id: 's2', bookId: 'b1', title: 'Two', order: 1, notes: '', createdAt: 1, updatedAt: 1 },
@@ -101,7 +101,7 @@ describe('EPUB', () => {
       expect(opf).toContain(`href="${f.slice('OEBPS/'.length)}"`);
     expect(opf).toContain('properties="cover-image"');
     expect(opf).toContain('<dc:creator>K. Hart</dc:creator>');
-    expect(opf).toContain('urn:uuid:b1');
+    expect(opf).toContain('urn:uuid:6f1c2b3a-0d4e-4f5a-8b6c-7d8e9f0a1b2c');
   });
 
   it('has a chapter per section with the pieces, and a contents page', async () => {
@@ -116,5 +116,19 @@ describe('EPUB', () => {
     expect(nav).toContain('href="text/chapter1.xhtml">One<');
     expect(nav).toContain('href="text/acknowledgements.xhtml"');
     expect(await zip.file('OEBPS/content.opf')!.async('string')).toContain('<itemref idref="nav"/>');
+  });
+
+  it('only points to the contents page when the book has one', async () => {
+    const i = input();
+    const zip = await open(await bookToEpub({ ...i, design: { ...i.design, toc: false } }, fakeConvert));
+    expect(await zip.file('OEBPS/nav.xhtml')!.async('string')).not.toContain('href="nav.xhtml"');
+    expect(await zip.file('OEBPS/content.opf')!.async('string')).not.toContain('<itemref idref="nav"/>');
+  });
+
+  it('still has a contents entry when nothing is placed yet', async () => {
+    const i = input();
+    const zip = await open(await bookToEpub({ ...i, sections: [], entries: [], design: { ...i.design, acknowledgements: '' } }, fakeConvert));
+    expect(await zip.file('OEBPS/nav.xhtml')!.async('string')).toContain('<li><a href="text/titlepage.xhtml">');
+    expect(await zip.file('OEBPS/toc.ncx')!.async('string')).toContain('<navPoint');
   });
 });

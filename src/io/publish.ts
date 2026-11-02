@@ -364,7 +364,11 @@ export async function bookToEpub(input: PublishInput, convert: ImageConverter = 
   });
   if (d.acknowledgements.trim() && d.acknowledgementsAt === 'back') acks();
 
-  const tocDocs = docs.filter((x) => x.id.startsWith('chapter') || x.id === 'acknowledgements');
+  // A book with nothing placed yet still needs one contents entry: its title page.
+  const bodyDocs = docs.filter((x) => x.id.startsWith('chapter') || x.id === 'acknowledgements');
+  const tocDocs = bodyDocs.length ? bodyDocs : docs.filter((x) => x.id === 'titlepage');
+  // Show the contents page in the reading order only when the book asks for one.
+  const tocInSpine = d.toc && groups.length > 1;
   const nav = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="${xml(lang())}" lang="${xml(lang())}">
@@ -374,17 +378,16 @@ export async function bookToEpub(input: PublishInput, convert: ImageConverter = 
 <nav epub:type="landmarks" hidden=""><ol>${docs
     .filter((x) => x.landmark)
     .map((x) => `<li><a epub:type="${x.landmark}" href="text/${x.file}">${xml(x.title)}</a></li>`)
-    .join('')}<li><a epub:type="toc" href="nav.xhtml">Contents</a></li></ol></nav>
+    .join('')}${tocInSpine ? '<li><a epub:type="toc" href="nav.xhtml">Contents</a></li>' : ''}</ol></nav>
 </body>
 </html>`;
-  const uid = `urn:uuid:${book.id}`;
+  // Books have UUIDs; anything else still gets a stable identifier, just not a urn:uuid one.
+  const uid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(book.id) ? `urn:uuid:${book.id}` : `yourigin:book:${book.id}`;
   const ncx = `<?xml version="1.0" encoding="UTF-8"?>
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${uid}"/></head><docTitle><text>${xml(book.title)}</text></docTitle><navMap>${tocDocs
     .map((x, i) => `<navPoint id="np${i + 1}" playOrder="${i + 1}"><navLabel><text>${xml(x.title)}</text></navLabel><content src="text/${x.file}"/></navPoint>`)
     .join('')}</navMap></ncx>`;
-  // Show the contents page in the reading order only when the book asks for one.
-  const tocInSpine = d.toc && groups.length > 1;
-  const firstBody = docs.findIndex((x) => x.id.startsWith('chapter') || x.id === 'acknowledgements');
+  const firstBody = bodyDocs.length ? docs.indexOf(bodyDocs[0]) : -1;
   const spine = docs.map((x) => `<itemref idref="${x.id}"${x.id === 'cover' ? ' linear="no"' : ''}/>`);
   if (tocInSpine) spine.splice(firstBody < 0 ? spine.length : firstBody, 0, '<itemref idref="nav"/>');
   const imgs = [...images.entries()];
