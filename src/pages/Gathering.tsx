@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Camera, FolderPlus, ImagePlus, Upload, X } from 'lucide-react';
+import { Camera, FolderPlus, ImagePlus, Mic, Square, Upload, X } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { setSetting, useSettings } from '../db/settings';
 import { parseCapture, splitPieces, type SplitMode } from '../domain/text';
@@ -17,6 +17,9 @@ import { db, requestPersistentStorage } from '../db/db';
 import { useToast } from '../components/Toast';
 import { PendingSuggestions, suggestFor } from '../components/Suggestions';
 import { ImportDialog } from '../components/ImportDialog';
+import { takeSharedInbox } from '../io/shareInbox';
+import { dictationSupported, useDictation } from '../hooks/useDictation';
+import { useOnline } from '../hooks/useOnline';
 
 export function Gathering() {
   const lib = useLibrary();
@@ -62,6 +65,28 @@ export function Gathering() {
     draftTimer.current = setTimeout(() => void setSetting('captureDraft', v), 400);
   };
 
+  // Spoken words go in where the cursor is, spaced from the words around them.
+  const valueRef = useRef(value);
+  valueRef.current = value;
+  const insertSpoken = (phrase: string) => {
+    if (!phrase) return;
+    const v = valueRef.current;
+    const el = ref.current;
+    const at = el && document.activeElement === el ? el.selectionStart : v.length;
+    const before = v.slice(0, at);
+    const after = v.slice(at);
+    const lead = before && !/\s$/.test(before) ? ' ' : '';
+    const trail = after && !/^\s/.test(after) ? ' ' : '';
+    const next = before + lead + phrase + trail + after;
+    valueRef.current = next;
+    change(next);
+    const caret = (before + lead + phrase).length;
+    requestAnimationFrame(() => el?.setSelectionRange(caret, caret));
+  };
+  const online = useOnline();
+  const dictation = useDictation(insertSpoken, (m) => toast(m));
+  const canSpeak = dictationSupported && online;
+
   useEffect(() => {
     if (params.get('focus')) {
       ref.current?.focus();
@@ -69,6 +94,45 @@ export function Gathering() {
       setParams(params, { replace: true });
     }
   }, [params, setParams]);
+
+  // From the app icon's "Speak a piece" shortcut. Some phones want a tap first; the button is there.
+  const startDictation = dictation.start;
+  useEffect(() => {
+    if (!params.get('speak')) return;
+    params.delete('speak');
+    setParams(params, { replace: true });
+    if (canSpeak) startDictation();
+  }, [params, setParams, canSpeak, startDictation]);
+
+  // Shared from another app (the phone's Share menu): it waits here to be tagged and captured.
+  // Wait for settings, so the share joins an unsent draft instead of replacing it.
+  const shared = settings ? params.get('shared') : null;
+  const sharing = useRef(false);
+  useEffect(() => {
+    if (!shared || sharing.current) return;
+    sharing.current = true;
+    params.delete('shared');
+    setParams(params, { replace: true });
+    if (shared === 'failed') {
+      sharing.current = false;
+      toast('That share didn’t come through — try sharing it again');
+      return;
+    }
+    void takeSharedInbox().then((inbox) => {
+      sharing.current = false;
+      if (!inbox || (!inbox.text && !inbox.files.length)) return;
+      if (inbox.text) {
+        const v = valueRef.current.trimEnd();
+        const next = v ? `${v}\n\n${inbox.text}` : inbox.text;
+        valueRef.current = next;
+        change(next);
+      }
+      addArt(inbox.files);
+      toast('Shared to Gathering — add tags if you like, then Capture');
+    });
+    // Runs once per share; the helpers it calls read the latest state through refs/setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shared]);
 
   useEffect(() => {
     ref.current?.focus();
@@ -181,10 +245,9 @@ export function Gathering() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 pt-8 md:px-8 md:pt-14">
-      <h1 className="font-serif text-3xl leading-tight font-normal text-ink md:text-[2.6rem]">What’s moving through your mind?</h1>
+      <h1 className="sr-only">Gathering</h1>
 
       <form
-        className="mt-6"
         onSubmit={(e) => {
           e.preventDefault();
           void capture();
@@ -249,6 +312,11 @@ export function Gathering() {
             className="writing block w-full resize-none bg-transparent text-[1.2rem] leading-[1.75] text-ink placeholder:text-muted/70 focus:outline-none focus-visible:outline-none md:text-[1.3rem]"
             spellCheck
           />
+          {dictation.listening && (
+            <p className="mt-1 text-sm text-muted italic" aria-live="polite">
+              {dictation.interim || 'Listening…'}
+            </p>
+          )}
           {art.length > 0 && (
             <ul className="mt-3 flex flex-wrap gap-2" aria-label="Art to add">
               {art.map((a) => (
@@ -267,7 +335,18 @@ export function Gathering() {
             </ul>
           )}
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button type="button" className="btn-ghost -ml-2 text-sm" onClick={() => pickRef.current?.click()}>
+            {canSpeak && (
+              <button
+                type="button"
+                className={`btn-ghost -ml-2 text-sm ${dictation.listening ? 'text-accent' : ''}`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => (dictation.listening ? dictation.stop() : dictation.start())}
+                aria-pressed={dictation.listening}
+              >
+                {dictation.listening ? <Square size={16} /> : <Mic size={16} />} {dictation.listening ? 'Stop' : 'Speak'}
+              </button>
+            )}
+            <button type="button" className={`btn-ghost text-sm ${canSpeak ? '' : '-ml-2'}`} onClick={() => pickRef.current?.click()}>
               <ImagePlus size={16} /> Add art
             </button>
             {touch && (

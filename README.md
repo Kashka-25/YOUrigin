@@ -39,6 +39,12 @@ Then:
 
 Once installed, the app opens and works with no connection.
 
+On the phone, the installed app also:
+
+- **Appears in the Share menu.** Share text, a link or images from any app and they wait in Gathering to be tagged and captured.
+- **Has shortcuts on its icon.** Long-press it for Capture, Speak a piece, Library and Projects.
+- **Types what you say.** *Speak* in Gathering uses the phone's speech typing, which needs a connection, so it hides when you're offline.
+
 **Sync between devices:** *Settings → Sync between devices*. Sign in, then choose a sync passphrase on your first device and enter the same one on each other device. See [Sync](#sync) below. Without sync, you can still move work with *Download full backup* on one device and *Merge a backup* on the other.
 
 ## What's in V1

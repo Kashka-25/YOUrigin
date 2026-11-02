@@ -42,8 +42,23 @@ export default defineConfig({
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
           { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
+        // YOUrigin appears in the phone's Share menu; public/share-target.js receives it.
+        share_target: {
+          action: './share-target',
+          method: 'POST',
+          enctype: 'multipart/form-data',
+          params: { title: 'title', text: 'text', url: 'url', files: [{ name: 'files', accept: ['image/*'] }] },
+        },
+        // Long-press the app icon.
+        shortcuts: [
+          { name: 'Capture', short_name: 'Capture', url: './#/?focus=1', icons: [{ src: 'favicon-96.png', sizes: '96x96', type: 'image/png' }] },
+          { name: 'Speak a piece', short_name: 'Speak', url: './#/?speak=1', icons: [{ src: 'favicon-96.png', sizes: '96x96', type: 'image/png' }] },
+          { name: 'Library', short_name: 'Library', url: './#/library', icons: [{ src: 'favicon-96.png', sizes: '96x96', type: 'image/png' }] },
+          { name: 'Projects', short_name: 'Projects', url: './#/projects', icons: [{ src: 'favicon-96.png', sizes: '96x96', type: 'image/png' }] },
+        ],
       },
       workbox: {
+        importScripts: ['share-target.js'],
         globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       },
