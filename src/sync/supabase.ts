@@ -42,6 +42,18 @@ export async function fetchKeyInfo(client: SupabaseClient): Promise<KeyInfo | nu
   return data as KeyInfo | null;
 }
 
+/**
+ * Forgotten passphrase: removes this account's encrypted copy and its
+ * passphrase check from the server, so a new passphrase can be chosen.
+ * Row-level security limits both deletes to the signed-in account.
+ */
+export async function deleteRemoteSync(client: SupabaseClient, userId: string): Promise<void> {
+  const records = await client.from('yourigin_records').delete().eq('user_id', userId);
+  if (records.error) throw new Error(records.error.message);
+  const key = await client.from('yourigin_sync_keys').delete().eq('user_id', userId);
+  if (key.error) throw new Error(key.error.message);
+}
+
 export async function saveKeyInfo(client: SupabaseClient, info: KeyInfo): Promise<void> {
   const { error } = await client.from('yourigin_sync_keys').insert(info);
   if (error) {

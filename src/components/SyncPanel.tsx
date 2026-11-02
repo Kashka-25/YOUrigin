@@ -5,6 +5,7 @@ import {
   createPassphrase,
   resyncEverything,
   signIn,
+  startOver,
   stopSync,
   syncNow,
   unlock,
@@ -141,8 +142,9 @@ export function SyncPanel() {
         </p>
         <p className="text-sm leading-relaxed text-ink-2">
           This encrypts everything before it leaves your device. You'll enter it once on each device you sync.{' '}
-          <strong className="text-ink">It can't be reset or recovered</strong> — if it's forgotten, the cloud copy can't be read (your devices keep their
-          own copies). Use at least 10 characters; a short sentence works well.
+          <strong className="text-ink">It can't be recovered</strong> — keep it in your password manager. If it's ever forgotten, you can start sync
+          over from a device, which replaces the cloud copy (your devices keep their own copies). Use at least 10 characters; a short sentence works
+          well.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
@@ -207,6 +209,39 @@ export function SyncPanel() {
           </button>
           <button type="button" className="btn" onClick={() => void cancelSetup()}>
             Cancel
+          </button>
+        </div>
+        <div className="border-t border-line pt-3">
+          <button
+            type="button"
+            className="text-sm text-ink-2 underline underline-offset-2 hover:text-ink disabled:opacity-50"
+            disabled={busy}
+            onClick={async () => {
+              const ok = await confirm({
+                title: 'Start sync over with a new passphrase?',
+                message: (
+                  <div className="space-y-2">
+                    <p>Your passphrase can't be recovered, so this clears the encrypted copy of your library from the sync server and lets you choose a new passphrase.</p>
+                    <p>
+                      <strong className="text-ink">Everything on this device stays</strong> and is uploaded again with the new passphrase. Anything that only
+                      exists on another device or in the old cloud copy is lost, so do this on the device with your fullest library, and download a backup
+                      first (Settings → Your writing on this device → Download full backup).
+                    </p>
+                    <p>Your other devices will need to sign in to sync again with the new passphrase.</p>
+                  </div>
+                ),
+                confirmLabel: 'Clear and start over',
+                danger: true,
+              });
+              if (!ok) return;
+              void run(async () => {
+                await startOver();
+                setPass1('');
+                toast('Old sync copy cleared. Choose a new passphrase.');
+              });
+            }}
+          >
+            Forgot your passphrase? Start sync over
           </button>
         </div>
       </form>

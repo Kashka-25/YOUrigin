@@ -3,7 +3,7 @@ import { db } from '../db/db';
 import { createKeyInfo, unlockWithPassphrase } from './crypto';
 import { SyncEngine } from './engine';
 import { appOutbox, clearState, getState, isSyncEnabled, setState, setSyncEnabled } from './runtime';
-import { fetchKeyInfo, getClient, saveKeyInfo, SupabaseTransport } from './supabase';
+import { deleteRemoteSync, fetchKeyInfo, getClient, saveKeyInfo, SupabaseTransport } from './supabase';
 
 export type SyncPhase =
   | 'off' // not set up on this device
@@ -160,6 +160,22 @@ export async function signIn(email: string, password: string): Promise<void> {
     setStatus({ phase: 'off', error: e instanceof Error ? e.message : String(e) });
     throw e;
   }
+}
+
+/**
+ * For a forgotten passphrase: clears this account's encrypted copy on the
+ * server and asks for a new passphrase. This device's library is untouched
+ * and is uploaded again, encrypted with the new one.
+ */
+export async function startOver(): Promise<void> {
+  const client = await getClient();
+  const { data } = await client.auth.getSession();
+  const userId = data.session?.user.id;
+  if (!userId) throw new Error('Your sign-in has expired. Sign in again, then start over.');
+  await deleteRemoteSync(client, userId);
+  await setState('cursor', 0);
+  await setState('seeded', false);
+  setStatus({ phase: 'new-passphrase', error: undefined });
 }
 
 export async function createPassphrase(passphrase: string): Promise<void> {
