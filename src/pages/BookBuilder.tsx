@@ -14,14 +14,16 @@ import { EmptyState, Spinner } from '../components/ui';
 import { Modal, useConfirm } from '../components/Modal';
 import { useToast } from '../components/Toast';
 import { addSection, deleteBook, moveEntry, templateFromBook, updateBook } from '../db/books';
-import { bookToMarkdown, download, slug, today } from '../io/export';
+import { bookToMarkdown, download, downloadBlob, slug, today } from '../io/export';
+import { resolveDesign } from '../print/design';
+import { db } from '../db/db';
 import { coverColour } from '../components/BookCover';
 import { providerFor, type ProposedSection } from '../ai';
 import { useSettings } from '../db/settings';
 import { displayTitle } from '../domain/text';
 import { ContentsList } from '../components/book/ContentsList';
 import { ArtGrid } from '../components/art/ArtGrid';
-import { ChevronDown, Maximize2 } from 'lucide-react';
+import { BookOpen, ChevronDown, FileText, Loader2, Maximize2 } from 'lucide-react';
 
 export function BookBuilder() {
   const { id } = useParams();
@@ -158,11 +160,27 @@ export function BookBuilder() {
 
 function ExportMenu({ book }: { book: Book }) {
   const lib = useLibrary();
+  const toast = useToast();
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState<'docx' | 'epub' | null>(null);
   if (!lib) return null;
   const sections = lib.sections.filter((s) => s.bookId === book.id);
   const entries = lib.entries.filter((e) => e.bookId === book.id);
   const name = `${slug(book.title)}-${today()}`;
+  const publish = async (format: 'docx' | 'epub') => {
+    setBusy(format);
+    try {
+      const { bookToDocx, bookToEpub } = await import('../io/publish');
+      const assets = new Map((await db.assets.toArray()).map((a) => [a.id, a]));
+      const input = { book, design: resolveDesign(book), sections, entries, contentById: lib.contentById, assets };
+      downloadBlob(`${name}.${format}`, await (format === 'docx' ? bookToDocx(input) : bookToEpub(input)));
+    } catch (e) {
+      console.error(e);
+      toast(e instanceof Error ? `Couldn’t export: ${e.message}` : 'Couldn’t export that book');
+    } finally {
+      setBusy(null);
+    }
+  };
   return (
     <>
       <button type="button" className="btn" onClick={() => setOpen(true)}>
@@ -170,6 +188,19 @@ function ExportMenu({ book }: { book: Book }) {
       </button>
       <Modal open={open} onClose={() => setOpen(false)} title="Export">
         <div className="space-y-3">
+          {projectKind(book) === 'book' && (
+            <>
+              <p className="eyebrow">For publishing</p>
+              <button type="button" className="btn w-full justify-start" disabled={!!busy} onClick={() => void publish('docx')}>
+                {busy === 'docx' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />} Word manuscript (.docx) — for editors and publishers
+              </button>
+              <button type="button" className="btn w-full justify-start" disabled={!!busy} onClick={() => void publish('epub')}>
+                {busy === 'epub' ? <Loader2 size={16} className="animate-spin" /> : <BookOpen size={16} />} Ebook (.epub) — for Kindle and other ebook stores
+              </button>
+              <p className="text-xs text-muted">Both use the front pages, author and order from Design & print. Writing lines stay in the printed book.</p>
+              <p className="eyebrow pt-2">Other copies</p>
+            </>
+          )}
           <button
             type="button"
             className="btn w-full justify-start"

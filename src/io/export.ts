@@ -14,7 +14,10 @@ export function slug(s: string): string {
 }
 
 export function download(fileName: string, content: string, mime = 'text/plain'): void {
-  const blob = new Blob([content], { type: `${mime};charset=utf-8` });
+  downloadBlob(fileName, new Blob([content], { type: `${mime};charset=utf-8` }));
+}
+
+export function downloadBlob(fileName: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

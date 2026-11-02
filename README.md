@@ -56,7 +56,7 @@ Once installed, the app opens and works with no connection.
 - **Book Map:** a calm relationship graph of tags, books and collections.
 - **Collections:** lightweight groupings that can become books.
 - **Import:** many `.txt`, `.md` and `.docx` files at once. Optional splitting of one file into many pieces. The original text is preserved exactly.
-- **Export:** book → Markdown / JSON / print-PDF; library → Markdown; full JSON backup with merge or replace.
+- **Export:** book → Word manuscript (.docx) / ebook (.epub) / Markdown / JSON / print-PDF; library → Markdown; full JSON backup with merge or replace. Word and EPUB follow the book's order and its front and back pages from Design & print; pictures become JPEG so every reader and store accepts them.
 - **Safety:** soft delete to Trash, confirmation before anything destructive, Undo toasts, revision history, and a request for persistent storage so the browser doesn't evict data.
 - **Shortcuts:** Ctrl/⌘K or `/` for search; `N` or Alt+N for a new brain dump; Ctrl+Enter to capture.
 
