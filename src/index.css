@@ -177,6 +177,13 @@
   margin-left: calc(var(--pagedjs-width, 6in) + 18px);
 }
 
+/* Writing workspace: the open chapter's pages in one column. */
+.page-strip .pagedjs_page {
+  background: #fff;
+  margin: 0 auto 20px;
+  box-shadow: 0 2px 14px rgb(0 0 0 / 0.25);
+}
+
 /* Manuscript / print */
 /* Focus mode (editing): hide the app's bars. */
 html[data-focus] .chrome {

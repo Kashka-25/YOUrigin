@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { BookImage, BookOpenText, Download, Settings2, Sparkles, ArrowLeft, LayoutTemplate } from 'lucide-react';
+import { BookImage, BookOpenText, Download, Settings2, Sparkles, ArrowLeft, LayoutTemplate, PenLine } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { computeBookProgress } from '../domain/progress';
 import { BOOK_TYPE_LABEL, COVER_COLOURS, PROJECT_KIND_META, projectKind } from '../domain/constants';
@@ -72,6 +72,9 @@ export function BookBuilder() {
           {book.description && <p className="mt-2 max-w-2xl text-sm text-ink-2">{book.description}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link to={`/projects/${book.id}/write`} className="btn hidden lg:inline-flex" title="Outline, writing and printed pages side by side">
+            <PenLine size={16} /> Workspace
+          </Link>
           {isBook && (
             <>
               <Link to={`/projects/${book.id}/print`} className="btn-primary">

@@ -62,9 +62,10 @@ export function bookHtml({ book, design: d, sections, entries, contentById, asse
       ${book.subtitle ? `<p class="yb-subtitle">${esc(book.subtitle)}</p>` : ''}
       ${d.author ? `<p class="yb-author">${esc(d.author)}</p>` : ''}
     </section>`);
-  } else {
-    parts.push(`<span class="yb-book-title yb-hidden">${esc(book.title)}</span>`);
   }
+  // Without a title page the running heads still need the book's title. It rides inside
+  // the first chapter: on a page of its own it would leave a blank page before it.
+  let hiddenTitle = d.titlePage ? '' : `<span class="yb-book-title yb-hidden">${esc(book.title)}</span>`;
   if (d.copyright.trim()) parts.push(`<section class="yb-front yb-copyright"><div>${esc(d.copyright)}</div></section>`);
   if (d.dedication.trim()) parts.push(`<section class="yb-front yb-dedication"><div>${esc(d.dedication)}</div></section>`);
   const acks = d.acknowledgements.trim()
@@ -115,18 +116,18 @@ export function bookHtml({ book, design: d, sections, entries, contentById, asse
       if (c.type === 'image') {
         const a = c.assetId ? assets.get(c.assetId) : undefined;
         const layout = c.imageLayout ?? 'full-page';
-        return `${layout === 'inline' ? sep : ''}<figure class="yb-fig yb-fig-${layout}">${img(a, 'yb-fig-img', c.title)}${
+        return `${layout === 'inline' ? sep : ''}<figure class="yb-fig yb-fig-${layout}" data-piece="${c.id}">${img(a, 'yb-fig-img', c.title)}${
           c.body.trim() ? `<figcaption>${esc(c.body)}</figcaption>` : ''
         }</figure>`;
       }
       const sp = resolveSpace(c, placed[i].entry, d);
-      return `${sep}<article class="yb-piece yb-type-${c.type}${sp.kind !== 'none' ? ' yb-has-space' : ''}">
+      return `${sep}<article class="yb-piece yb-type-${c.type}${sp.kind !== 'none' ? ' yb-has-space' : ''}" data-piece="${c.id}">
         ${showTitle ? `<h3 class="yb-piece-title">${esc(showTitle)}</h3>` : ''}
         ${c.body.trim() ? `<div class="yb-body">${esc(c.body)}</div>` : ''}
         ${spaceHtml(sp)}
       </article>`;
     });
-    parts.push(`<section class="yb-section" id="s-${section.id}">
+    parts.push(`<section class="yb-section" id="s-${section.id}">${hiddenTitle}
       <header class="yb-opener yb-opener-${d.sectionStyle}">
         ${opener ? img(opener, 'yb-opener-img', section.title) : ''}
         ${d.sectionStyle === 'ornamental' ? `<p class="yb-orn yb-orn-top">${esc(d.ornament || '✦')}</p>` : ''}
@@ -134,8 +135,9 @@ export function bookHtml({ book, design: d, sections, entries, contentById, asse
       </header>
       ${pieces.join('\n')}
     </section>`);
+    hiddenTitle = '';
   }
-  if (!groups.length) parts.push('<section class="yb-section"><p class="yb-empty">This book has no placed pieces yet.</p></section>');
+  if (!groups.length) parts.push(`<section class="yb-section">${hiddenTitle}<p class="yb-empty">This book has no placed pieces yet.</p></section>`);
   if (acks && d.acknowledgementsAt === 'back') parts.push(acks);
   return parts.join('\n');
 }
