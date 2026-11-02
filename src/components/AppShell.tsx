@@ -24,6 +24,7 @@ import { isOrphan } from '../domain/query';
 import { Modal } from './Modal';
 import { useSettings } from '../db/settings';
 import { SyncBadge } from './SyncBadge';
+import { useOnline } from '../hooks/useOnline';
 
 type NavDef = { to: string; label: string; icon: typeof Feather; end?: boolean };
 
@@ -45,21 +46,6 @@ const SECONDARY = [
   { to: '/settings', label: 'Settings & backup', icon: Settings },
   { to: '/trash', label: 'Trash', icon: Trash2 },
 ];
-
-function useOnline() {
-  const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
-  useEffect(() => {
-    const up = () => setOnline(true);
-    const down = () => setOnline(false);
-    window.addEventListener('online', up);
-    window.addEventListener('offline', down);
-    return () => {
-      window.removeEventListener('online', up);
-      window.removeEventListener('offline', down);
-    };
-  }, []);
-  return online;
-}
 
 function isTyping(el: EventTarget | null) {
   const t = el as HTMLElement | null;
