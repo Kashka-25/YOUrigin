@@ -27,7 +27,19 @@ import { EmptyState, Spinner } from './components/ui';
 // The print designer (and its page-layout engine) only loads when opened.
 const PrintLayout = lazy(() => import('./pages/PrintLayout').then((m) => ({ default: m.PrintLayout })));
 
+const Workspace = lazy(() => import('./pages/Workspace').then((m) => ({ default: m.Workspace })));
+
 const CoverDesigner = lazy(() => import('./pages/CoverDesigner').then((m) => ({ default: m.CoverDesigner })));
+
+/** One workspace per project, so the open piece and its pages never carry over. */
+function WorkspaceRoute() {
+  const { id } = useParams();
+  return (
+    <Suspense fallback={<Spinner />}>
+      <Workspace key={id} />
+    </Suspense>
+  );
+}
 
 function CoverRoute() {
   const { id } = useParams();
@@ -105,6 +117,7 @@ export default function App() {
                 element={<PrintRoute />}
               />
               <Route path="/projects/:id/cover" element={<CoverRoute />} />
+              <Route path="/projects/:id/write" element={<WorkspaceRoute />} />
               <Route path="/books/*" element={<BooksRedirect />} />
               <Route
                 path="*"

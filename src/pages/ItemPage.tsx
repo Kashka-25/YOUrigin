@@ -8,7 +8,6 @@ import { displayTitle } from '../domain/text';
 import { db } from '../db/db';
 import { useLibrary } from '../hooks/useLibrary';
 import { useAutosave } from '../hooks/useAutosave';
-import { useAutoGrow } from '../hooks/useAutoGrow';
 import { useFocusMode } from '../hooks/useFocusMode';
 import {
   addTagsToItems,
@@ -30,6 +29,7 @@ import { RelationsPanel } from '../components/RelationsPanel';
 import { HistoryPanel } from '../components/HistoryPanel';
 import { wordCount } from '../domain/text';
 import { AssetImage } from '../components/AssetImage';
+import { AutoTextarea } from '../components/AutoTextarea';
 import { ArtPanel } from '../components/art/ArtPanel';
 import { ArtViewer } from '../components/art/ArtViewer';
 import { artCaption } from '../components/art/art';
@@ -444,31 +444,4 @@ function Editor({ item }: { item: ContentItem }) {
       {assign && <AssignDialog open mode={assign} contentIds={[item.id]} onClose={() => setAssign(null)} />}
     </div>
   );
-}
-
-function AutoTextarea({
-  value,
-  onChange,
-  className,
-  id,
-  onBlur,
-  inputRef,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  className: string;
-  id: string;
-  onBlur?: () => void;
-  inputRef?: (el: HTMLTextAreaElement | null) => void;
-}) {
-  const [el, setEl] = useState<HTMLTextAreaElement | null>(null);
-  useAutoGrow(el, value, 300);
-  const ref = useCallback(
-    (x: HTMLTextAreaElement | null) => {
-      setEl(x);
-      inputRef?.(x);
-    },
-    [inputRef],
-  );
-  return <textarea id={id} ref={ref} value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} className={className} spellCheck />;
 }
