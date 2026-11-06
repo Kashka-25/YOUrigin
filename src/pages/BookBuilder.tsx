@@ -330,6 +330,8 @@ function BookSettings({ book, onClose }: { book: Book; onClose: () => void }) {
   });
   const lib = useLibrary();
   const shelves = lib ? shelfNames(lib.books) : [];
+  const homeProject = lib?.projects.find((project) => project.id === book.id)
+    ?? lib?.projects.find((project) => (book.projectIds ?? []).includes(project.id));
   const isBook = form.kind === 'book';
   const [tplName, setTplName] = useState('');
   const set = (p: Partial<typeof form>) => setForm((f) => ({ ...f, ...p }));
