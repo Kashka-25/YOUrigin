@@ -64,7 +64,7 @@ export function ProjectAssignDialog({
           </fieldset>
           <div className="flex justify-end gap-2">
             <button type="button" className="btn" onClick={onClose}>Cancel</button>
-            <button type="button" className="btn-primary" onClick={() => void submit()}><Link2 size={15} /> Add to Project</button>
+            <button type="button" className="btn-primary" onClick={() => void submit()} disabled={contentIds.every((id) => (lib?.contentById.get(id)?.projectIds ?? []).includes(targetId))}><Link2 size={15} /> Add to Project</button>
           </div>
         </div>
       )}
