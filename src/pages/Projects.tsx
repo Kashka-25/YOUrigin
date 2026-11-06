@@ -1,13 +1,16 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowUpRight, BookOpen, FilePlus2, FolderPlus, Link2, Plus, Search, Trash2, Unlink } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, BookOpen, FilePlus2, FolderPlus, Link2, ListMusic, Music2, Plus, Search, Trash2, Unlink, Upload } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { DEFAULT_PROJECT_COLOUR, PROJECT_CATEGORIES, PROJECT_STATUS_META } from '../domain/constants';
-import type { ProjectColour, ProjectStatus } from '../domain/types';
+import type { ContentType, ProjectColour, ProjectStatus } from '../domain/types';
 import { ProjectColourPicker, projectColourStyle } from '../components/ProjectColourPicker';
 import { createProject, updateProject, deleteProject, addItemsToProject, removeItemFromProject, addWorksToProject, removeWorkFromProject } from '../db/projectRecords';
 import { createContent } from '../db/content';
-import { createBook } from '../db/books';
+import { addToBook, createBook } from '../db/books';
+import { db } from '../db/db';
+import { ImportDialog } from '../components/ImportDialog';
+import { displayTitle, excerpt } from '../domain/text';
 import { Modal, useConfirm } from '../components/Modal';
 import { EmptyState, Spinner } from '../components/ui';
 
@@ -173,6 +176,7 @@ export function Projects() {
           </div>
         </form>
       </Modal>
+      <ImportDialog open={importingNotes} onClose={() => setImportingNotes(false)} projectId={id} projectTitle={project.title} initialType="song" />
     </div>
   );
 }
@@ -185,14 +189,21 @@ export function ProjectHome() {
   const [editing, setEditing] = useState(false);
   const [addingNote, setAddingNote] = useState(false);
   const [choosingNotes, setChoosingNotes] = useState(false);
+  const [importingNotes, setImportingNotes] = useState(false);
   const [creatingWork, setCreatingWork] = useState(false);
   const [choosingWorks, setChoosingWorks] = useState(false);
-  const [noteQuery, setNoteQuery] = useState('');
   const [workQuery, setWorkQuery] = useState('');
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [editColour, setEditColour] = useState<ProjectColour>(DEFAULT_PROJECT_COLOUR);
+  const [newNoteType, setNewNoteType] = useState<ContentType>('song');
+  const [noteQuery, setNoteQuery] = useState('');
+  const [noteTypeFilter, setNoteTypeFilter] = useState<ContentType | 'all'>('all');
+  const [creatingSetList, setCreatingSetList] = useState(false);
+  const [setListTitle, setSetListTitle] = useState('');
+  const [setListDescription, setSetListDescription] = useState('');
+  const [selectedSetSongIds, setSelectedSetSongIds] = useState<string[]>([]);
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [newNoteBody, setNewNoteBody] = useState('');
   const [newWorkTitle, setNewWorkTitle] = useState('');
@@ -203,13 +214,22 @@ export function ProjectHome() {
   const currentProject = project;
 
   const notes = lib.items
-    .filter((item) => !item.deletedAt && (item.projectIds ?? []).includes(id))
+    .filter((item) => !item.deletedAt && !item.archived && (item.projectIds ?? []).includes(id))
     .sort((a, b) => b.updatedAt - a.updatedAt);
+  const visibleNotes = notes
+    .filter((item) => (noteTypeFilter === 'all' || item.type === noteTypeFilter))
+    .filter((item) => {
+      const haystack = (noteTitle(item) + ' ' + item.body + ' ' + TYPE_LABEL[item.type]).toLowerCase();
+      return haystack.includes(noteQuery.trim().toLowerCase());
+    });
+  const songNotes = notes.filter((item) => item.type === 'song');
   const works = lib.books
     .filter((work) => (work.projectIds ?? []).includes(id))
     .sort((a, b) => b.updatedAt - a.updatedAt);
+  const setLists = works.filter((work) => projectKind(work) === 'setlist');
+  const otherWorks = works.filter((work) => projectKind(work) !== 'setlist');
   const availableNotes = lib.items
-    .filter((item) => !item.deletedAt && !(item.projectIds ?? []).includes(id))
+    .filter((item) => !item.deletedAt && !item.archived && !(item.projectIds ?? []).includes(id))
     .filter((item) => (noteTitle(item) + ' ' + item.body).toLowerCase().includes(noteQuery.toLowerCase()))
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(0, 40);
@@ -236,10 +256,11 @@ export function ProjectHome() {
   async function saveNewNote(e: React.FormEvent) {
     e.preventDefault();
     if (!newNoteBody.trim()) return;
-    const noteId = await createContent({ title: newNoteTitle, body: newNoteBody, type: 'note', status: 'seed' });
+    const noteId = await createContent({ title: newNoteTitle, body: newNoteBody, type: newNoteType, status: 'seed' });
     await addItemsToProject(id, [noteId]);
     setNewNoteTitle('');
     setNewNoteBody('');
+    setNewNoteType('song');
     setAddingNote(false);
     nav('/item/' + noteId);
   }
@@ -251,6 +272,38 @@ export function ProjectHome() {
     setNewWorkTitle('');
     setCreatingWork(false);
     nav('/projects/' + workId);
+  }
+
+  function openSetList() {
+    setSetListTitle(currentProject.title + ' — Set list');
+    setSetListDescription('');
+    setSelectedSetSongIds(songNotes.map((item) => item.id));
+    setCreatingSetList(true);
+  }
+
+  function toggleSetSong(songId: string) {
+    setSelectedSetSongIds((current) => current.includes(songId)
+      ? current.filter((id) => id !== songId)
+      : [...current, songId]);
+  }
+
+  async function saveNewSetList(e: React.FormEvent) {
+    e.preventDefault();
+    if (!setListTitle.trim()) return;
+    const setListId = await createBook({
+      title: setListTitle,
+      description: setListDescription,
+      templateId: null,
+      kind: 'setlist',
+      shelf: 'Set lists',
+      projectIds: [id],
+    });
+    const sections = await db.sections.where('bookId').equals(setListId).sortBy('order');
+    if (sections[0] && selectedSetSongIds.length) {
+      await addToBook(setListId, selectedSetSongIds, sections[0].id);
+    }
+    setCreatingSetList(false);
+    nav('/projects/' + setListId);
   }
 
   async function removeThisProject() {
@@ -284,52 +337,121 @@ export function ProjectHome() {
         {project.description && <p className="mt-3 max-w-2xl font-serif text-lg leading-relaxed text-ink-2">{project.description}</p>}
       </header>
 
-      <section className="mt-9">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div><p className="eyebrow">Thinking and gathering</p><h2 className="section-heading">Notes <span className="text-muted">· {notes.length}</span></h2></div>
+      <section className="mt-9" aria-labelledby="project-song-library">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="eyebrow">Your project library</p>
+            <h2 id="project-song-library" className="section-heading">Songs & ideas <span className="text-muted">· {notes.length}</span></h2>
+            <p className="mt-1 max-w-xl text-sm text-ink-2">A clear home for lyrics, melodies, fragments and musical thoughts. Only pieces linked to this Project appear here.</p>
+          </div>
           <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn" onClick={() => setChoosingNotes(true)}><Link2 size={14} /> Add existing</button>
-            <button type="button" className="btn-primary" onClick={() => setAddingNote(true)}><Plus size={15} /> New note</button>
+            <button type="button" className="btn" onClick={() => setImportingNotes(true)}><Upload size={15} /> Upload from phone</button>
+            <button type="button" className="btn-primary" onClick={() => setAddingNote(true)}><Plus size={15} /> Write new</button>
           </div>
         </div>
-        {notes.length ? (
+
+        {notes.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            <label className="relative min-w-48 flex-1">
+              <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+              <input className="input w-full pl-9" value={noteQuery} onChange={(e) => setNoteQuery(e.target.value)} placeholder="Find a song or idea…" aria-label="Find a song or idea" />
+            </label>
+            <select className="input w-auto min-w-32" value={noteTypeFilter} onChange={(e) => setNoteTypeFilter(e.target.value as ContentType | 'all')} aria-label="Filter project pieces by type">
+              <option value="all">All pieces</option>
+              <option value="song">Songs</option>
+              <option value="idea">Ideas</option>
+              <option value="poem">Poems</option>
+              <option value="fragment">Fragments</option>
+              <option value="note">Notes</option>
+            </select>
+          </div>
+        )}
+
+        {visibleNotes.length ? (
           <ul className="divide-y divide-line border-y border-line">
-            {notes.map((item) => (
-              <li key={item.id} className="flex items-center gap-3 py-3">
+            {visibleNotes.map((item) => (
+              <li key={item.id} className="group flex items-center gap-3 py-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-project-music text-gold" aria-hidden>
+                  <Music2 size={17} />
+                </span>
                 <Link to={'/item/' + item.id} className="min-w-0 flex-1">
-                  <span className="block truncate font-serif text-lg text-ink hover:text-accent">{noteTitle(item)}</span>
-                  <span className="mt-0.5 block truncate text-xs text-muted">{item.type} · {new Date(item.updatedAt).toLocaleDateString()}</span>
+                  <span className="block truncate font-serif text-lg text-ink hover:text-accent">{displayTitle(item)}</span>
+                  <span className="mt-0.5 block truncate text-xs text-muted">{TYPE_LABEL[item.type]} · {new Date(item.updatedAt).toLocaleDateString()}</span>
+                  <span className="mt-1 block line-clamp-2 whitespace-pre-line text-sm text-ink-2">{excerpt(item.body, 150)}</span>
                 </Link>
-                <button type="button" className="btn-ghost p-2" onClick={() => void removeItemFromProject(id, item.id)} aria-label={'Remove ' + noteTitle(item) + ' from project'} title="Remove from project"><Unlink size={15} /></button>
+                <button type="button" className="btn-ghost p-2 opacity-70 group-hover:opacity-100" onClick={() => void removeItemFromProject(id, item.id)} aria-label={'Remove ' + displayTitle(item) + ' from project'} title="Remove from project"><Unlink size={15} /></button>
               </li>
             ))}
           </ul>
-        ) : <div className="panel p-5 text-sm text-ink-2">No notes are linked yet. Add an existing note or start a new one.</div>}
+        ) : notes.length ? (
+          <div className="panel p-5 text-sm text-ink-2">No pieces match that search. Try another title or type.</div>
+        ) : (
+          <div className="panel p-6">
+            <div className="mx-auto max-w-md py-3 text-center">
+              <Music2 size={24} className="mx-auto text-gold" aria-hidden />
+              <h3 className="mt-3 font-serif text-xl">Start your music library</h3>
+              <p className="mt-1 text-sm leading-relaxed text-ink-2">Write a lyric or musical idea, or upload notes from your phone. Each song becomes its own piece that you can open and keep developing.</p>
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <button type="button" className="btn" onClick={() => setImportingNotes(true)}><Upload size={15} /> Upload notes</button>
+                <button type="button" className="btn-primary" onClick={() => setAddingNote(true)}><Plus size={15} /> Write a song</button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
-      <section className="mt-10">
+      <section className="mt-10" aria-labelledby="project-set-lists">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div><p className="eyebrow">Things taking shape</p><h2 className="section-heading">Works <span className="text-muted">· {works.length}</span></h2></div>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn" onClick={() => setChoosingWorks(true)}><Link2 size={14} /> Add existing</button>
-            <button type="button" className="btn-primary" onClick={() => setCreatingWork(true)}><FilePlus2 size={15} /> New work</button>
+          <div>
+            <p className="eyebrow">Arrange songs for a performance</p>
+            <h2 id="project-set-lists" className="section-heading">Set lists <span className="text-muted">· {setLists.length}</span></h2>
           </div>
+          <button type="button" className="btn-primary" onClick={openSetList}><ListMusic size={15} /> New set list</button>
         </div>
-        {works.length ? (
+        {setLists.length ? (
           <ul className="grid gap-3 sm:grid-cols-2">
-            {works.map((work) => (
-              <li key={work.id} className="archive-card flex items-center gap-3 p-4">
-                <BookOpen size={19} className="shrink-0 text-gold" />
+            {setLists.map((work) => {
+              const count = lib.entries.filter((entry) => entry.bookId === work.id).length;
+              return (
+                <li key={work.id} className="archive-card flex items-center gap-3 p-4">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-paper-2 text-gold"><ListMusic size={18} /></span>
+                  <Link to={'/projects/' + work.id} className="min-w-0 flex-1">
+                    <span className="block truncate font-serif text-xl text-ink hover:text-accent">{work.title}</span>
+                    <span className="mt-1 block truncate text-xs text-muted">{count} {count === 1 ? 'song' : 'songs'} · Open to arrange the order</span>
+                    {work.description && <span className="mt-1 block line-clamp-1 text-xs text-muted">{work.description}</span>}
+                  </Link>
+                  <button type="button" className="btn-ghost p-2" onClick={() => void removeWorkFromProject(id, work.id)} aria-label={'Remove ' + work.title + ' from project'} title="Remove from project"><Unlink size={15} /></button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <div className="panel p-5 text-sm text-ink-2">Create a set list for a gig, choose the songs you want to play, then drag them into the order that feels right. You can make a different set list for every performance.</div>
+        )}
+      </section>
+
+      {otherWorks.length > 0 && (
+        <details className="group mt-10 rounded-2xl border border-line bg-card">
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
+            <BookOpen size={16} className="text-muted" />
+            <span className="font-serif text-lg">Other creative Works</span>
+            <span className="text-xs text-muted">· {otherWorks.length}</span>
+            <span className="ml-auto text-xs text-muted">Optional</span>
+          </summary>
+          <ul className="divide-y divide-line px-4 pb-2">
+            {otherWorks.map((work) => (
+              <li key={work.id} className="flex items-center gap-3 py-3">
+                <BookOpen size={17} className="shrink-0 text-gold" />
                 <Link to={'/projects/' + work.id} className="min-w-0 flex-1">
-                  <span className="block truncate font-serif text-xl text-ink hover:text-accent">{work.title}</span>
-                  <span className="mt-1 block truncate text-xs text-muted">{work.description || 'Creative work'} · {work.kind ?? 'book'}</span>
+                  <span className="block truncate font-serif text-lg text-ink hover:text-accent">{work.title}</span>
+                  <span className="mt-0.5 block truncate text-xs text-muted">{work.description || PROJECT_KIND_META[projectKind(work)].label}</span>
                 </Link>
                 <button type="button" className="btn-ghost p-2" onClick={() => void removeWorkFromProject(id, work.id)} aria-label={'Remove ' + work.title + ' from project'} title="Remove from project"><Unlink size={15} /></button>
               </li>
             ))}
           </ul>
-        ) : <div className="panel p-5 text-sm text-ink-2">No Works linked yet. You can create a separate output or connect an existing one.</div>}
-      </section>
+        </details>
+      )}
 
       <Modal open={editing} onClose={() => setEditing(false)} title="Project details">
         <form className="space-y-4" onSubmit={saveProject}>
@@ -343,9 +465,37 @@ export function ProjectHome() {
 
       <Modal open={addingNote} onClose={() => setAddingNote(false)} title="New note for this project">
         <form className="space-y-4" onSubmit={saveNewNote}>
-          <div><label className="label" htmlFor="new-note-title">Title <span className="font-normal text-muted">(optional)</span></label><input id="new-note-title" className="input" value={newNoteTitle} onChange={(e) => setNewNoteTitle(e.target.value)} placeholder="A thought or working title" data-autofocus /></div>
-          <div><label className="label" htmlFor="new-note-body">Note</label><textarea id="new-note-body" className="input min-h-40 font-serif text-base" rows={6} value={newNoteBody} onChange={(e) => setNewNoteBody(e.target.value)} placeholder="Begin wherever you are…" required /></div>
+          <div><label className="label" htmlFor="new-note-type">What are you adding?</label><select id="new-note-type" className="input" value={newNoteType} onChange={(e) => setNewNoteType(e.target.value as ContentType)}><option value="song">Song / lyrics</option><option value="idea">Music idea</option><option value="fragment">Fragment</option><option value="note">Note</option></select></div>
+          <div><label className="label" htmlFor="new-note-title">Title <span className="font-normal text-muted">(optional)</span></label><input id="new-note-title" className="input" value={newNoteTitle} onChange={(e) => setNewNoteTitle(e.target.value)} placeholder="A song title or working name" data-autofocus /></div>
+          <div><label className="label" htmlFor="new-note-body">Words, lyrics or ideas</label><textarea id="new-note-body" className="input min-h-40 font-serif text-base" rows={6} value={newNoteBody} onChange={(e) => setNewNoteBody(e.target.value)} placeholder="Start wherever the song begins…" required /></div>
           <div className="flex justify-end gap-2"><button type="button" className="btn" onClick={() => setAddingNote(false)}>Cancel</button><button type="submit" className="btn-primary" disabled={!newNoteBody.trim()}>Save note</button></div>
+        </form>
+      </Modal>
+
+      <Modal open={creatingSetList} onClose={() => setCreatingSetList(false)} title="Create a set list">
+        <form className="space-y-4" onSubmit={saveNewSetList}>
+          <div><label className="label" htmlFor="set-list-title">Set list name</label><input id="set-list-title" className="input" value={setListTitle} onChange={(e) => setSetListTitle(e.target.value)} placeholder="Friday night · The Lantern Room" required data-autofocus /></div>
+          <div><label className="label" htmlFor="set-list-description">Gig details <span className="font-normal text-muted">(optional)</span></label><textarea id="set-list-description" className="input min-h-16" rows={2} value={setListDescription} onChange={(e) => setSetListDescription(e.target.value)} placeholder="Venue, date, timing or notes for the performance…" /></div>
+          <div className="border-t border-line pt-3">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div><p className="label mb-0">Songs to start with</p><p className="text-xs text-muted">{selectedSetSongIds.length} of {songNotes.length} songs selected</p></div>
+              <button type="button" className="btn-ghost px-2 py-1 text-xs" onClick={() => setSelectedSetSongIds(selectedSetSongIds.length === songNotes.length ? [] : songNotes.map((item) => item.id))}>{selectedSetSongIds.length === songNotes.length ? 'Clear all' : 'Select all'}</button>
+            </div>
+            {songNotes.length ? (
+              <ul className="max-h-64 divide-y divide-line overflow-y-auto rounded-xl border border-line px-3">
+                {songNotes.map((item) => (
+                  <li key={item.id} className="py-2">
+                    <label className="flex cursor-pointer items-center gap-2 text-sm">
+                      <input type="checkbox" checked={selectedSetSongIds.includes(item.id)} onChange={() => toggleSetSong(item.id)} />
+                      <span className="min-w-0 flex-1 truncate font-serif">{displayTitle(item)}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="rounded-xl border border-dashed border-line p-4 text-sm text-muted">There are no Song pieces in this Project yet. You can create an empty set list now and add songs later.</p>}
+            <p className="mt-2 text-xs text-muted">Songs are added to the first set in their current list order. You can drag and drop them into a new order, move them between sets, and reuse them in other gigs.</p>
+          </div>
+          <div className="flex justify-end gap-2"><button type="button" className="btn" onClick={() => setCreatingSetList(false)}>Cancel</button><button type="submit" className="btn-primary" disabled={!setListTitle.trim()}>Create set list</button></div>
         </form>
       </Modal>
 
