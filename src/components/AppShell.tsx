@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  BookOpen, Feather, FolderOpen, Hash, Images, Library, Menu,
+  BookOpen, Feather, FolderKanban, FolderOpen, Hash, Images, Library, Menu,
   Network, Search, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit,
 } from 'lucide-react';
 import { Logo } from './Logo';
@@ -16,7 +16,7 @@ type NavDef = { to: string; label: string; icon: typeof Feather; end?: boolean }
 const PRIMARY: NavDef[] = [
   { to: '/', label: 'Gather', icon: Feather, end: true },
   { to: '/library', label: 'Library', icon: Library },
-  { to: '/initiatives', label: 'Projects', icon: FolderOpen },
+  { to: '/initiatives', label: 'Projects', icon: FolderKanban },
   { to: '/projects', label: 'Works', icon: BookOpen },
   { to: '/universe', label: 'My Universe', icon: Orbit },
 ];
