@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, BookOpen, FilePlus2, FolderPlus, Link2, ListMusic, Music2, Plus, Search, Trash2, Unlink, Upload } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
-import { DEFAULT_PROJECT_COLOUR, PROJECT_CATEGORIES, PROJECT_STATUS_META } from '../domain/constants';
+import { DEFAULT_PROJECT_COLOUR, PROJECT_CATEGORIES, PROJECT_KIND_META, PROJECT_STATUS_META, TYPE_LABEL, projectKind } from '../domain/constants';
 import type { ContentType, ProjectColour, ProjectStatus } from '../domain/types';
 import { ProjectColourPicker, projectColourStyle } from '../components/ProjectColourPicker';
 import { createProject, updateProject, deleteProject, addItemsToProject, removeItemFromProject, addWorksToProject, removeWorkFromProject } from '../db/projectRecords';
@@ -176,7 +176,6 @@ export function Projects() {
           </div>
         </form>
       </Modal>
-      <ImportDialog open={importingNotes} onClose={() => setImportingNotes(false)} projectId={id} projectTitle={project.title} initialType="song" />
     </div>
   );
 }
@@ -345,6 +344,7 @@ export function ProjectHome() {
             <p className="mt-1 max-w-xl text-sm text-ink-2">A clear home for lyrics, melodies, fragments and musical thoughts. Only pieces linked to this Project appear here.</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn" onClick={() => setChoosingNotes(true)}><Link2 size={15} /> Add existing</button>
             <button type="button" className="btn" onClick={() => setImportingNotes(true)}><Upload size={15} /> Upload from phone</button>
             <button type="button" className="btn-primary" onClick={() => setAddingNote(true)}><Plus size={15} /> Write new</button>
           </div>
@@ -371,7 +371,7 @@ export function ProjectHome() {
           <ul className="divide-y divide-line border-y border-line">
             {visibleNotes.map((item) => (
               <li key={item.id} className="group flex items-center gap-3 py-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-project-music text-gold" aria-hidden>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold/10 text-gold" aria-hidden>
                   <Music2 size={17} />
                 </span>
                 <Link to={'/item/' + item.id} className="min-w-0 flex-1">
@@ -516,6 +516,7 @@ export function ProjectHome() {
         <input className="input mb-3 w-full" value={workQuery} onChange={(e) => setWorkQuery(e.target.value)} placeholder="Search Works…" aria-label="Search Works" data-autofocus />
         {availableWorks.length ? <ul className="divide-y divide-line">{availableWorks.map((work) => <li key={work.id} className="flex items-center gap-3 py-2"><span className="min-w-0 flex-1 truncate font-serif">{work.title}</span><button type="button" className="btn px-3 py-1.5 text-xs" onClick={() => void addWorksToProject(id, [work.id])}>Add</button></li>)}</ul> : <p className="py-5 text-sm text-muted">No matching Works to add.</p>}
       </Modal>
+      <ImportDialog open={importingNotes} onClose={() => setImportingNotes(false)} projectId={id} projectTitle={project.title} initialType="song" />
     </div>
   );
 }
