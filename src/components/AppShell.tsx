@@ -58,7 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [nav]);
   useEffect(() => setMoreOpen(false), [loc.pathname]);
   const orphanCount = lib ? lib.items.filter((i) => !i.deletedAt && !i.archived && !i.keepUnassigned && isOrphan(i, lib.ctx)).length : 0;
-  const recent = lib ? [...lib.books].filter((b) => !b.archived).sort((a,b) => b.updatedAt-a.updatedAt).slice(0,5) : [];
+  const recent = lib ? [...lib.projects].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 5) : [];
   const navItem = (item: NavDef, badge?: number) => (
     <NavLink key={item.to} to={item.to} end={item.end} className={({isActive}) =>
       `nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm ${activeFor(item.to,isActive) ? 'font-semibold' : ''}`}>
@@ -83,7 +83,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav aria-label="Main" className="space-y-1">{PRIMARY.map((i) => navItem(i))}</nav>
         {recent.length > 0 && <div className="mt-8">
           <p className="eyebrow px-3">Recently opened</p>
-          <ul className="mt-2 space-y-1">{recent.map((b) => <li key={b.id}><NavLink to={`/projects/${b.id}`} className={({isActive}) => `block truncate rounded-lg px-3 py-2 font-serif text-[15px] transition-colors ${isActive ? 'bg-white/10 text-[#f2e3c8]' : 'text-[#a99ab1] hover:bg-white/[.05] hover:text-white'}`}>{b.title}</NavLink></li>)}</ul>
+          <ul className="mt-2 space-y-1">{recent.map((b) => <li key={b.id}><NavLink to={`/initiative/${b.id}`} className={({isActive}) => `block truncate rounded-lg px-3 py-2 font-serif text-[15px] transition-colors ${isActive ? 'bg-white/10 text-[#f2e3c8]' : 'text-[#a99ab1] hover:bg-white/[.05] hover:text-white'}`}>{b.title}</NavLink></li>)}</ul>
         </div>}
         <div className="mt-auto border-t border-white/10 pt-4">
           <p className="eyebrow mb-2 px-3">Studio tools</p>
