@@ -2,6 +2,18 @@ import type { Book, BookType, ContentType, ProjectKind, Status } from './types';
 
 export const STATUSES: Status[] = ['seed', 'developing', 'polished'];
 
+export const PROJECT_CATEGORIES = ['App', 'Business', 'Creative', 'Place', 'Research', 'Personal', 'Other'] as const;
+
+export const PROJECT_STATUS_META: Record<
+  import('./types').ProjectStatus,
+  { label: string; description: string; className: string }
+> = {
+  idea: { label: 'Idea', description: 'Something you may explore.', className: 'bg-paper-2 text-ink-2' },
+  building: { label: 'Building', description: 'Actively taking shape.', className: 'bg-developing/15 text-developing' },
+  resting: { label: 'Resting', description: 'Intentionally paused.', className: 'bg-paper-2 text-muted' },
+  complete: { label: 'Complete', description: 'Finished or fulfilled.', className: 'bg-polished/15 text-polished' },
+};
+
 export const STATUS_META: Record<
   Status,
   { label: string; colour: string; symbol: string; meaning: string }
