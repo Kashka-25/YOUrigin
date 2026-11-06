@@ -211,7 +211,7 @@ export function ProjectHome() {
   const project = lib.projects.find((item) => item.id === id);
   if (!project) return <EmptyState title="Project not found" action={<Link to="/initiatives" className="btn">All projects</Link>} />;
   const currentProject = project;
-  const isMusicProject = /\\b(music|lyrics?|songs?|band|gig|set[\\s-]?list|album)\\b/i.test(
+  const isMusicProject = /\b(music|lyrics?|songs?|band|gig|set[\s-]?list|album)\b/i.test(
     [project.title, project.category, project.description].join(' '),
   );
 
@@ -476,7 +476,7 @@ export function ProjectHome() {
                 <p className="mt-1 text-sm leading-relaxed text-ink-2">Write a lyric or musical idea, or upload notes from your phone. Each song becomes its own piece that you can open and keep developing.</p>
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
                   <button type="button" className="btn" onClick={() => setImportingNotes(true)}><Upload size={15} /> Upload notes</button>
-                  <button type="button" className="btn-primary" onClick={() => setAddingNote(true)}><Plus size={15} /> Write a song</button>
+                  <button type="button" className="btn-primary" onClick={openNewNote}><Plus size={15} /> Write a song</button>
                 </div>
               </div>
             </div>
