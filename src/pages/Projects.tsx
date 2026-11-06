@@ -231,11 +231,6 @@ export function ProjectHome() {
   const workspace = lib.books.find((work) => work.id === id)
     ?? lib.books.find((work) => (work.projectIds ?? []).includes(id)
       && work.title.trim().toLocaleLowerCase() === project.title.trim().toLocaleLowerCase());
-  const availableNotes = lib.items
-    .filter((item) => !item.deletedAt && !item.archived && !(item.projectIds ?? []).includes(id))
-    .filter((item) => (noteTitle(item) + ' ' + item.body).toLowerCase().includes(noteQuery.toLowerCase()))
-    .sort((a, b) => b.updatedAt - a.updatedAt)
-    .slice(0, 40);
 
   function openNewNote() {
     setNewNoteType(isMusicProject ? 'song' : 'note');
@@ -273,7 +268,7 @@ export function ProjectHome() {
       nav('/projects/' + workspace.id);
       return;
     }
-    const workspaceId = await createBook({ id, title: project.title, description: project.description, templateId: null, kind: 'custom' });
+    const workspaceId = await createBook({ id, title: currentProject.title, description: currentProject.description, templateId: null, kind: 'custom' });
     nav('/projects/' + workspaceId);
   }
 
@@ -401,6 +396,26 @@ export function ProjectHome() {
           <div><label className="label" htmlFor="new-note-body">Words, lyrics or ideas</label><textarea id="new-note-body" className="input min-h-40 font-serif text-base" rows={6} value={newNoteBody} onChange={(e) => setNewNoteBody(e.target.value)} placeholder="Start wherever the song begins…" required /></div>
           <div className="flex justify-end gap-2"><button type="button" className="btn" onClick={() => setAddingNote(false)}>Cancel</button><button type="submit" className="btn-primary" disabled={!newNoteBody.trim()}>Save note</button></div>
         </form>
+      </Modal>
+
+      <Modal open={choosingNotes} onClose={() => setChoosingNotes(false)} title="Add notes from your Library">
+        <input className="input mb-3 w-full" value={noteQuery} onChange={(e) => setNoteQuery(e.target.value)} placeholder="Search notes…" aria-label="Search notes" data-autofocus />
+        {availableNotes.length ? (
+          <ul className="divide-y divide-line">
+            {availableNotes.map((item) => (
+              <li key={item.id} className="flex items-center gap-3 py-2">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-serif">{noteTitle(item)}</span>
+                  <span className="text-xs text-muted">{item.type}</span>
+                </span>
+                <button type="button" className="btn px-3 py-1.5 text-xs" onClick={async () => {
+                  await addItemsToProject(id, [item.id]);
+                  setChoosingNotes(false);
+                }}>Add</button>
+              </li>
+            ))}
+          </ul>
+        ) : <p className="py-5 text-sm text-muted">No matching notes to add.</p>}
       </Modal>
 
       <ImportDialog open={importingNotes} onClose={() => setImportingNotes(false)} projectId={id} projectTitle={project.title} initialType={isMusicProject ? 'song' : 'auto'} />
