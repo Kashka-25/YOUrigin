@@ -44,7 +44,11 @@ describe('Project homes', () => {
   it('places known Projects in their established homes', () => {
     expect(suggestedProjectHome({ title: 'YOU App' })).toBe('App');
     expect(suggestedProjectHome({ title: 'Hopeium' })).toBe('App');
+    expect(suggestedProjectHome({ title: 'CommYOUnity' })).toBe('App');
     expect(suggestedProjectHome({ title: 'Empatherapy' })).toBe('Business');
+    expect(suggestedProjectHome({ title: 'Atlantean Gardens' })).toBe('Business');
+    expect(suggestedProjectHome({ title: 'Sweet Vital Nectar' })).toBe('Business');
+    expect(suggestedProjectHome({ title: 'Rhythm Relics' })).toBe('Business');
     expect(suggestedProjectHome({ title: 'Terra Senga' })).toBe('Place');
     expect(suggestedProjectHome({ title: 'Lyric Ideas' })).toBe('Creative');
   });
