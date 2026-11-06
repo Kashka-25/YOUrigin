@@ -34,24 +34,34 @@ export async function migrateLegacyWorksToProjects(
   projects: Table<Project, string>,
 ): Promise<number> {
   const works = await books.toArray();
+  const existingProjects = await projects.toArray();
   const migratedAt = Date.now();
   let migrated = 0;
+
+  const normaliseTitle = (value: string) => value.normalize('NFKC').trim().replace(/\\s+/g, ' ').toLocaleLowerCase();
 
   for (const work of works) {
     if ((work.projectIds ?? []).length) continue;
 
-    const projectId = `legacy-work-${work.id}`;
-    if (!(await projects.get(projectId))) {
-      await projects.add({
+    const title = work.title.trim() || 'Untitled project';
+    const matches = existingProjects.filter((project) => normaliseTitle(project.title) === normaliseTitle(title));
+    // Reuse an unambiguous same-name Project rather than creating a duplicate.
+    const matchingProject = matches.length === 1 ? matches[0] : undefined;
+    const projectId = matchingProject?.id ?? `legacy-work-${work.id}`;
+
+    if (!matchingProject && !(await projects.get(projectId))) {
+      const project: Project = {
         id: projectId,
-        title: work.title.trim() || 'Untitled project',
+        title,
         description: work.description ?? '',
         category: '',
         colour: 'ochre',
         status: work.archived ? 'resting' : 'idea',
         createdAt: work.createdAt,
         updatedAt: migratedAt,
-      });
+      };
+      await projects.add(project);
+      existingProjects.push(project);
     }
 
     await books.update(work.id, {
