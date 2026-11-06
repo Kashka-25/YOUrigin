@@ -10,8 +10,6 @@ export interface LibraryContext {
   booksOf: Map<string, Set<string>>;
   /** contentId -> collection ids */
   collectionsOf: Map<string, Set<string>>;
-  /** contentId -> Project ids */
-  projectsOf: Map<string, Set<string>>;
   bookTitle: Map<string, string>;
   collectionName: Map<string, string>;
   projectTitle: Map<string, string>;
