@@ -8,6 +8,7 @@ import { AppShell } from './components/AppShell';
 import { Onboarding } from './components/Onboarding';
 import { useSettings } from './db/settings';
 import { Gathering } from './pages/Gathering';
+import { MyUniverse } from './pages/MyUniverse';
 import { Library } from './pages/Library';
 import { ItemPage } from './pages/ItemPage';
 import { Books } from './pages/Books';
@@ -72,7 +73,7 @@ function useTheme(theme: 'system' | 'light' | 'dark' | undefined) {
     const apply = () => {
       const dark = theme === 'dark' || ((theme ?? 'system') === 'system' && mq.matches);
       document.documentElement.classList.toggle('dark', dark);
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#130f19' : '#f1e8d6');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#090711' : '#f4efe7');
     };
     apply();
     mq.addEventListener('change', apply);
@@ -126,6 +127,7 @@ export default function App() {
                     <Routes>
                       <Route path="/" element={<Gathering />} />
                       <Route path="/library" element={<Library />} />
+                      <Route path="/universe" element={<MyUniverse />} />
                       <Route path="/item/:id" element={<ItemPage />} />
                       <Route path="/projects" element={<Books />} />
                       <Route path="/projects/:id" element={<BookBuilder />} />

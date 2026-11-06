@@ -6,60 +6,55 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Design tokens — "dark academia": candlelit gold on aubergine night,
-   parchment ink, amethyst for the assistant. Drawn from the YOUrigin artwork.
-   The three creative states are always paired with a symbol + label so
-   colour is never the only signal. */
-
-/* Light: "Vellum" — parchment pages, plum-black ink, antique gold. */
+/* YOUrigin — the quiet observatory. Warm manuscript typography inside a
+   midnight archive; amethyst for imagination, antique gold for intention. */
 :root {
-  --paper: #f1e8d6;
-  --paper-2: #e7dac0;
-  --card: #f8f1e3;
-  --ink: #2b1d2f;
-  --ink-2: #514055;
-  --muted: #84725e;
-  --line: #d8c6a4;
-  --accent: #85590c;
-  --accent-ink: #fff8ea;
-  --gold: #a87a22;
-  --rigin: #4b2a5f;
-  --seed: #9b3a2b;
-  --seed-bg: #f0d8cd;
-  --developing: #7d5a00;
-  --developing-bg: #f0e2bb;
-  --polished: #36663f;
-  --polished-bg: #d9e6d1;
-  --ai: #5b3d99;
-  --ai-bg: #e7ddf4;
-  --focus: #85590c;
+  --paper: #f4efe7;
+  --paper-2: #e9e0d5;
+  --card: #fbf8f2;
+  --ink: #2b2130;
+  --ink-2: #5f5363;
+  --muted: #8d7f8c;
+  --line: #ded2c5;
+  --accent: #a77a35;
+  --accent-ink: #fffaf0;
+  --gold: #c79b58;
+  --rigin: #71518a;
+  --seed: #a85d52;
+  --seed-bg: #f2e0dc;
+  --developing: #94702f;
+  --developing-bg: #f2e9d5;
+  --polished: #54735b;
+  --polished-bg: #e0e9df;
+  --ai: #7255a0;
+  --ai-bg: #eee7f6;
+  --focus: #a77a35;
   --glow: transparent;
   color-scheme: light;
 }
 
-/* Dark: "Night Library" — the signature look. */
 .dark {
-  --paper: #130f19;
-  --paper-2: #1e1726;
-  --card: #1a1421;
-  --ink: #eee2cb;
-  --ink-2: #c7b79a;
-  --muted: #8e7f6c;
-  --line: #352a3c;
-  --accent: #d4a54c;
-  --accent-ink: #1a1206;
-  --gold: #e0b45c;
-  --rigin: #c8b0ea;
-  --seed: #e5806b;
-  --seed-bg: #3a1c1e;
-  --developing: #eccb66;
-  --developing-bg: #382b12;
-  --polished: #93c38c;
-  --polished-bg: #1b2c1f;
-  --ai: #b9a0f2;
-  --ai-bg: #2a1f3f;
-  --focus: #d4a54c;
-  --glow: rgba(212, 165, 76, 0.07);
+  --paper: #090711;
+  --paper-2: #15111f;
+  --card: #171321;
+  --ink: #f0e9df;
+  --ink-2: #c5b8c9;
+  --muted: #95869d;
+  --line: #30263b;
+  --accent: #d6ad6d;
+  --accent-ink: #1b1420;
+  --gold: #d6ad6d;
+  --rigin: #a88bc7;
+  --seed: #df8a79;
+  --seed-bg: #321d25;
+  --developing: #d8b66f;
+  --developing-bg: #302717;
+  --polished: #94bd9a;
+  --polished-bg: #1b2b24;
+  --ai: #c0a6e8;
+  --ai-bg: #261d35;
+  --focus: #e4bd7c;
+  --glow: rgba(128, 87, 153, .14);
   color-scheme: dark;
 }
 
@@ -83,162 +78,117 @@
   --color-ai-bg: var(--ai-bg);
   --color-gold: var(--gold);
   --color-rigin: var(--rigin);
-  --font-display: 'Cinzel Variable', 'Trajan Pro', Georgia, serif;
+  --font-display: 'Cinzel Variable', Georgia, serif;
   --font-serif: 'Newsreader Variable', 'Iowan Old Style', Georgia, serif;
-  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: 'Inter Variable', system-ui, sans-serif;
 }
 
 @layer base {
-  html,
-  body {
-    background: radial-gradient(120% 70% at 50% -10%, var(--glow), transparent 60%) fixed, var(--paper);
-    color: var(--ink);
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  body {
-    min-height: 100dvh;
-  }
-
-  :focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-
-  ::selection {
-    background: color-mix(in srgb, var(--accent) 25%, transparent);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
-    }
-  }
-
-  /* The writing itself: preserve every space and line break. */
-  .writing {
-    font-family: var(--font-serif);
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
+  html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+  body { min-height: 100dvh; }
+  #root { min-height: 100dvh; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 6px; }
+  ::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+  .writing { font-family: var(--font-serif); white-space: pre-wrap; overflow-wrap: anywhere; }
 }
 
 @layer components {
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-paper-2 disabled:cursor-not-allowed disabled:opacity-50;
-  }
-  .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-accent px-5 py-2 text-sm font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
-  }
-  .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-3 py-1.5 text-sm text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink disabled:opacity-50;
-  }
-  .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-seed px-4 py-2 text-sm font-semibold text-white hover:opacity-90;
-  }
-  .input {
-    @apply w-full rounded-xl border border-line bg-card px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none;
-  }
-  .label {
-    @apply mb-1 block text-xs font-semibold tracking-wide text-muted uppercase;
-  }
-  .panel {
-    @apply rounded-2xl border border-line bg-card;
-  }
-  .page-title {
-    @apply font-serif text-3xl font-medium tracking-tight text-ink md:text-4xl;
-  }
-  .eyebrow {
-    @apply font-display text-[11px] font-semibold tracking-[0.2em] text-muted uppercase;
-  }
+  .btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-all hover:border-accent/50 hover:bg-paper-2 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-accent/40 bg-accent px-5 py-2 text-sm font-semibold text-accent-ink shadow-sm transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-ghost { @apply inline-flex min-h-9 items-center justify-center gap-2 rounded-xl px-3 py-1.5 text-sm text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink disabled:opacity-50; }
+  .btn-danger { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-seed px-4 py-2 text-sm font-semibold text-white hover:opacity-90; }
+  .input { @apply w-full rounded-xl border border-line bg-card px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none; }
+  .label { @apply mb-1.5 block text-xs font-semibold tracking-wide text-muted uppercase; }
+  .panel { @apply rounded-2xl border border-line bg-card; }
+  .page-title { @apply font-serif text-4xl font-normal tracking-tight text-ink md:text-5xl; }
+  .eyebrow { @apply font-display text-[10px] font-semibold tracking-[0.22em] text-gold uppercase; }
 }
 
-/* Print layout: on screen, pages sit on a soft background with a shadow. */
-.print-stage .pagedjs_page {
-  background: #fff;
-  margin: 0 auto 28px;
-  box-shadow: 0 2px 18px rgb(0 0 0 / 0.28);
+/* Ambient archive atmosphere. Decorative only; content remains high contrast. */
+.app-shell {
+  min-height: 100dvh;
+  background:
+    radial-gradient(ellipse 70% 44% at 72% -10%, rgba(116, 76, 145, .16), transparent 72%),
+    radial-gradient(ellipse 45% 35% at 100% 62%, rgba(174, 130, 78, .055), transparent 75%),
+    var(--paper);
 }
-.print-stage .pagedjs_pages {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0 18px;
-  max-width: calc(var(--pagedjs-width, 6in) * 2 + 18px);
+.app-sidebar {
+  background: linear-gradient(180deg, rgba(24, 18, 33, .98), rgba(13, 10, 20, .98));
+  border-color: rgba(180, 150, 194, .14);
 }
-/* Books open on a right-hand page: show page 1 on the right, then spreads. */
-.print-stage .pagedjs_first_page {
-  margin-left: calc(var(--pagedjs-width, 6in) + 18px);
+.app-sidebar .nav-link {
+  min-height: 44px;
+  border: 1px solid transparent;
+  color: #b7aabd;
+  transition: background .18s ease, border-color .18s ease, color .18s ease;
 }
+.app-sidebar .nav-link:hover { background: rgba(180, 150, 194, .08); color: #f4ebdf; }
+.app-sidebar .nav-link[aria-current="page"] {
+  color: #f1dfbf;
+  background: linear-gradient(100deg, rgba(134, 99, 159, .22), rgba(214, 173, 109, .08));
+  border-color: rgba(214, 173, 109, .22);
+}
+.app-sidebar .eyebrow { color: #c5a574; }
+.app-sidebar .sidebar-muted { color: #8f8098; }
+.app-main { min-width: 0; }
+.page-frame { width: min(100% - 2rem, 1120px); margin-inline: auto; padding-block: 2.5rem 5rem; }
+.page-intro { margin-bottom: 2rem; }
+.page-intro p { max-width: 42rem; }
+.page-gather { width: min(100% - 2rem, 920px); padding-top: clamp(2.5rem, 7vh, 5.5rem); }
+.gather-heading { font-family: var(--font-serif); font-size: clamp(2.25rem, 5vw, 3.7rem); line-height: 1.02; letter-spacing: -.035em; }
+.gather-subtitle { color: var(--muted); font-family: var(--font-serif); font-size: 1.15rem; }
+.capture-surface {
+  position: relative; overflow: hidden;
+  border: 1px solid rgba(176, 145, 193, .22);
+  border-radius: 26px;
+  background: linear-gradient(145deg, rgba(35, 26, 47, .96), rgba(20, 16, 29, .98));
+  box-shadow: 0 24px 80px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.035);
+}
+.capture-surface:before {
+  content: ""; position: absolute; inset: 0 0 auto; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(214,173,109,.55), transparent);
+}
+.capture-surface textarea, .capture-surface input { color: #f0e9df; }
+.capture-surface textarea::placeholder, .capture-surface input::placeholder { color: #84768d; }
+.capture-surface .input { background: rgba(255,255,255,.045); border-color: rgba(190,165,202,.18); }
+.capture-surface .btn { background: rgba(255,255,255,.055); border-color: rgba(190,165,202,.2); color: #e7dce9; }
+.capture-surface .btn-ghost { color: #b7aabd; }
+.surface-kicker { color: #d6ad6d; font-family: var(--font-display); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; }
+.section-heading { font-family: var(--font-serif); font-size: 1.7rem; letter-spacing: -.02em; }
+.archive-card {
+  border: 1px solid var(--line); border-radius: 18px; background: color-mix(in srgb, var(--card) 88%, transparent);
+  transition: transform .2s ease, border-color .2s ease, background .2s ease;
+}
+.archive-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); background: var(--paper-2); }
+.soft-divider { border-color: color-mix(in srgb, var(--line) 72%, transparent); }
+.mobile-dock { background: rgba(15, 11, 22, .94); border-color: rgba(190,165,202,.16); backdrop-filter: blur(18px); }
+.mobile-dock a[aria-current="page"] { color: #e2bd80; }
+.mobile-dock a[aria-current="page"]:before { content: ""; position: absolute; top: 0; width: 22px; height: 2px; border-radius: 9px; background: #d6ad6d; }
 
-/* Writing workspace: the open chapter's pages in one column. */
-.page-strip .pagedjs_page {
-  background: #fff;
-  margin: 0 auto 20px;
-  box-shadow: 0 2px 14px rgb(0 0 0 / 0.25);
+/* Existing print system: preserve true page sizes and print-only output. */
+.print-stage .pagedjs_page { background: #fff; margin: 0 auto 28px; box-shadow: 0 2px 18px rgb(0 0 0 / .28); }
+.print-stage .pagedjs_pages { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 18px; max-width: calc(var(--pagedjs-width, 6in) * 2 + 18px); }
+.print-stage .pagedjs_first_page { margin-left: calc(var(--pagedjs-width, 6in) + 18px); }
+.page-strip .pagedjs_page { background: #fff; margin: 0 auto 20px; box-shadow: 0 2px 14px rgb(0 0 0 / .25); }
+html[data-focus] .chrome { display: none !important; }
+@media (max-width: 767px) {
+  .page-frame { width: min(100% - 1.25rem, 1120px); padding-block: 1.75rem 6rem; }
+  .page-gather { width: min(100% - 1.25rem, 920px); padding-top: 2.2rem; }
+  .app-sidebar { display: none; }
 }
-
-/* Manuscript / print */
-/* Focus mode (editing): hide the app's bars. */
-html[data-focus] .chrome {
-  display: none !important;
-}
-
 @media print {
-  /* Only the laid-out pages print, at true size. */
-  .print-layout {
-    background: #fff !important;
-  }
-  .print-layout main {
-    padding: 0 !important;
-    overflow: visible !important;
-  }
-  .print-stage {
-    zoom: 1 !important;
-    width: auto !important;
-  }
-  .print-stage .pagedjs_page {
-    box-shadow: none !important;
-    margin: 0 !important;
-  }
-  .print-stage .pagedjs_pages {
-    display: block !important;
-    max-width: none !important;
-  }
-  .print-stage .pagedjs_first_page {
-    margin-left: 0 !important;
-  }
-  /* Cover designer: only the cover, at true size. */
-  .cover-designer {
-    background: #fff !important;
-  }
-  .cover-designer main {
-    padding: 0 !important;
-  }
-  .cover-designer .cover-stage {
-    zoom: 1 !important;
-    box-shadow: none !important;
-    margin: 0 !important;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-  html,
-  body {
-    background: white;
-    color: black;
-  }
-  .print-break {
-    break-before: page;
-  }
-  .manuscript-piece {
-    break-inside: avoid;
-  }
+  .print-layout { background: #fff !important; }
+  .print-layout main { padding: 0 !important; overflow: visible !important; }
+  .print-stage { zoom: 1 !important; width: auto !important; }
+  .print-stage .pagedjs_page { box-shadow: none !important; margin: 0 !important; }
+  .print-stage .pagedjs_pages { display: block !important; max-width: none !important; }
+  .print-stage .pagedjs_first_page { margin-left: 0 !important; }
+  .cover-designer { background: #fff !important; }
+  .cover-designer main { padding: 0 !important; }
+  .cover-designer .cover-stage { zoom: 1 !important; box-shadow: none !important; margin: 0 !important; }
+  .no-print { display: none !important; }
+  html, body { background: white; color: black; }
+  .print-break { break-before: page; }
+  .manuscript-piece { break-inside: avoid; }
 }

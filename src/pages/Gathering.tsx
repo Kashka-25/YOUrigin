@@ -244,8 +244,8 @@ export function Gathering() {
   );
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pt-8 md:px-8 md:pt-14">
-      <h1 className="sr-only">Gathering</h1>
+    <div className="page-gather mx-auto">
+      <div className="mb-8 text-center"><p className="eyebrow mb-3">The beginning of everything</p><h1 className="gather-heading">Make room for a thought.</h1><p className="gather-subtitle mt-3">A quiet place to collect what is moving through you.</p><div className="mx-auto mt-6 h-px w-20 bg-gradient-to-r from-transparent via-gold/70 to-transparent" /></div>
 
       <form
         onSubmit={(e) => {
@@ -254,7 +254,7 @@ export function Gathering() {
         }}
       >
         <div
-          className="panel px-5 py-4 transition-colors focus-within:border-accent/60 md:px-7 md:py-6"
+          className="capture-surface px-5 py-5 transition-colors focus-within:border-gold/50 md:px-8 md:py-7"
           onDragOver={(e) => {
             if (e.dataTransfer.types.includes('Files')) e.preventDefault();
           }}
@@ -279,7 +279,7 @@ export function Gathering() {
                     ref.current?.focus();
                   }
                 }}
-                placeholder="Heading (optional)"
+                placeholder="Give this thought a name…"
                 className="mb-3 block w-full border-b border-line bg-transparent pb-2 font-serif text-2xl text-ink placeholder:text-muted/60 focus:outline-none focus-visible:outline-none"
               />
             </>
@@ -377,7 +377,7 @@ export function Gathering() {
               }}
             />
           </div>
-          <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-line pt-3">
+          <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-white/10 pt-4">
             {detectedTags.map((t) => (
               <TagChip key={t} name={t} />
             ))}
@@ -419,7 +419,7 @@ export function Gathering() {
           )}
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-line/70 bg-card/65 px-4 py-3">
           <StatusPicker value={effStatus} onChange={setStatus} />
           <TypeSelect value={effType} onChange={setType} />
           <select

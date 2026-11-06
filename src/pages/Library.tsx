@@ -107,9 +107,9 @@ export function Library() {
   const tagsByUse = [...lib.tags].sort((a, b) => (lib.tagCounts.get(b.id) ?? 0) - (lib.tagCounts.get(a.id) ?? 0));
 
   return (
-    <div className="mx-auto max-w-4xl px-4 pt-8 md:px-8 md:pt-12">
+    <div className="page-frame">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="page-title">Library</h1>
+        <div><p className="eyebrow mb-2">The things you have gathered</p><h1 className="page-title">Your Library</h1><p className="mt-2 max-w-xl font-serif text-lg text-ink-2">A living archive of thoughts, fragments, images and discoveries.</p></div>
         <div className="flex gap-2">
           <button type="button" className="btn" onClick={() => setImportOpen(true)}>
             <Upload size={15} /> Import
@@ -126,7 +126,7 @@ export function Library() {
         </div>
       </div>
 
-      <div className="mt-5 inline-flex max-w-full overflow-x-auto rounded-full border border-line p-1" role="tablist" aria-label="Library view">
+      <div className="mt-7 inline-flex max-w-full overflow-x-auto rounded-xl border border-line/80 bg-card/70 p-1" role="tablist" aria-label="Library view">
         {VIEWS.map((v) => (
           <button
             key={v.id}
@@ -134,7 +134,7 @@ export function Library() {
             role="tab"
             aria-selected={view === v.id}
             onClick={() => showView(v.id)}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-sm sm:px-4 ${view === v.id ? 'bg-accent font-semibold text-accent-ink' : 'text-ink-2 hover:text-ink'}`}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-sm sm:px-4 ${view === v.id ? 'bg-paper-2 font-semibold text-ink shadow-sm' : 'text-ink-2 hover:text-ink'}`}
           >
             {v.label}
           </button>
@@ -198,7 +198,7 @@ export function Library() {
 
       {view === 'all' && (
           <>
-          <div className="sticky top-[61px] z-20 -mx-4 mt-4 bg-paper/95 px-4 py-3 backdrop-blur md:top-0 md:-mx-8 md:px-8">
+          <div className="sticky top-[61px] z-20 -mx-2 mt-6 rounded-2xl border border-line/70 bg-paper/95 px-3 py-3 shadow-sm backdrop-blur md:top-0 md:mx-0 md:px-4">
             <div className="flex gap-2">
               <input
                 type="search"
