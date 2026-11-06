@@ -23,10 +23,11 @@ import { normaliseTagName } from '../domain/text';
 import type { ContentType, Status } from '../domain/types';
 import { StatusPicker } from './ui';
 import { createMany } from '../db/content';
+import { addItemsToProject } from '../db/projectRecords';
 import { db } from '../db/db';
 import { useToast } from './Toast';
 
-export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function ImportDialog({ open, onClose, projectId, projectTitle, initialType = 'auto' }: { open: boolean; onClose: () => void; projectId?: string; projectTitle?: string; initialType?: ContentType | 'auto' }) {
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<ImportedFile[]>([]);
@@ -34,7 +35,7 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
   const [drafts, setDrafts] = useState<DraftPiece[] | null>(null);
   const [used, setUsed] = useState<Record<string, Exclude<SplitStrategy, 'auto'>>>({});
   const [status, setStatus] = useState<Status>('seed');
-  const [type, setType] = useState<ContentType | 'auto'>('auto');
+  const [type, setType] = useState<ContentType | 'auto'>(initialType);
   const [makeBook, setMakeBook] = useState(false);
   const [bookTitle, setBookTitle] = useState('');
   const [bookType, setBookType] = useState<BookType>('poetry');
@@ -48,7 +49,7 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
     const r = draftPieces(fs, s);
     setDrafts(r.pieces);
     // Documents with chapters are most useful imported as a ready-made book.
-    setMakeBook(r.pieces.some((d) => d.section));
+    setMakeBook(!projectId && r.pieces.some((d) => d.section));
     setBookType(guessBookType(resolveTypes(r.pieces, 'auto')));
     setBookTitle((t) => t || (fs[0]?.name.replace(/\.[^.]+$/, '').replace(/_+/g, ' ').trim() ?? ''));
     setUsed(r.used);
@@ -73,6 +74,7 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
     setTags('');
     setBookTitle('');
     setMakeBook(false);
+    setType(initialType);
     setStrategy('auto');
   };
 
@@ -88,11 +90,17 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
     try {
       const kept = includedDrafts(drafts);
       const ids = await createMany(
-        toNewContent(drafts, { status, type, extraTags: tags.split(/[\s,]+/).map(normaliseTagName).filter(Boolean) }),
+        toNewContent(drafts, { status, type, extraTags: tags.split(/[\\s,]+/).map(normaliseTagName).filter(Boolean) }),
       );
+      if (projectId) await addItemsToProject(projectId, ids);
       const title = bookTitle.trim() || 'Imported book';
-      const bookId = makeBook ? await buildBookFromImport(title, bookType, kept, ids) : null;
-      toast(bookId ? `Imported ${ids.length} pieces and built “${title}”` : `Imported ${ids.length} piece${ids.length === 1 ? '' : 's'} into your Library`, {
+      const bookId = !projectId && makeBook ? await buildBookFromImport(title, bookType, kept, ids) : null;
+      const importedMessage = projectId
+        ? 'Added ' + ids.length + ' piece' + (ids.length === 1 ? '' : 's') + ' to “' + (projectTitle || 'this Project') + '”'
+        : bookId
+          ? 'Imported ' + ids.length + ' pieces and built “' + title + '”'
+          : 'Imported ' + ids.length + ' piece' + (ids.length === 1 ? '' : 's') + ' into your Library';
+      toast(importedMessage, {
         undo: async () => {
           if (bookId) {
             await db.entries.where('bookId').equals(bookId).delete();
@@ -111,7 +119,7 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Import writing" wide>
+    <Modal open={open} onClose={onClose} title={projectId ? "Add writing to " + (projectTitle || "Project") : "Import writing"} wide>
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -127,7 +135,7 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
       >
         <Upload className="text-muted" aria-hidden />
         <p className="mt-2 text-sm text-ink-2">
-          Drop a Word document (.docx), .txt or .md file — one with all your poems, or many files at once. Each poem becomes its own piece.
+          {projectId ? 'Choose notes from your phone or computer. Plain text, Markdown and Word files are converted into editable YOUrigin pieces. You can review, rename, split and untick anything before adding it.' : 'Drop a Word document (.docx), .txt or .md file — one with all your poems, or many files at once. Each poem becomes its own piece.'}
         </p>
         <button type="button" className="btn mt-3" onClick={() => inputRef.current?.click()} disabled={busy}>
           Choose files
@@ -159,7 +167,7 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
         <div className="mt-5 space-y-4">
           <div className="panel space-y-2 p-4">
             <label className="label" htmlFor="imp-split">
-              Where does each poem begin?
+              Where does each piece begin?
             </label>
             <select
               id="imp-split"
@@ -184,7 +192,7 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
             </p>
           </div>
 
-          <div className={`panel space-y-3 p-4 ${makeBook ? 'border-accent' : ''}`}>
+          {!projectId && <div className={`panel space-y-3 p-4 ${makeBook ? 'border-accent' : ''}`}>
             <label className="flex items-start gap-2">
               <input type="checkbox" className="mt-1 h-4 w-4" checked={makeBook} onChange={(e) => setMakeBook(e.target.checked)} />
               <span>
@@ -220,7 +228,7 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
                 </div>
               </div>
             )}
-          </div>
+          </div>}
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
