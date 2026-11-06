@@ -3,7 +3,7 @@ import { db, ensureBuiltIns, SCHEMA_VERSION } from './db';
 import { createMany } from './content';
 import { createBook } from './books';
 import { exportBackup, replaceWithBackup } from './backup';
-import { addItemsToProject, addWorksToProject, createProject, createProjectForWorks, deleteProject, importWorksAsProjects, removeItemFromProject } from './projectRecords';
+import { addItemsToProject, addWorksToProject, createProject, createProjectForWorks, deleteProject, importWorksAsProjects, removeItemFromProject, updateProject } from './projectRecords';
 import { SYNC_TABLES } from '../sync/tracking';
 
 beforeEach(async () => {
@@ -20,8 +20,16 @@ describe('independent Projects', () => {
       title: 'YOU App',
       description: 'A personal operating system',
       category: '',
+      colour: 'ochre',
       status: 'idea',
     });
+  });
+
+  it('stores and updates a Project colour', async () => {
+    const id = await createProject({ title: 'Terra Senga', colour: 'moss' });
+    expect((await db.projects.get(id))?.colour).toBe('moss');
+    await updateProject(id, { colour: 'teal' });
+    expect((await db.projects.get(id))?.colour).toBe('teal');
   });
 
   it('links one note to multiple Projects and removes only the selected relationship', async () => {
@@ -63,13 +71,14 @@ describe('independent Projects', () => {
 
     const projectIds = await importWorksAsProjects([firstWork, secondWork, firstWork], {
       category: 'Business',
+      colour: 'violet',
       status: 'building',
     });
 
     expect(projectIds).toHaveLength(2);
     const created = await db.projects.bulkGet(projectIds);
     expect(created.map((project) => project?.title).sort()).toEqual(['Empatherapy', 'YOU App architecture']);
-    expect(created.every((project) => !!project && project.category === 'Business' && project.status === 'building')).toBe(true);
+    expect(created.every((project) => !!project && project.category === 'Business' && project.colour === 'violet' && project.status === 'building')).toBe(true);
     expect((await db.books.get(firstWork))?.description).toBe('The personal operating system');
     expect((await db.books.get(secondWork))?.description).toBe('A healing venture');
     expect((await db.books.get(firstWork))?.projectIds).toEqual([projectIds[0]]);
@@ -97,6 +106,7 @@ describe('independent Projects', () => {
       title: 'Terra Senga',
       description: 'The land and its development',
       category: 'Place',
+      colour: 'jade',
       status: 'resting',
     }, [first, second]);
 
@@ -104,6 +114,7 @@ describe('independent Projects', () => {
       title: 'Terra Senga',
       description: 'The land and its development',
       category: 'Place',
+      colour: 'jade',
       status: 'resting',
     });
     expect((await db.books.get(first))?.projectIds).toContain(projectId);
