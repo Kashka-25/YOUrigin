@@ -7,6 +7,8 @@ import { ConfirmProvider } from './components/Modal';
 import { AppShell } from './components/AppShell';
 import { Onboarding } from './components/Onboarding';
 import { useSettings } from './db/settings';
+import { applyColourScale, COLOUR_SCALE_DEFAULT } from './domain/colourScale';
+import type { ColourScale } from './domain/types';
 import { Gathering } from './pages/Gathering';
 import { MyUniverse } from './pages/MyUniverse';
 import { Library } from './pages/Library';
@@ -69,18 +71,21 @@ function BooksRedirect() {
   return <Navigate replace to={pathname.replace(/^\/books/, '/projects') + search} />;
 }
 
-function useTheme(theme: 'system' | 'light' | 'dark' | undefined) {
+function useTheme(theme: 'system' | 'light' | 'dark' | undefined, colourScale: ColourScale | undefined) {
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const apply = () => {
       const dark = theme === 'dark' || ((theme ?? 'system') === 'system' && mq.matches);
+      const mode = dark ? 'dark' : 'light';
       document.documentElement.classList.toggle('dark', dark);
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#090711' : '#f4efe7');
+      applyColourScale(colourScale ?? COLOUR_SCALE_DEFAULT, mode);
+      const background = window.getComputedStyle(document.documentElement).getPropertyValue('--paper').trim();
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', background || (dark ? '#090711' : '#f4efe7'));
     };
     apply();
     mq.addEventListener('change', apply);
     return () => mq.removeEventListener('change', apply);
-  }, [theme]);
+  }, [theme, colourScale]);
 }
 
 function UpdateBanner() {
@@ -104,7 +109,7 @@ function UpdateBanner() {
 
 export default function App() {
   const settings = useSettings();
-  useTheme(settings?.theme);
+  useTheme(settings?.theme, settings?.colourScale);
 
   return (
     <HashRouter>
