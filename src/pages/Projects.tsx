@@ -198,7 +198,7 @@ export function ProjectHome() {
   const [editColour, setEditColour] = useState<ProjectColour>(DEFAULT_PROJECT_COLOUR);
   const [newNoteType, setNewNoteType] = useState<ContentType>('song');
   const [noteQuery, setNoteQuery] = useState('');
-  const [noteTypeFilter, setNoteTypeFilter] = useState<ContentType | 'all'>('all');
+  const [noteTypeFilter, setNoteTypeFilter] = useState<ContentType | 'all' | 'music'>('music');
   const [creatingSetList, setCreatingSetList] = useState(false);
   const [setListTitle, setSetListTitle] = useState('');
   const [setListDescription, setSetListDescription] = useState('');
@@ -215,8 +215,9 @@ export function ProjectHome() {
   const notes = lib.items
     .filter((item) => !item.deletedAt && !item.archived && (item.projectIds ?? []).includes(id))
     .sort((a, b) => b.updatedAt - a.updatedAt);
+  const musicNotes = notes.filter((item) => ['song', 'idea', 'fragment', 'poem'].includes(item.type));
   const visibleNotes = notes
-    .filter((item) => (noteTypeFilter === 'all' || item.type === noteTypeFilter))
+    .filter((item) => (noteTypeFilter === 'music' ? ['song', 'idea', 'fragment', 'poem'].includes(item.type) : noteTypeFilter === 'all' || item.type === noteTypeFilter))
     .filter((item) => {
       const haystack = (noteTitle(item) + ' ' + item.body + ' ' + TYPE_LABEL[item.type]).toLowerCase();
       return haystack.includes(noteQuery.trim().toLowerCase());
@@ -340,7 +341,7 @@ export function ProjectHome() {
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="eyebrow">Your project library</p>
-            <h2 id="project-song-library" className="section-heading">Songs & ideas <span className="text-muted">· {notes.length}</span></h2>
+            <h2 id="project-song-library" className="section-heading">Songs & ideas <span className="text-muted">· {musicNotes.length}</span></h2>
             <p className="mt-1 max-w-xl text-sm text-ink-2">A clear home for lyrics, melodies, fragments and musical thoughts. Only pieces linked to this Project appear here.</p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -356,8 +357,9 @@ export function ProjectHome() {
               <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
               <input className="input w-full pl-9" value={noteQuery} onChange={(e) => setNoteQuery(e.target.value)} placeholder="Find a song or idea…" aria-label="Find a song or idea" />
             </label>
-            <select className="input w-auto min-w-32" value={noteTypeFilter} onChange={(e) => setNoteTypeFilter(e.target.value as ContentType | 'all')} aria-label="Filter project pieces by type">
-              <option value="all">All pieces</option>
+            <select className="input w-auto min-w-32" value={noteTypeFilter} onChange={(e) => setNoteTypeFilter(e.target.value as ContentType | 'all' | 'music')} aria-label="Filter project pieces by type">
+              <option value="music">Music pieces</option>
+              <option value="all">All types</option>
               <option value="song">Songs</option>
               <option value="idea">Ideas</option>
               <option value="poem">Poems</option>
@@ -384,7 +386,7 @@ export function ProjectHome() {
             ))}
           </ul>
         ) : notes.length ? (
-          <div className="panel p-5 text-sm text-ink-2">No pieces match that search. Try another title or type.</div>
+          <div className="panel p-5 text-sm text-ink-2">No music pieces match that search. Choose “All types” to see the other material linked to this Project.</div>
         ) : (
           <div className="panel p-6">
             <div className="mx-auto max-w-md py-3 text-center">
