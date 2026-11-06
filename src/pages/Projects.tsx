@@ -190,7 +190,7 @@ export function Projects() {
           <div>
             <label className="label" htmlFor="project-category">Category <span className="font-normal text-muted">(optional)</span></label>
             <input id="project-category" className="input" list="project-categories" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="App, Business, Place…" />
-            <datalist id="project-categories">{[...new Set([...PROJECT_CATEGORIES, ...categories])].map((name) => <option key={name} value={name} />)}</datalist>
+            <datalist id="project-categories">{[...new Set([...PROJECT_CATEGORIES, ...categories.filter((name) => name !== 'Needs a home')])].map((name) => <option key={name} value={name} />)}</datalist>
           </div>
           <ProjectColourPicker value={colour} onChange={setColour} />
           {lib.books.length > 0 && (
