@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import { ArrowUpRight, BookOpen, Compass, Feather, Layers3, Orbit, Sparkles, Stars } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { projectKind, PROJECT_KIND_META } from '../domain/constants';
@@ -102,6 +103,6 @@ export function MyUniverse() {
   );
 }
 
-function Stat({ icon, label, value, detail }: { icon: React.ReactNode; label: string; value: number; detail: string }) {
+function Stat({ icon, label, value, detail }: { icon: ReactNode; label: string; value: number; detail: string }) {
   return <div className="archive-card flex items-center gap-4 p-4"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-paper-2 text-gold">{icon}</span><span className="min-w-0 flex-1"><span className="block font-serif text-2xl leading-none text-ink">{value.toLocaleString()}</span><span className="mt-1 block text-sm font-medium text-ink">{label}</span><span className="mt-0.5 block text-xs text-muted">{detail}</span></span></div>;
 }
