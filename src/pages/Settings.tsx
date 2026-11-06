@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { BookA, Download, HardDrive, Laptop, Monitor, Palette, RotateCcw, Smartphone, TabletSmartphone, Upload } from 'lucide-react';
 import { setSetting, useSettings } from '../db/settings';
-import { applyColourScale, COLOUR_SCALE_DEFAULT, COLOUR_SCALE_STOPS, coloursAt, stopName } from '../domain/colourScale';
+import { applyColourScale, COLOUR_SCALE_DEFAULT, COLOUR_SCALE_STOPS, DEFAULT_COLOUR_SCALE, coloursAt, stopName } from '../domain/colourScale';
 import { StatusPicker, TypeSelect, Spinner } from '../components/ui';
 import { exportBackup, isBackup, mergeBackup, replaceWithBackup } from '../db/backup';
 import { download, libraryToMarkdown, today } from '../io/export';
@@ -60,7 +60,7 @@ export function Settings() {
 
   if (!s || !lib) return <Spinner />;
 
-  const colourScale = s.colourScale ?? COLOUR_SCALE_DEFAULT;
+  const colourScale = s.colourScale ?? DEFAULT_COLOUR_SCALE;
   function updateColourScale(mode: 'light' | 'dark', value: number) {
     const next = { ...colourScale, [mode]: value };
     const activeMode = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
@@ -389,8 +389,8 @@ export function Settings() {
               type="button"
               className="btn-ghost -ml-2 mt-1 min-h-9 px-2 text-xs"
               onClick={() => {
-                applyColourScale(COLOUR_SCALE_DEFAULT, document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-                void setSetting('colourScale', COLOUR_SCALE_DEFAULT);
+                applyColourScale(DEFAULT_COLOUR_SCALE, document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+                void setSetting('colourScale', DEFAULT_COLOUR_SCALE);
               }}
             >
               <RotateCcw size={13} /> Restore original colours
