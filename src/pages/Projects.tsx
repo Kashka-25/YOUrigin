@@ -418,6 +418,7 @@ export function ProjectHome() {
           </section>
         </>
       ) : (
+        <>
         <section className="mt-9" aria-labelledby="project-song-library">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -535,8 +536,7 @@ export function ProjectHome() {
             </ul>
           </details>
         )}
-  
-  
+        </>
       )}
       <Modal open={editing} onClose={() => setEditing(false)} title="Project details">
         <form className="space-y-4" onSubmit={saveProject}>
