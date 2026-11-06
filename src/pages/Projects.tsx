@@ -31,6 +31,7 @@ export function Projects() {
   const [workId, setWorkId] = useState('');
 
   if (!lib) return <Spinner />;
+  const library = lib;
   const categories = [...new Set(lib.projects.map((p) => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
   const unlinkedWorksCount = lib.books.filter((work) => !(work.projectIds ?? []).length).length;
   const projects = [...lib.projects]
@@ -44,7 +45,7 @@ export function Projects() {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    const existingWork = lib.books.find((work) => work.id === workId);
+    const existingWork = library.books.find((work) => work.id === workId);
     const id = await createProject({
       title: title.trim() || existingWork?.title || 'Untitled project',
       description: description.trim() || existingWork?.description || '',
@@ -192,6 +193,7 @@ export function ProjectHome() {
   if (!lib) return <Spinner />;
   const project = lib.projects.find((item) => item.id === id);
   if (!project) return <EmptyState title="Project not found" action={<Link to="/initiatives" className="btn">All projects</Link>} />;
+  const currentProject = project;
 
   const notes = lib.items
     .filter((item) => !item.deletedAt && (item.projectIds ?? []).includes(id))
@@ -211,9 +213,9 @@ export function ProjectHome() {
     .slice(0, 40);
 
   function openEdit() {
-    setEditTitle(project.title);
-    setEditDescription(project.description);
-    setEditCategory(project.category);
+    setEditTitle(currentProject.title);
+    setEditDescription(currentProject.description);
+    setEditCategory(currentProject.category);
     setEditing(true);
   }
 
