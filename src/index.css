@@ -30,6 +30,7 @@
   --ai-bg: #eee7f6;
   --focus: #a77a35;
   --glow: transparent;
+  --scale-glow: #71518a;
   color-scheme: light;
 }
 
@@ -55,6 +56,7 @@
   --ai-bg: #261d35;
   --focus: #e4bd7c;
   --glow: rgba(128, 87, 153, .14);
+  --scale-glow: #805799;
   color-scheme: dark;
 }
 
@@ -109,8 +111,8 @@
 .app-shell {
   min-height: 100dvh;
   background:
-    radial-gradient(ellipse 70% 44% at 72% -10%, rgba(116, 76, 145, .16), transparent 72%),
-    radial-gradient(ellipse 45% 35% at 100% 62%, rgba(174, 130, 78, .055), transparent 75%),
+    radial-gradient(ellipse 70% 44% at 72% -10%, color-mix(in srgb, var(--scale-glow) 20%, transparent), transparent 72%),
+    radial-gradient(ellipse 45% 35% at 100% 62%, color-mix(in srgb, var(--gold) 8%, transparent), transparent 75%),
     var(--paper);
 }
 .app-sidebar {
@@ -191,4 +193,88 @@ html[data-focus] .chrome { display: none !important; }
   html, body { background: white; color: black; }
   .print-break { break-before: page; }
   .manuscript-piece { break-inside: avoid; }
+}
+
+/* Project identity colours are deliberately small accents, not large fills. */
+.project-card {
+  border-top: 3px solid var(--project-colour, var(--gold));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--project-colour, var(--gold)) 10%, var(--card)),
+    var(--card) 72%
+  );
+}
+.project-colour-dot {
+  width: .72rem;
+  height: .72rem;
+  border-radius: 999px;
+  background: var(--project-colour, var(--gold));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--project-colour, var(--gold)) 16%, transparent);
+}
+.project-colour-swatch {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  color: white;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.project-colour-swatch:hover { transform: scale(1.08); }
+.project-colour-swatch[aria-pressed="true"] {
+  border-color: var(--card);
+  box-shadow: 0 0 0 2px var(--accent), inset 0 0 0 1px rgba(0, 0, 0, .12);
+}
+
+/* Nature and Cosmos sliders, matching the tactile YOU colour-scale control. */
+.colour-scale {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+}
+.colour-scale::-webkit-slider-runnable-track {
+  height: 12px;
+  border-radius: 999px;
+  background: var(--track);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.colour-scale::-moz-range-track {
+  height: 12px;
+  border-radius: 999px;
+  background: var(--track);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.colour-scale::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  margin-top: -7px;
+  border: 3px solid var(--gold);
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .22);
+}
+.colour-scale::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--gold);
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .22);
+}
+.colour-scale:focus-visible { outline: none; }
+.colour-scale:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 35%, transparent);
+}
+.colour-scale:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 35%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .project-colour-swatch { transition: none; }
 }
