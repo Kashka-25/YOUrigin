@@ -1,6 +1,7 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
+import { ensureWorksHaveProjects } from '../db/projectRecords';
 import type {
   Book,
   BookEntry,
@@ -40,6 +41,11 @@ const LibraryCtx = createContext<LibraryData | undefined>(undefined);
  * tables change, so every screen updates the moment something is saved.
  */
 export function LibraryProvider({ children }: { children: ReactNode }) {
+  // Reconcile legacy Works into the unified Projects area; this is idempotent.
+  useEffect(() => {
+    void ensureWorksHaveProjects().catch((error) => console.error('Could not convert existing Works into Projects:', error));
+  }, []);
+
   const raw = useLiveQuery(async () => {
     const [items, tags, families, books, projects, sections, entries, collections, templates] = await Promise.all([
       db.content.toArray(),
