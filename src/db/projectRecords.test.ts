@@ -3,7 +3,7 @@ import { db, ensureBuiltIns, SCHEMA_VERSION } from './db';
 import { createMany } from './content';
 import { createBook } from './books';
 import { exportBackup, replaceWithBackup } from './backup';
-import { addItemsToProject, addWorksToProject, createProject, createProjectForWorks, deleteProject, importWorksAsProjects, removeItemFromProject, updateProject } from './projectRecords';
+import { addItemsToProject, addWorksToProject, createProject, createProjectForWorks, deleteProject, ensureWorksHaveProjects, importWorksAsProjects, removeItemFromProject, updateProject } from './projectRecords';
 import { SYNC_TABLES } from '../sync/tracking';
 
 beforeEach(async () => {
@@ -51,6 +51,70 @@ describe('independent Projects', () => {
     await addWorksToProject(first, [workId]);
     await addWorksToProject(second, [workId]);
     expect((await db.books.get(workId))?.projectIds?.sort()).toEqual([first, second].sort());
+  });
+
+  it('converts existing Works into same-id Projects without changing their creative records', async () => {
+    const workId = await createBook({
+      title: 'Field Codex',
+      description: 'A living manuscript',
+      templateId: 'tpl-codex',
+      kind: 'book',
+    });
+    const [pieceId] = await createMany([{ title: 'Opening', body: 'The first passage', type: 'teaching', status: 'developing' }]);
+    const sectionsBefore = await db.sections.where('bookId').equals(workId).toArray();
+    const entriesBefore = await import('./books').then(({ addToBook }) => addToBook(workId, [pieceId]));
+    await db.books.update(workId, {
+      cover: 'moss',
+      notes: 'Keep these manuscript notes',
+      shelf: 'Codices',
+    });
+    const bookBefore = await db.books.get(workId);
+
+    const created = await ensureWorksHaveProjects();
+    const project = await db.projects.get(workId);
+
+    expect(created).toContain(workId);
+    expect(project).toMatchObject({
+      id: workId,
+      title: 'Field Codex',
+      description: 'A living manuscript',
+      status: 'building',
+      createdAt: bookBefore?.createdAt,
+    });
+    expect(await db.books.get(workId)).toMatchObject({
+      id: workId,
+      title: 'Field Codex',
+      cover: 'moss',
+      notes: 'Keep these manuscript notes',
+      shelf: 'Codices',
+    });
+    expect(await db.sections.where('bookId').equals(workId).toArray()).toEqual(sectionsBefore);
+    expect(await db.entries.where('bookId').equals(workId).toArray()).toHaveLength(entriesBefore.length);
+    expect((await db.content.get(pieceId))?.body).toBe('The first passage');
+
+    // Running the migration again must not create or change a second Project.
+    expect(await ensureWorksHaveProjects()).toEqual([]);
+    expect(await db.projects.where('id').equals(workId).count()).toBe(1);
+  });
+
+  it('reuses an existing same-title Project for a linked Work instead of duplicating it', async () => {
+    const workId = await createBook({ title: 'YOU App', templateId: null, kind: 'custom' });
+    const existingProjectId = await createProject({ title: 'YOU App', category: 'App' });
+    await addWorksToProject(existingProjectId, [workId]);
+
+    expect(await ensureWorksHaveProjects()).toEqual([]);
+    expect(await db.projects.count()).toBe(1);
+    expect((await db.books.get(workId))?.projectIds).toEqual([existingProjectId]);
+  });
+
+  it('gives a linked Work its own Project while preserving its original parent Project', async () => {
+    const parentId = await createProject({ title: 'Creative studio' });
+    const workId = await createBook({ title: 'Poetry collection', templateId: null, kind: 'book' });
+    await addWorksToProject(parentId, [workId]);
+
+    expect(await ensureWorksHaveProjects()).toEqual([workId]);
+    expect(await db.projects.get(workId)).toMatchObject({ title: 'Poetry collection' });
+    expect((await db.books.get(workId))?.projectIds).toEqual([parentId]);
   });
 
   it('imports several unlinked Works as separate Projects without changing their contents or structure', async () => {
