@@ -100,7 +100,7 @@ export function ImportDialog({ open, onClose, projectId, projectTitle, initialTy
     try {
       const kept = includedDrafts(drafts);
       const ids = await createMany(
-        toNewContent(drafts, { status, type, extraTags: tags.split(/[\\s,]+/).map(normaliseTagName).filter(Boolean) }),
+        toNewContent(drafts, { status, type, extraTags: tags.split(/[\s,]+/).map(normaliseTagName).filter(Boolean) }),
       );
       if (projectId) await addItemsToProject(projectId, ids);
       const title = bookTitle.trim() || 'Imported book';
