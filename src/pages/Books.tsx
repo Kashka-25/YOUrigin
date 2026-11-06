@@ -2,13 +2,12 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronDown, Plus, Pencil, Trash2 } from 'lucide-react';
 import { useLibrary, type LibraryData } from '../hooks/useLibrary';
-import { computeBookProgress } from '../domain/progress';
 import { BOOK_TYPE_LABEL, PROJECT_KIND_META, projectKind } from '../domain/constants';
-import { countLabel, groupByShelf, shelfNames } from '../domain/projects';
+import { groupByShelf, shelfNames } from '../domain/projects';
 import type { Book, BookType, ProjectKind, Template } from '../domain/types';
 import { createBook, deleteTemplate, renameShelf, saveTemplate } from '../db/books';
 import { Modal, useConfirm } from '../components/Modal';
-import { EmptyState, ProgressBar, Spinner } from '../components/ui';
+import { EmptyState, Spinner } from '../components/ui';
 import { coverColour } from '../components/BookCover';
 import { ProjectKindPicker } from '../components/ProjectKindPicker';
 
@@ -61,21 +60,22 @@ export function Books() {
     <div className="mx-auto max-w-5xl px-4 pt-8 md:px-8 md:pt-12">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="eyebrow">Books, albums, set lists, ideas</p>
-          <h1 className="page-title">Projects</h1>
+          <p className="eyebrow">A home for the things you’re making</p>
+          <h1 className="page-title">Works</h1>
+          <p className="mt-2 max-w-xl text-sm text-ink-2">Books, albums, collections and creative projects — gathered in one place.</p>
         </div>
         <button type="button" className="btn-primary" onClick={() => startNew()}>
-          <Plus size={16} /> New project
+          <Plus size={16} /> New work
         </button>
       </div>
 
       {projects.length === 0 ? (
-        <EmptyState title="No projects yet" action={<button className="btn-primary" onClick={() => startNew()}>Start a project</button>}>
-          A project gives your pieces a shape: a book, an album, a set list. One piece can sit in many projects.
+        <EmptyState title="Nothing here just yet" action={<button className="btn-primary" onClick={() => startNew()}>Start a work</button>}>
+          Give your ideas a shape. Start with a book, an album, a set list or something of your own.
         </EmptyState>
       ) : (
         groups.map((g) => (
-          <section key={g.shelf || '-'} className="mt-8" aria-label={g.shelf || 'Other projects'}>
+          <section key={g.shelf || '-'} className="mt-8" aria-label={g.shelf || 'Other works'}>
             {shelves.length > 0 && (
               <div className="mb-3 flex items-center gap-2 border-b border-line pb-1.5">
                 <h2 className="font-serif text-2xl">{g.shelf || 'Other'}</h2>
@@ -85,7 +85,7 @@ export function Books() {
                     <button type="button" className="btn-ghost p-1" onClick={() => setRenaming(g.shelf)} aria-label={`Rename shelf ${g.shelf}`}>
                       <Pencil size={14} />
                     </button>
-                    <button type="button" className="btn-ghost ml-auto px-2 py-1 text-xs" onClick={() => startNew(g.shelf)} aria-label={`New project on ${g.shelf}`}>
+                    <button type="button" className="btn-ghost ml-auto px-2 py-1 text-xs" onClick={() => startNew(g.shelf)} aria-label={`New work on ${g.shelf}`}>
                       <Plus size={14} /> Add
                     </button>
                   </>
@@ -122,9 +122,9 @@ export function Books() {
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
           <div>
             <h2 id="tpl-h" className="font-serif text-2xl">
-              Book templates <span className="align-middle text-sm text-muted">({templates.length})</span>
+              Starting points <span className="align-middle text-sm text-muted">({templates.length})</span>
             </h2>
-            <p className="text-sm text-ink-2">Starting shapes for new books. All of them can be edited.</p>
+            <p className="text-sm text-ink-2">Optional structures for when you want a place to begin. You can change them at any time.</p>
           </div>
           <ChevronDown size={20} className="shrink-0 text-muted transition-transform group-open:rotate-180" aria-hidden />
         </summary>
@@ -307,25 +307,16 @@ export function Books() {
 
 function ProjectCard({ book: b, lib }: { book: Book; lib: LibraryData }) {
   const kind = projectKind(b);
-  const progress = computeBookProgress(
-    lib.sections.filter((s) => s.bookId === b.id),
-    lib.entries.filter((e) => e.bookId === b.id),
-    lib.contentById,
-  );
-  const { counts } = progress;
+  const pieceCount = lib.entries.filter((entry) => entry.bookId === b.id).length;
   return (
-    <Link to={`/projects/${b.id}`} className="panel group block overflow-hidden transition-shadow hover:shadow-md">
-      <div className="h-2" style={{ background: coverColour(b.cover) }} />
+    <Link to={`/projects/${b.id}`} className="panel group block overflow-hidden transition-colors hover:bg-paper-2">
+      <div className="h-1.5" style={{ background: coverColour(b.cover) }} />
       <div className="p-5">
         <p className="eyebrow">{kind === 'book' ? BOOK_TYPE_LABEL[b.type] : PROJECT_KIND_META[kind].label}</p>
         <h3 className="mt-1 font-serif text-2xl leading-tight group-hover:underline">{b.title}</h3>
         {b.subtitle && <p className="mt-1 font-serif text-ink-2 italic">{b.subtitle}</p>}
-        <div className="mt-4">
-          <ProgressBar value={progress.overall} label="Overall" />
-        </div>
-        <p className="mt-3 text-xs text-muted">
-          {countLabel(counts.total, PROJECT_KIND_META[kind].noun)} · {counts.polished} polished · {counts.developing} developing · {counts.seed} seeds
-        </p>
+        {b.description && <p className="mt-3 line-clamp-2 text-sm text-ink-2">{b.description}</p>}
+        <p className="mt-4 text-xs text-muted">{pieceCount} {pieceCount === 1 ? 'piece' : 'pieces'}</p>
       </div>
     </Link>
   );
