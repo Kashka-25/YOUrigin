@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowUpRight, BookOpen, FilePlus2, Link2, Plus, Search, Trash2, Unlink } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, BookOpen, FilePlus2, FolderPlus, Link2, Plus, Search, Trash2, Unlink } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { PROJECT_CATEGORIES, PROJECT_STATUS_META } from '../domain/constants';
 import type { ProjectStatus } from '../domain/types';
@@ -32,6 +32,7 @@ export function Projects() {
 
   if (!lib) return <Spinner />;
   const categories = [...new Set(lib.projects.map((p) => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const unlinkedWorksCount = lib.books.filter((work) => !(work.projectIds ?? []).length).length;
   const projects = [...lib.projects]
     .filter((p) => {
       const text = (p.title + ' ' + p.description + ' ' + p.category).toLowerCase();
@@ -67,7 +68,10 @@ export function Projects() {
           <h1 className="page-title">Projects</h1>
           <p className="mt-3 max-w-xl font-serif text-lg text-ink-2">A simple home for the ideas, ventures and places you're developing.</p>
         </div>
-        <button type="button" className="btn-primary" onClick={() => setCreating(true)}><Plus size={16} /> New project</button>
+        <div className="flex flex-wrap gap-2">
+          {unlinkedWorksCount > 0 && <Link to="/initiatives/import-works" className="btn"><FolderPlus size={16} /> Organise existing Works <span className="text-xs text-muted">· {unlinkedWorksCount}</span></Link>}
+          <button type="button" className="btn-primary" onClick={() => setCreating(true)}><Plus size={16} /> New project</button>
+        </div>
       </header>
 
       {lib.projects.length > 0 && (
