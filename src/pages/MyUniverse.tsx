@@ -56,7 +56,8 @@ export function MyUniverse() {
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Your universe at a glance">
         <Stat icon={<Layers3 size={18}/>} label="Collected pieces" value={pieces.length} detail="Thoughts, notes and images"/>
-        <Stat icon={<Orbit size={18}/>} label="Projects" value={projects.length} detail="Ventures, places and ideas"/>\n        <Stat icon={<BookOpen size={18}/>} label="Works" value={works.length} detail="Books and creative outputs"/>
+        <Stat icon={<Orbit size={18}/>} label="Projects" value={projects.length} detail="Ventures, places and ideas"/>
+        <Stat icon={<BookOpen size={18}/>} label="Works" value={works.length} detail="Books and creative outputs"/>
         <Stat icon={<Compass size={18}/>} label="Collections" value={collections.length} detail="Groups you have gathered"/>
       </section>
 
