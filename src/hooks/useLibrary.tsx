@@ -76,6 +76,14 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         collectionsOf.set(id, set);
       }
     }
+    const projectsOf = new Map<string, Set<string>>();
+    for (const item of items) {
+      for (const id of item.projectIds ?? []) {
+        const set = projectsOf.get(item.id) ?? new Set();
+        set.add(id);
+        projectsOf.set(item.id, set);
+      }
+    }
     const tagCounts = new Map<string, number>();
     for (const i of items) {
       if (i.deletedAt) continue;
@@ -86,8 +94,10 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       tagIdByName,
       booksOf,
       collectionsOf,
+      projectsOf,
       bookTitle: new Map(books.map((b) => [b.id, b.title])),
       collectionName: new Map(collections.map((c) => [c.id, c.name])),
+      projectTitle: new Map(projects.map((p) => [p.id, p.title])),
     };
     const ai: AIContext = {
       items: items.filter((i) => !i.deletedAt && !i.archived),
