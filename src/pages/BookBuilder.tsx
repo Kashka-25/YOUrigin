@@ -48,7 +48,7 @@ export function BookBuilder() {
   if (!lib) return <Spinner />;
   if (!data)
     return (
-      <EmptyState title="Work not found" action={<Link to="/projects" className="btn">All works</Link>}>
+      <EmptyState title="Creative workspace not found" action={<Link to="/initiatives" className="btn">All projects</Link>}>
         It may have been deleted. Your writing is still in the Library.
       </EmptyState>
     );
@@ -59,6 +59,7 @@ export function BookBuilder() {
   const isBook = kind === 'book';
   const isSetList = kind === 'setlist';
   const parentProject = lib.projects.find((project) => (book.projectIds ?? []).includes(project.id));
+  const homeProject = lib.projects.find((project) => project.id === book.id) ?? parentProject;
   const projectMaterialIds = isSetList && parentProject
     ? new Set(lib.items
       .filter((item) => !item.deletedAt && !item.archived && ['song', 'idea', 'fragment', 'poem'].includes(item.type) && (item.projectIds ?? []).includes(parentProject.id))
@@ -67,8 +68,8 @@ export function BookBuilder() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-6 md:px-8 md:pt-10">
-      <Link to={isSetList && parentProject ? '/initiative/' + parentProject.id : '/projects'} className="btn-ghost -ml-3">
-        <ArrowLeft size={16} /> {isSetList && parentProject ? parentProject.title : 'Works'}
+      <Link to={homeProject ? '/initiative/' + homeProject.id : '/initiatives'} className="btn-ghost -ml-3">
+        <ArrowLeft size={16} /> {homeProject?.title ?? 'Projects'}
       </Link>
       <header className="mt-3 flex flex-wrap items-start gap-4">
         <div className="h-20 w-2 shrink-0 rounded-full" style={{ background: coverColour(book.cover) }} aria-hidden />
@@ -105,7 +106,7 @@ export function BookBuilder() {
               {isBook && <Link to={`/projects/${book.id}/cover`} className="btn-ghost justify-start"><BookImage size={15} /> Cover design</Link>}
               {!isSetList && <Link to={`/projects/${book.id}/read`} className="btn-ghost justify-start"><BookOpenText size={15} /> Read</Link>}
               <ExportMenu book={book} />
-              <button type="button" className="btn-ghost justify-start" onClick={() => setEditOpen(true)}><Settings2 size={15} /> Work settings</button>
+              <button type="button" className="btn-ghost justify-start" onClick={() => setEditOpen(true)}><Settings2 size={15} /> Workspace settings</button>
             </div>
           </details>
         </div>
@@ -114,7 +115,7 @@ export function BookBuilder() {
       {!isSetList && (
       <details className="group mt-6 rounded-2xl border border-line bg-card">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
-          <span className="font-serif text-lg">Work progress</span>
+          <span className="font-serif text-lg">Project progress</span>
           <ChevronDown size={18} className="text-muted transition-transform group-open:rotate-180" aria-hidden />
         </summary>
         <div className="px-4 pb-4">
@@ -454,17 +455,17 @@ function BookSettings({ book, onClose }: { book: Book; onClose: () => void }) {
             className="btn text-seed"
             onClick={async () => {
               const ok = await confirm({
-                title: `Delete “${book.title}”?`,
-                message: 'Its sections and placements will be removed. Every piece of writing stays safely in your Library.',
-                confirmLabel: 'Delete work',
+                title: `Remove the creative workspace for “${book.title}”?`,
+                message: 'Its sections and placements will be removed. Every piece of writing stays safely in your Library, and the Project itself will remain.',
+                confirmLabel: 'Remove workspace',
                 danger: true,
               });
               if (!ok) return;
               await deleteBook(book.id);
-              nav('/projects');
+              nav(homeProject ? '/initiative/' + homeProject.id : '/initiatives');
             }}
           >
-            Delete work
+            Remove workspace
           </button>
         </div>
       </div>
