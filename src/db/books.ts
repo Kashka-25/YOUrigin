@@ -5,6 +5,8 @@ import { COVER_COLOURS, PROJECT_KIND_META } from '../domain/constants';
 import { acknowledgementsTemplate, copyrightTemplate, dedicationTemplate } from '../print/design';
 
 export interface NewBook {
+  /** Reuse a Project id when creating its single creative workspace. */
+  id?: string;
   title: string;
   subtitle?: string;
   description?: string;
@@ -38,7 +40,7 @@ export async function createBook(input: NewBook): Promise<string> {
     const withDedication = isBook && (input.dedicationPage ?? tpl?.dedicationPage ?? false);
     const withAcks = isBook && (input.acknowledgementsPage ?? tpl?.acknowledgementsPage ?? false);
     const book: Book = {
-      id: newId(),
+      id: input.id ?? newId(),
       title,
       subtitle: input.subtitle?.trim() ?? '',
       description: input.description?.trim() ?? '',
