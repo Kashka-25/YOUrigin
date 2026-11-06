@@ -22,7 +22,6 @@ import { SearchPalette } from './SearchPalette';
 import { useLibrary } from '../hooks/useLibrary';
 import { isOrphan } from '../domain/query';
 import { Modal } from './Modal';
-import { useSettings } from '../db/settings';
 import { SyncBadge } from './SyncBadge';
 import { useOnline } from '../hooks/useOnline';
 
