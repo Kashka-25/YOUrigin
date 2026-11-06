@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowUpRight, BookOpen, FilePlus2, FolderPlus, Link2, Plus, Search, Trash2, Unlink } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, BookOpen, FilePlus2, Link2, Plus, Search, Trash2, Unlink } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { PROJECT_CATEGORIES, PROJECT_STATUS_META } from '../domain/constants';
 import type { ProjectStatus } from '../domain/types';
@@ -41,7 +41,7 @@ export function Projects() {
     })
     .sort((a, b) => b.updatedAt - a.updatedAt);
 
-  async function submit(e: React.FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     const existingWork = lib.books.find((work) => work.id === workId);
     const id = await createProject({
