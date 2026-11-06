@@ -57,6 +57,7 @@ export function suggestedProjectHome(project: {
     'youapp': 'App',
     'yourigin': 'App',
     'commyounity': 'App',
+    'hopeium': 'App',
     'empatherapy': 'Business',
     'atlanteangardens': 'Business',
     'sweetvitalnectar': 'Business',
