@@ -1,12 +1,14 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './db';
-import type { ContentType, Status } from '../domain/types';
+import type { ColourScale, ContentType, Status } from '../domain/types';
+import { COLOUR_SCALE_DEFAULT } from '../domain/colourScale';
 
 export interface Settings {
   onboarded: boolean;
   defaultStatus: Status;
   defaultType: ContentType;
   theme: 'system' | 'light' | 'dark';
+  colourScale: ColourScale;
   aiProvider: 'local' | 'claude';
   /** Stored only on this device; never included in backups. */
   claudeApiKey: string;
@@ -26,6 +28,7 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultStatus: 'seed',
   defaultType: 'fragment',
   theme: 'dark',
+  colourScale: { light: COLOUR_SCALE_DEFAULT, dark: COLOUR_SCALE_DEFAULT },
   aiProvider: 'local',
   claudeApiKey: '',
   claudeModel: 'claude-opus-5-5',
