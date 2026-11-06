@@ -93,9 +93,15 @@ export function BookBuilder() {
         </div>
       </header>
 
-      <div className="mt-6">
-        <BookDashboard progress={progress} />
-      </div>
+      <details className="group mt-6 rounded-2xl border border-line bg-card">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
+          <span className="font-serif text-lg">Project progress</span>
+          <ChevronDown size={18} className="text-muted transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
+        <div className="px-4 pb-4">
+          <BookDashboard progress={progress} />
+        </div>
+      </details>
 
       <details className="group mt-4 rounded-2xl border border-line bg-card">
         <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
