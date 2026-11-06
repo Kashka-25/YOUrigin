@@ -3,6 +3,7 @@ import type { ColourScale } from './types';
 // The YOU colour scale, adapted to YOUrigin's warm manuscript and midnight
 // archive. The middle stop is the existing look, so a fresh install is unchanged.
 export const COLOUR_SCALE_DEFAULT = 100 / 3;
+export const DEFAULT_COLOUR_SCALE: ColourScale = { light: COLOUR_SCALE_DEFAULT, dark: COLOUR_SCALE_DEFAULT };
 
 export const COLOUR_SCALE_STOPS = {
   light: [
