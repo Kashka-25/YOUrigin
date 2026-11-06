@@ -231,6 +231,11 @@ export function ProjectHome() {
   const workspace = lib.books.find((work) => work.id === id)
     ?? lib.books.find((work) => (work.projectIds ?? []).includes(id)
       && work.title.trim().toLocaleLowerCase() === project.title.trim().toLocaleLowerCase());
+  const availableNotes = lib.items
+    .filter((item) => !item.deletedAt && !item.archived && !(item.projectIds ?? []).includes(id))
+    .filter((item) => (noteTitle(item) + ' ' + item.body).toLowerCase().includes(noteQuery.toLowerCase()))
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, 40);
 
   function openNewNote() {
     setNewNoteType(isMusicProject ? 'song' : 'note');
