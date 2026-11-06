@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Check, FolderKanban, Search } from 'lucide-react';
+import { ArrowLeft, BookOpen, Check, Search } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { PROJECT_CATEGORIES, PROJECT_KIND_META, PROJECT_STATUS_META, projectKind } from '../domain/constants';
 import type { ProjectStatus } from '../domain/types';
