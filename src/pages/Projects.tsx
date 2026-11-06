@@ -7,7 +7,7 @@ import type { ContentType, ProjectColour, ProjectStatus } from '../domain/types'
 import { ProjectColourPicker, projectColourStyle } from '../components/ProjectColourPicker';
 import { createProject, updateProject, deleteProject, addItemsToProject, removeItemFromProject } from '../db/projectRecords';
 import { createContent } from '../db/content';
-import { createBook } from '../db/books';
+import { createBook, updateBook } from '../db/books';
 import { ImportDialog } from '../components/ImportDialog';
 import { displayTitle, excerpt } from '../domain/text';
 import { PROJECT_HOME_ORDER, suggestedProjectHome } from '../domain/projects';
@@ -248,6 +248,7 @@ export function ProjectHome() {
   async function saveProject(e: React.FormEvent) {
     e.preventDefault();
     await updateProject(id, { title: editTitle, description: editDescription, category: editCategory, colour: editColour });
+    if (workspace) await updateBook(workspace.id, { title: editTitle, description: editDescription });
     setEditing(false);
   }
 
