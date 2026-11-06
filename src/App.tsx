@@ -33,7 +33,7 @@ const Workspace = lazy(() => import('./pages/Workspace').then((m) => ({ default:
 
 const CoverDesigner = lazy(() => import('./pages/CoverDesigner').then((m) => ({ default: m.CoverDesigner })));
 
-/** One workspace per project, so the open piece and its pages never carry over. */
+/** One workspace per Work, so the open piece and its pages never carry over. */
 function WorkspaceRoute() {
   const { id } = useParams();
   return (
@@ -52,7 +52,7 @@ function CoverRoute() {
   );
 }
 
-/** A fresh print view per book project, so one book's pages never linger while another lays out. */
+/** A fresh print view per Work, so one manuscript's pages never linger while another lays out. */
 function PrintRoute() {
   const { id } = useParams();
   return (
@@ -62,7 +62,7 @@ function PrintRoute() {
   );
 }
 
-/** Books became projects: old /books links (bookmarks, history) still land in the right place. */
+/** Legacy /books links still resolve to the Works area without breaking bookmarks or history. */
 function BooksRedirect() {
   const { pathname, search } = useLocation();
   return <Navigate replace to={pathname.replace(/^\/books/, '/projects') + search} />;
