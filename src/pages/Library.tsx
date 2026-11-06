@@ -38,6 +38,7 @@ function readFilters(p: URLSearchParams): LibraryFilters {
     tagIds: list('tags'),
     bookId: p.get('book'),
     collectionId: p.get('collection'),
+    projectId: p.get('project'),
     orphansOnly: p.get('orphans') === '1',
     showArchived: p.get('archived') === '1',
     sort: (p.get('sort') as SortKey) ?? 'updated',
@@ -52,6 +53,7 @@ function writeFilters(f: LibraryFilters): URLSearchParams {
   if (f.tagIds.length) p.set('tags', f.tagIds.join(','));
   if (f.bookId) p.set('book', f.bookId);
   if (f.collectionId) p.set('collection', f.collectionId);
+  if (f.projectId) p.set('project', f.projectId);
   if (f.orphansOnly) p.set('orphans', '1');
   if (f.showArchived) p.set('archived', '1');
   if (f.sort !== 'updated') p.set('sort', f.sort);
@@ -82,7 +84,7 @@ export function Library() {
   if (!lib) return <Spinner />;
 
   const activeCount =
-    filters.statuses.length + filters.types.length + filters.tagIds.length + (filters.bookId ? 1 : 0) + (filters.collectionId ? 1 : 0) + (filters.orphansOnly ? 1 : 0) + (filters.showArchived ? 1 : 0);
+    filters.statuses.length + filters.types.length + filters.tagIds.length + (filters.bookId ? 1 : 0) + (filters.collectionId ? 1 : 0) + (filters.projectId ? 1 : 0) + (filters.orphansOnly ? 1 : 0) + (filters.showArchived ? 1 : 0);
   const totalLive = lib.items.filter((i) => !i.deletedAt && !i.archived).length;
 
   const onToggle = (id: string, shift: boolean) => {
@@ -243,6 +245,11 @@ export function Library() {
               {filters.tagIds.map((t) => (
                 <TagChip key={t} name={lib.ctx.tagName.get(t) ?? '?'} active onRemove={() => set({ tagIds: filters.tagIds.filter((x) => x !== t) })} />
               ))}
+              {filters.projectId && (
+                <button type="button" onClick={() => set({ projectId: null })} className="inline-flex items-center gap-1 rounded-full border border-accent bg-accent px-3 py-1 text-xs font-semibold text-accent-ink" aria-label="Stop showing only this Project">
+                  <FolderOpen size={12} aria-hidden /> {lib.projects.find((p) => p.id === filters.projectId)?.title ?? '?'} <X size={12} aria-hidden />
+                </button>
+              )}
               {filters.collectionId && (
                 <button
                   type="button"
@@ -309,7 +316,7 @@ export function Library() {
                 </div>
                 <div>
                   <label className="label" htmlFor="f-book">
-                    In project
+                    In Work
                   </label>
                   <select id="f-book" className="input" value={filters.bookId ?? ''} onChange={(e) => set({ bookId: e.target.value || null })}>
                     <option value="">Any</option>
@@ -317,6 +324,17 @@ export function Library() {
                       <option key={b.id} value={b.id}>
                         {b.title}
                       </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label" htmlFor="f-project">
+                    In Project
+                  </label>
+                  <select id="f-project" className="input" value={filters.projectId ?? ''} onChange={(e) => set({ projectId: e.target.value || null })}>
+                    <option value="">Any</option>
+                    {lib.projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
                     ))}
                   </select>
                 </div>
