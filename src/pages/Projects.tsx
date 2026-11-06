@@ -2,8 +2,9 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, BookOpen, FilePlus2, FolderPlus, Link2, Plus, Search, Trash2, Unlink } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
-import { PROJECT_CATEGORIES, PROJECT_STATUS_META } from '../domain/constants';
-import type { ProjectStatus } from '../domain/types';
+import { DEFAULT_PROJECT_COLOUR, PROJECT_CATEGORIES, PROJECT_STATUS_META } from '../domain/constants';
+import type { ProjectColour, ProjectStatus } from '../domain/types';
+import { ProjectColourPicker, projectColourStyle } from '../components/ProjectColourPicker';
 import { createProject, updateProject, deleteProject, addItemsToProject, removeItemFromProject, addWorksToProject, removeWorkFromProject } from '../db/projectRecords';
 import { createContent } from '../db/content';
 import { createBook } from '../db/books';
@@ -28,6 +29,7 @@ export function Projects() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+  const [colour, setColour] = useState<ProjectColour>(DEFAULT_PROJECT_COLOUR);
   const [workId, setWorkId] = useState('');
 
   if (!lib) return <Spinner />;
@@ -50,6 +52,7 @@ export function Projects() {
       title: title.trim() || existingWork?.title || 'Untitled project',
       description: description.trim() || existingWork?.description || '',
       category,
+      colour,
       status: existingWork ? 'building' : 'idea',
     });
     if (existingWork) await addWorksToProject(id, [existingWork.id]);
@@ -57,6 +60,7 @@ export function Projects() {
     setTitle('');
     setDescription('');
     setCategory('');
+    setColour(DEFAULT_PROJECT_COLOUR);
     setWorkId('');
     nav('/initiative/' + id);
   }
@@ -108,9 +112,10 @@ export function Projects() {
             const works = lib.books.filter((work) => (work.projectIds ?? []).includes(project.id)).length;
             return (
               <li key={project.id}>
-                <Link to={'/initiative/' + project.id} className="archive-card group flex h-full flex-col p-5 transition-colors hover:border-gold/50">
+                <Link to={'/initiative/' + project.id} className="archive-card project-card group flex h-full flex-col p-5 transition-colors" style={projectColourStyle(project.colour)}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
+                      <span className="project-colour-dot mb-3 block" aria-hidden />
                       {project.category && <p className="eyebrow mb-2">{project.category}</p>}
                       <h2 className="font-serif text-2xl leading-tight text-ink group-hover:text-accent">{project.title}</h2>
                     </div>
@@ -145,6 +150,7 @@ export function Projects() {
             <input id="project-category" className="input" list="project-categories" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="App, Business, Place…" />
             <datalist id="project-categories">{[...new Set([...PROJECT_CATEGORIES, ...categories])].map((name) => <option key={name} value={name} />)}</datalist>
           </div>
+          <ProjectColourPicker value={colour} onChange={setColour} />
           {lib.books.length > 0 && (
             <div>
               <label className="label" htmlFor="project-start-work">Start from an existing Work <span className="font-normal text-muted">(optional)</span></label>
@@ -186,6 +192,7 @@ export function ProjectHome() {
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editCategory, setEditCategory] = useState('');
+  const [editColour, setEditColour] = useState<ProjectColour>(DEFAULT_PROJECT_COLOUR);
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [newNoteBody, setNewNoteBody] = useState('');
   const [newWorkTitle, setNewWorkTitle] = useState('');
@@ -216,12 +223,13 @@ export function ProjectHome() {
     setEditTitle(currentProject.title);
     setEditDescription(currentProject.description);
     setEditCategory(currentProject.category);
+    setEditColour(currentProject.colour ?? DEFAULT_PROJECT_COLOUR);
     setEditing(true);
   }
 
   async function saveProject(e: React.FormEvent) {
     e.preventDefault();
-    await updateProject(id, { title: editTitle, description: editDescription, category: editCategory });
+    await updateProject(id, { title: editTitle, description: editDescription, category: editCategory, colour: editColour });
     setEditing(false);
   }
 
@@ -272,7 +280,7 @@ export function ProjectHome() {
             <button type="button" className="btn-ghost px-2 py-1 text-xs text-muted" onClick={() => void removeThisProject()} title="Delete project"><Trash2 size={14} /></button>
           </div>
         </div>
-        <h1 className="page-title mt-3">{project.title}</h1>
+        <h1 className="page-title mt-3 flex items-center gap-3"><span className="project-colour-dot shrink-0" style={projectColourStyle(project.colour)} aria-hidden />{project.title}</h1>
         {project.description && <p className="mt-3 max-w-2xl font-serif text-lg leading-relaxed text-ink-2">{project.description}</p>}
       </header>
 
@@ -328,6 +336,7 @@ export function ProjectHome() {
           <div><label className="label" htmlFor="edit-project-title">Name</label><input id="edit-project-title" className="input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} data-autofocus /></div>
           <div><label className="label" htmlFor="edit-project-description">Description</label><textarea id="edit-project-description" className="input min-h-24" rows={3} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} /></div>
           <div><label className="label" htmlFor="edit-project-category">Category <span className="font-normal text-muted">(optional)</span></label><input id="edit-project-category" className="input" list="edit-project-categories" value={editCategory} onChange={(e) => setEditCategory(e.target.value)} placeholder="App, Business, Place…" /><datalist id="edit-project-categories">{PROJECT_CATEGORIES.map((name) => <option key={name} value={name} />)}</datalist></div>
+          <ProjectColourPicker value={editColour} onChange={setEditColour} />
           <div className="flex justify-end gap-2"><button type="button" className="btn" onClick={() => setEditing(false)}>Cancel</button><button type="submit" className="btn-primary">Save details</button></div>
         </form>
       </Modal>
