@@ -43,7 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const galleryOn = loc.pathname === '/library' && new URLSearchParams(loc.search).get('view') === 'gallery';
-  const activeFor = (to: string, isActive: boolean) => to === '/library?view=gallery' ? galleryOn : to === '/library' ? isActive && !galleryOn : isActive;
+  const activeFor = (to: string, isActive: boolean) => to === '/library?view=gallery' ? galleryOn : to === '/library' ? isActive && !galleryOn : to === '/initiatives' ? isActive || loc.pathname.startsWith('/initiative/') : isActive;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
