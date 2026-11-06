@@ -70,8 +70,8 @@ export function Books() {
       </div>
 
       {projects.length === 0 ? (
-        <EmptyState title="Nothing here just yet" action={<button className="btn-primary" onClick={() => startNew()}>Start a work</button>}>
-          Give your ideas a shape. Start with a book, an album, a set list or something of your own.
+        <EmptyState title="Nothing here just yet" action={<button className="btn-primary" onClick={() => startNew()}>Start a Work</button>}>
+          Create a book, album, set list, manuscript or another creative output. Projects can contain several Works.
         </EmptyState>
       ) : (
         groups.map((g) => (
@@ -173,7 +173,7 @@ export function Books() {
         </div>
       </details>
 
-      <Modal open={creating} onClose={() => setCreating(false)} title="New project">
+      <Modal open={creating} onClose={() => setCreating(false)} title="New work">
         <form
           className="space-y-4"
           onSubmit={async (e) => {
