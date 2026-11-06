@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowUpRight, BookOpen, FilePlus2, FolderPlus, Link2, ListMusic, Music2, Plus, Search, Trash2, Unlink, Upload } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, BookOpen, FolderPlus, Link2, ListMusic, Music2, Plus, Search, Trash2, Unlink, Upload } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { DEFAULT_PROJECT_COLOUR, PROJECT_CATEGORIES, PROJECT_KIND_META, PROJECT_STATUS_META, TYPE_LABEL, projectKind } from '../domain/constants';
 import type { ContentType, ProjectColour, ProjectStatus } from '../domain/types';
