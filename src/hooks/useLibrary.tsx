@@ -57,7 +57,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<LibraryData | undefined>(() => {
     if (!raw) return undefined;
-    const { items, tags, books, sections, entries, collections } = raw;
+    const { items, tags, books, projects, sections, entries, collections } = raw;
     const contentById = new Map(items.map((i) => [i.id, i]));
     const tagById = new Map(tags.map((t) => [t.id, t]));
     const tagName = new Map(tags.map((t) => [t.id, t.name]));
