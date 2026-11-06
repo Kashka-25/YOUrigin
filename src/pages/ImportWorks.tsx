@@ -2,8 +2,9 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Check, Search } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
-import { PROJECT_CATEGORIES, PROJECT_KIND_META, PROJECT_STATUS_META, projectKind } from '../domain/constants';
-import type { ProjectStatus } from '../domain/types';
+import { DEFAULT_PROJECT_COLOUR, PROJECT_CATEGORIES, PROJECT_KIND_META, PROJECT_STATUS_META, projectKind } from '../domain/constants';
+import type { ProjectColour, ProjectStatus } from '../domain/types';
+import { ProjectColourPicker } from '../components/ProjectColourPicker';
 import { createProjectForWorks, importWorksAsProjects } from '../db/projectRecords';
 import { useToast } from '../components/Toast';
 import { EmptyState, Spinner } from '../components/ui';
@@ -19,6 +20,7 @@ export function ImportWorks() {
   const [mode, setMode] = useState<ImportMode>('individual');
   const [category, setCategory] = useState('');
   const [status, setStatus] = useState<ProjectStatus>('idea');
+  const [colour, setColour] = useState<ProjectColour>(DEFAULT_PROJECT_COLOUR);
   const [groupTitle, setGroupTitle] = useState('');
   const [groupDescription, setGroupDescription] = useState('');
   const [includeArchived, setIncludeArchived] = useState(false);
@@ -61,7 +63,7 @@ export function ImportWorks() {
     setBusy(true);
     try {
       if (mode === 'individual') {
-        const created = await importWorksAsProjects(ids, { category, status });
+        const created = await importWorksAsProjects(ids, { category, colour, status });
         if (!created.length) {
           toast('Those Works are already linked to a Project.');
           return;
@@ -72,6 +74,7 @@ export function ImportWorks() {
           title: groupTitle,
           description: groupDescription,
           category,
+          colour,
           status,
         }, ids);
         toast('Created “' + groupTitle.trim() + '” with ' + ids.length + ' Works.');
@@ -204,6 +207,7 @@ export function ImportWorks() {
                   {Object.entries(PROJECT_STATUS_META).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
                 </select>
               </div>
+              <ProjectColourPicker value={colour} onChange={setColour} />
             </div>
 
             <div className="mt-5 border-t border-line pt-4">
