@@ -74,27 +74,22 @@ export function BookBuilder() {
           {book.subtitle && <p className="mt-1 font-serif text-lg text-ink-2 italic">{book.subtitle}</p>}
           {book.description && <p className="mt-2 max-w-2xl text-sm text-ink-2">{book.description}</p>}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link to={`/projects/${book.id}/write`} className="btn hidden lg:inline-flex" title="Outline, writing and printed pages side by side">
-            <PenLine size={16} /> Workspace
+        <div className="flex items-center gap-2">
+          <Link to={`/projects/${book.id}/write`} className="btn-primary" title="Open your writing workspace">
+            <PenLine size={16} /> Write
           </Link>
-          {isBook && (
-            <>
-              <Link to={`/projects/${book.id}/print`} className="btn-primary">
-                <LayoutTemplate size={16} /> Design & print
-              </Link>
-              <Link to={`/projects/${book.id}/cover`} className="btn">
-                <BookImage size={16} /> Cover
-              </Link>
-            </>
-          )}
-          <Link to={`/projects/${book.id}/read`} className="btn">
-            <BookOpenText size={16} /> Read
-          </Link>
-          <ExportMenu book={book} />
-          <button type="button" className="btn" onClick={() => setEditOpen(true)} aria-label="Project settings">
-            <Settings2 size={16} />
-          </button>
+          <details className="group relative">
+            <summary className="btn list-none cursor-pointer [&::-webkit-details-marker]:hidden">
+              More <ChevronDown size={15} className="transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="absolute right-0 z-20 mt-2 grid min-w-48 gap-1 rounded-2xl border border-line bg-card p-2 shadow-lg">
+              {isBook && <Link to={`/projects/${book.id}/print`} className="btn-ghost justify-start"><LayoutTemplate size={15} /> Design & print</Link>}
+              {isBook && <Link to={`/projects/${book.id}/cover`} className="btn-ghost justify-start"><BookImage size={15} /> Cover design</Link>}
+              <Link to={`/projects/${book.id}/read`} className="btn-ghost justify-start"><BookOpenText size={15} /> Read</Link>
+              <ExportMenu book={book} />
+              <button type="button" className="btn-ghost justify-start" onClick={() => setEditOpen(true)}><Settings2 size={15} /> Work settings</button>
+            </div>
+          </details>
         </div>
       </header>
 
