@@ -48,7 +48,7 @@ export function BookBuilder() {
   if (!lib) return <Spinner />;
   if (!data)
     return (
-      <EmptyState title="Project not found" action={<Link to="/projects" className="btn">All projects</Link>}>
+      <EmptyState title="Work not found" action={<Link to="/projects" className="btn">All works</Link>}>
         It may have been deleted. Your writing is still in the Library.
       </EmptyState>
     );
@@ -61,7 +61,7 @@ export function BookBuilder() {
   return (
     <div className="mx-auto max-w-6xl px-4 pt-6 md:px-8 md:pt-10">
       <Link to="/projects" className="btn-ghost -ml-3">
-        <ArrowLeft size={16} /> Projects
+        <ArrowLeft size={16} /> Works
       </Link>
       <header className="mt-3 flex flex-wrap items-start gap-4">
         <div className="h-20 w-2 shrink-0 rounded-full" style={{ background: coverColour(book.cover) }} aria-hidden />
@@ -73,6 +73,17 @@ export function BookBuilder() {
           <h1 className="page-title">{book.title}</h1>
           {book.subtitle && <p className="mt-1 font-serif text-lg text-ink-2 italic">{book.subtitle}</p>}
           {book.description && <p className="mt-2 max-w-2xl text-sm text-ink-2">{book.description}</p>}
+          {(book.projectIds ?? []).length > 0 && (
+            <p className="mt-3 text-xs text-muted">
+              Part of{' '}
+              {lib.projects.filter((project) => (book.projectIds ?? []).includes(project.id)).map((project, index) => (
+                <span key={project.id}>
+                  {index > 0 ? ', ' : ''}
+                  <Link to={'/initiative/' + project.id} className="underline underline-offset-2 hover:text-ink">{project.title}</Link>
+                </span>
+              ))}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Link to={`/projects/${book.id}/write`} className="btn-primary" title="Open your writing workspace">
@@ -95,7 +106,7 @@ export function BookBuilder() {
 
       <details className="group mt-6 rounded-2xl border border-line bg-card">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
-          <span className="font-serif text-lg">Project progress</span>
+          <span className="font-serif text-lg">Work progress</span>
           <ChevronDown size={18} className="text-muted transition-transform group-open:rotate-180" aria-hidden />
         </summary>
         <div className="px-4 pb-4">
