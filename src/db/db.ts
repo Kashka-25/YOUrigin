@@ -19,7 +19,50 @@ import { BUILT_IN_FAMILIES, BUILT_IN_TEMPLATES } from '../domain/constants';
 import { installChangeTracking } from '../sync/tracking';
 import { appOutbox, isSyncEnabled } from '../sync/runtime';
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
+
+/**
+ * One-time, non-destructive migration: each existing standalone Work gets a
+ * same-name Project wrapper. The original Work, sections, entries and writing
+ * remain in place and are linked to the new Project.
+ *
+ * IDs are derived from the Work ID so the same migration on another device
+ * creates the same Project ID and can safely merge through sync.
+ */
+export async function migrateLegacyWorksToProjects(
+  books: Table<Book, string>,
+  projects: Table<Project, string>,
+): Promise<number> {
+  const works = await books.toArray();
+  const migratedAt = Date.now();
+  let migrated = 0;
+
+  for (const work of works) {
+    if ((work.projectIds ?? []).length) continue;
+
+    const projectId = `legacy-work-${work.id}`;
+    if (!(await projects.get(projectId))) {
+      await projects.add({
+        id: projectId,
+        title: work.title.trim() || 'Untitled project',
+        description: work.description ?? '',
+        category: '',
+        colour: 'ochre',
+        status: work.archived ? 'resting' : 'idea',
+        createdAt: work.createdAt,
+        updatedAt: migratedAt,
+      });
+    }
+
+    await books.update(work.id, {
+      projectIds: [projectId],
+      updatedAt: migratedAt,
+    });
+    migrated++;
+  }
+
+  return migrated;
+}
 
 /**
  * Local-first store in IndexedDB. Schema changes go through `this.version(n)`
@@ -59,11 +102,18 @@ export class YOUriginDB extends Dexie {
     });
     // v2: stored images (book artwork, image pieces).
     this.version(2).stores({ assets: 'id, updatedAt' });
-    // v3: independent projects; notes and Works can each belong to many projects.
+    // v3: independent Projects; notes and Works can each belong to many Projects.
     this.version(3).stores({
       projects: 'id, updatedAt, status, category',
       content: 'id, status, type, createdAt, updatedAt, *tagIds, *projectIds',
       books: 'id, updatedAt, *projectIds',
+    });
+    // v4: keep each pre-existing standalone Work, and give it a Project home.
+    this.version(4).stores({}).upgrade(async (tx) => {
+      await migrateLegacyWorksToProjects(
+        tx.table('books') as Table<Book, string>,
+        tx.table('projects') as Table<Project, string>,
+      );
     });
   }
 }
