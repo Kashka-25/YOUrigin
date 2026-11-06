@@ -38,7 +38,7 @@ export async function migrateLegacyWorksToProjects(
   const migratedAt = Date.now();
   let migrated = 0;
 
-  const normaliseTitle = (value: string) => value.normalize('NFKC').trim().replace(/\\s+/g, ' ').toLocaleLowerCase();
+  const normaliseTitle = (value: string) => value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase();
 
   for (const work of works) {
     if ((work.projectIds ?? []).length) continue;
@@ -61,7 +61,6 @@ export async function migrateLegacyWorksToProjects(
         updatedAt: migratedAt,
       };
       await projects.add(project);
-      existingProjects.push(project);
     }
 
     await books.update(work.id, {
