@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db, ensureBuiltIns } from './db';
 import { createMany } from './content';
-import { addToBook, createBook, renameShelf, updateBook } from './books';
+import { addToBook, createBook, moveEntry, renameShelf, updateBook } from './books';
 import { exportBackup, mergeBackup, replaceWithBackup } from './backup';
 import { isBookProject, projectKind } from '../domain/constants';
 import { groupByShelf, shelfNames } from '../domain/projects';
@@ -56,6 +56,35 @@ describe('projects', () => {
     // Once per project.
     expect(await addToBook(gig1, [song])).toHaveLength(0);
     expect(await db.entries.where('contentId').equals(song).count()).toBe(3);
+  });
+
+  it('keeps each gig set list independently reorderable without moving the original songs', async () => {
+    const songs = await createMany([
+      { title: 'First song', body: 'First lyrics', type: 'song', status: 'developing' },
+      { title: 'Second song', body: 'Second lyrics', type: 'song', status: 'developing' },
+      { title: 'Third song', body: 'Third lyrics', type: 'song', status: 'developing' },
+    ]);
+    const friday = await createBook({ title: 'Friday gig', templateId: null, kind: 'setlist' });
+    const saturday = await createBook({ title: 'Saturday gig', templateId: null, kind: 'setlist' });
+    const [fridaySet] = await db.sections.where('bookId').equals(friday).toArray();
+    const [saturdaySet] = await db.sections.where('bookId').equals(saturday).toArray();
+
+    const fridayEntries = await addToBook(friday, songs, fridaySet.id);
+    await addToBook(saturday, [songs[0], songs[1]], saturdaySet.id);
+    await moveEntry(fridayEntries[2], fridaySet.id, 0);
+
+    const fridayOrder = (await db.entries.where('bookId').equals(friday).toArray())
+      .sort((a, b) => a.order - b.order)
+      .map((entry) => entry.contentId);
+    const saturdayOrder = (await db.entries.where('bookId').equals(saturday).toArray())
+      .sort((a, b) => a.order - b.order)
+      .map((entry) => entry.contentId);
+
+    expect(fridayOrder).toEqual([songs[2], songs[0], songs[1]]);
+    expect(saturdayOrder).toEqual([songs[0], songs[1]]);
+    expect((await db.content.bulkGet(songs)).map((item) => item?.body)).toEqual([
+      'First lyrics', 'Second lyrics', 'Third lyrics',
+    ]);
   });
 
   it('groups projects by shelf and renames shelves', async () => {
