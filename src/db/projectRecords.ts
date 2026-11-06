@@ -37,7 +37,7 @@ export async function addItemsToProject(projectId: string, contentIds: string[])
   await db.transaction('rw', db.projects, db.content, async () => {
     const project = await db.projects.get(projectId);
     if (!project) throw new Error('Project not found');
-    const items = (await db.content.bulkGet([...new Set(contentIds)])).filter((item) => !!item);
+    const items = (await db.content.bulkGet([...new Set(contentIds)])).filter((item): item is NonNullable<typeof item> => !!item);
     const now = Date.now();
     for (const item of items) {
       const ids = item.projectIds ?? [];
@@ -59,7 +59,7 @@ export async function addWorksToProject(projectId: string, workIds: string[]): P
   await db.transaction('rw', db.projects, db.books, async () => {
     const project = await db.projects.get(projectId);
     if (!project) throw new Error('Project not found');
-    const works = (await db.books.bulkGet([...new Set(workIds)])).filter((work) => !!work);
+    const works = (await db.books.bulkGet([...new Set(workIds)])).filter((work): work is NonNullable<typeof work> => !!work);
     const now = Date.now();
     for (const work of works) {
       const ids = work.projectIds ?? [];
