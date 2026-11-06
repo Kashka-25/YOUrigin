@@ -61,7 +61,7 @@ export function BookBuilder() {
   const parentProject = lib.projects.find((project) => (book.projectIds ?? []).includes(project.id));
   const projectMaterialIds = isSetList && parentProject
     ? new Set(lib.items
-      .filter((item) => !item.deletedAt && !item.archived && (item.projectIds ?? []).includes(parentProject.id))
+      .filter((item) => !item.deletedAt && !item.archived && ['song', 'idea', 'fragment', 'poem'].includes(item.type) && (item.projectIds ?? []).includes(parentProject.id))
       .map((item) => item.id))
     : undefined;
 
