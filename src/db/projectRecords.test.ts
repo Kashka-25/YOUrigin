@@ -118,6 +118,7 @@ describe('independent Projects', () => {
     const entriesBefore = await db.entries.where('bookId').equals(activeWork).toArray();
 
     const alreadyLinkedWork = await createBook({ title: 'Already organised', templateId: null, kind: 'custom' });
+    const sameNameWork = await createBook({ title: 'Existing Project', templateId: null, kind: 'custom' });
     const existingProject = await createProject({ title: 'Existing Project' });
     await addWorksToProject(existingProject, [alreadyLinkedWork]);
 
@@ -125,7 +126,7 @@ describe('independent Projects', () => {
       migrateLegacyWorksToProjects(db.books, db.projects),
     );
 
-    expect(migrated).toBe(2);
+    expect(migrated).toBe(3);
     const activeProjectId = `legacy-work-${activeWork}`;
     const archivedProjectId = `legacy-work-${archivedWork}`;
     expect(await db.projects.get(activeProjectId)).toMatchObject({
@@ -140,6 +141,8 @@ describe('independent Projects', () => {
     expect((await db.books.get(activeWork))?.projectIds).toEqual([activeProjectId]);
     expect((await db.books.get(archivedWork))?.projectIds).toEqual([archivedProjectId]);
     expect((await db.books.get(alreadyLinkedWork))?.projectIds).toEqual([existingProject]);
+    // A single exact-title Project is reused instead of creating a duplicate.
+    expect((await db.books.get(sameNameWork))?.projectIds).toEqual([existingProject]);
 
     // The Work itself, its manuscript sections and its placed writing remain untouched.
     expect((await db.books.get(activeWork))?.title).toBe('YOUrigin field guide');
