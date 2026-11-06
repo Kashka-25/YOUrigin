@@ -8,6 +8,7 @@ import { AppShell } from './components/AppShell';
 import { Onboarding } from './components/Onboarding';
 import { useSettings } from './db/settings';
 import { Gathering } from './pages/Gathering';
+import { MyUniverse } from './pages/MyUniverse';
 import { Library } from './pages/Library';
 import { ItemPage } from './pages/ItemPage';
 import { Books } from './pages/Books';
@@ -126,6 +127,7 @@ export default function App() {
                     <Routes>
                       <Route path="/" element={<Gathering />} />
                       <Route path="/library" element={<Library />} />
+                      <Route path="/universe" element={<MyUniverse />} />
                       <Route path="/item/:id" element={<ItemPage />} />
                       <Route path="/projects" element={<Books />} />
                       <Route path="/projects/:id" element={<BookBuilder />} />
