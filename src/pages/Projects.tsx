@@ -1,14 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowUpRight, BookOpen, FolderPlus, Link2, ListMusic, Music2, Plus, Search, Trash2, Unlink, Upload } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, BookOpen, Link2, Music2, Plus, Search, Trash2, Unlink, Upload } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { DEFAULT_PROJECT_COLOUR, PROJECT_CATEGORIES, PROJECT_KIND_META, PROJECT_STATUS_META, TYPE_LABEL, projectKind } from '../domain/constants';
 import type { ContentType, ProjectColour, ProjectStatus } from '../domain/types';
 import { ProjectColourPicker, projectColourStyle } from '../components/ProjectColourPicker';
-import { createProject, updateProject, deleteProject, addItemsToProject, removeItemFromProject, addWorksToProject, removeWorkFromProject } from '../db/projectRecords';
+import { createProject, updateProject, deleteProject, addItemsToProject, removeItemFromProject } from '../db/projectRecords';
 import { createContent } from '../db/content';
-import { addToBook, createBook } from '../db/books';
-import { db } from '../db/db';
+import { createBook } from '../db/books';
 import { ImportDialog } from '../components/ImportDialog';
 import { displayTitle, excerpt } from '../domain/text';
 import { PROJECT_HOME_ORDER, suggestedProjectHome } from '../domain/projects';
@@ -34,7 +33,6 @@ export function Projects() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [colour, setColour] = useState<ProjectColour>(DEFAULT_PROJECT_COLOUR);
-  const [workId, setWorkId] = useState('');
 
   // Save only clear, title-based suggestions for older Projects that have no home yet.
   // Existing categories are never overwritten and no notes or Works are changed.
@@ -49,9 +47,6 @@ export function Projects() {
   }, [lib?.projects]);
 
   if (!lib) return <Spinner />;
-  const library = lib;
-
-
   const categories = [...new Set(lib.projects.map((project) => suggestedProjectHome(project) || 'Needs a home'))]
     .sort((a, b) => {
       const ai = PROJECT_HOME_ORDER.indexOf(a as (typeof PROJECT_HOME_ORDER)[number]);
@@ -63,7 +58,6 @@ export function Projects() {
       if (b === 'Needs a home') return -1;
       return a.localeCompare(b);
     });
-  const unlinkedWorksCount = lib.books.filter((work) => !(work.projectIds ?? []).length).length;
   const projects = [...lib.projects]
     .filter((project) => {
       const home = suggestedProjectHome(project) || 'Needs a home';
@@ -79,21 +73,12 @@ export function Projects() {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    const existingWork = library.books.find((work) => work.id === workId);
-    const id = await createProject({
-      title: title.trim() || existingWork?.title || 'Untitled project',
-      description: description.trim() || existingWork?.description || '',
-      category,
-      colour,
-      status: existingWork ? 'building' : 'idea',
-    });
-    if (existingWork) await addWorksToProject(id, [existingWork.id]);
+    const id = await createProject({ title, description, category, colour });
     setCreating(false);
     setTitle('');
     setDescription('');
     setCategory('');
     setColour(DEFAULT_PROJECT_COLOUR);
-    setWorkId('');
     nav('/initiative/' + id);
   }
 
@@ -106,7 +91,6 @@ export function Projects() {
           <p className="mt-3 max-w-xl font-serif text-lg text-ink-2">A simple home for the ideas, ventures and places you're developing.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {unlinkedWorksCount > 0 && <Link to="/initiatives/import-works" className="btn"><FolderPlus size={16} /> Organise existing Works <span className="text-xs text-muted">· {unlinkedWorksCount}</span></Link>}
           <button type="button" className="btn-primary" onClick={() => setCreating(true)}><Plus size={16} /> New project</button>
         </div>
       </header>
@@ -193,25 +177,9 @@ export function Projects() {
             <datalist id="project-categories">{[...new Set([...PROJECT_CATEGORIES, ...categories.filter((name) => name !== 'Needs a home')])].map((name) => <option key={name} value={name} />)}</datalist>
           </div>
           <ProjectColourPicker value={colour} onChange={setColour} />
-          {lib.books.length > 0 && (
-            <div>
-              <label className="label" htmlFor="project-start-work">Start from an existing Work <span className="font-normal text-muted">(optional)</span></label>
-              <select id="project-start-work" className="input" value={workId} onChange={(e) => {
-                const next = e.target.value;
-                setWorkId(next);
-                const work = lib.books.find((item) => item.id === next);
-                if (work && !title.trim()) setTitle(work.title);
-                if (work && !description.trim()) setDescription(work.description);
-              }}>
-                <option value="">Start fresh</option>
-                {lib.books.map((work) => <option key={work.id} value={work.id}>{work.title}</option>)}
-              </select>
-              <p className="mt-1 text-xs text-muted">This links the Work to the new Project. Its contents and structure stay as they are.</p>
-            </div>
-          )}
           <div className="flex justify-end gap-2">
             <button type="button" className="btn" onClick={() => setCreating(false)}>Cancel</button>
-            <button type="submit" className="btn-primary" disabled={!title.trim() && !workId}>Create project</button>
+            <button type="submit" className="btn-primary" disabled={!title.trim()}>Create project</button>
           </div>
         </form>
       </Modal>
