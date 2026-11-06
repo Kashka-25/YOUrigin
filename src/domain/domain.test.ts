@@ -3,6 +3,7 @@ import { displayTitle, extractHashtags, parseCapture, splitPieces, extractMarkdo
 import { computeBookProgress } from './progress';
 import { EMPTY_FILTERS, filterItems, parseQuery, type LibraryContext } from './query';
 import { buildGraph, layout } from './graph';
+import { suggestedProjectHome } from './projects';
 import type { BookEntry, ContentItem, Section, Status } from './types';
 
 function item(id: string, status: Status, tagIds: string[] = [], body = 'text'): ContentItem {
@@ -34,6 +35,30 @@ function ctx(tags: Record<string, string>, booksOf: Record<string, string[]> = {
     projectTitle: new Map(),
   };
 }
+
+describe('Project homes', () => {
+  it('keeps a category already chosen by the user', () => {
+    expect(suggestedProjectHome({ title: 'YOUrigin', category: 'Research' })).toBe('Research');
+  });
+
+  it('places known Projects in their established homes', () => {
+    expect(suggestedProjectHome({ title: 'YOU App' })).toBe('App');
+    expect(suggestedProjectHome({ title: 'Hopeium' })).toBe('App');
+    expect(suggestedProjectHome({ title: 'CommYOUnity' })).toBe('App');
+    expect(suggestedProjectHome({ title: 'Empatherapy' })).toBe('Business');
+    expect(suggestedProjectHome({ title: 'Atlantean Gardens' })).toBe('Business');
+    expect(suggestedProjectHome({ title: 'Sweet Vital Nectar' })).toBe('Business');
+    expect(suggestedProjectHome({ title: 'Rhythm Relics' })).toBe('Business');
+    expect(suggestedProjectHome({ title: 'Terra Senga' })).toBe('Place');
+    expect(suggestedProjectHome({ title: 'Lyric Ideas' })).toBe('Creative');
+  });
+
+  it('recognises clear purpose words but leaves ambiguous names alone', () => {
+    expect(suggestedProjectHome({ title: 'New Song Ideas' })).toBe('Creative');
+    expect(suggestedProjectHome({ title: 'Research: Soil Health' })).toBe('Research');
+    expect(suggestedProjectHome({ title: 'Untitled' })).toBe('');
+  });
+});
 
 describe('capture parsing', () => {
   it('extracts hashtags as normalised tags', () => {

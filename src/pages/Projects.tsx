@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, BookOpen, FolderPlus, Link2, ListMusic, Music2, Plus, Search, Trash2, Unlink, Upload } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
@@ -11,6 +11,7 @@ import { addToBook, createBook } from '../db/books';
 import { db } from '../db/db';
 import { ImportDialog } from '../components/ImportDialog';
 import { displayTitle, excerpt } from '../domain/text';
+import { PROJECT_HOME_ORDER, suggestedProjectHome } from '../domain/projects';
 import { Modal, useConfirm } from '../components/Modal';
 import { EmptyState, Spinner } from '../components/ui';
 
@@ -35,18 +36,46 @@ export function Projects() {
   const [colour, setColour] = useState<ProjectColour>(DEFAULT_PROJECT_COLOUR);
   const [workId, setWorkId] = useState('');
 
+  // Save only clear, title-based suggestions for older Projects that have no home yet.
+  // Existing categories are never overwritten and no notes or Works are changed.
+  useEffect(() => {
+    const suggestions = (lib?.projects ?? [])
+      .filter((project) => !(project.category ?? '').trim())
+      .map((project) => ({ id: project.id, category: suggestedProjectHome(project) }))
+      .filter((project) => !!project.category);
+    if (suggestions.length) {
+      void Promise.all(suggestions.map((project) => updateProject(project.id, { category: project.category })));
+    }
+  }, [lib?.projects]);
+
   if (!lib) return <Spinner />;
   const library = lib;
-  const categories = [...new Set(lib.projects.map((p) => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+
+  const categories = [...new Set(lib.projects.map((project) => suggestedProjectHome(project) || 'Needs a home'))]
+    .sort((a, b) => {
+      const ai = PROJECT_HOME_ORDER.indexOf(a as (typeof PROJECT_HOME_ORDER)[number]);
+      const bi = PROJECT_HOME_ORDER.indexOf(b as (typeof PROJECT_HOME_ORDER)[number]);
+      if (ai >= 0 && bi >= 0) return ai - bi;
+      if (ai >= 0) return -1;
+      if (bi >= 0) return 1;
+      if (a === 'Needs a home') return 1;
+      if (b === 'Needs a home') return -1;
+      return a.localeCompare(b);
+    });
   const unlinkedWorksCount = lib.books.filter((work) => !(work.projectIds ?? []).length).length;
   const projects = [...lib.projects]
-    .filter((p) => {
-      const text = (p.title + ' ' + p.description + ' ' + p.category).toLowerCase();
+    .filter((project) => {
+      const home = suggestedProjectHome(project) || 'Needs a home';
+      const text = (project.title + ' ' + project.description + ' ' + home).toLowerCase();
       return (!query.trim() || text.includes(query.trim().toLowerCase()))
-        && (!categoryFilter || p.category === categoryFilter)
-        && (statusFilter === 'all' || p.status === statusFilter);
+        && (!categoryFilter || home === categoryFilter)
+        && (statusFilter === 'all' || project.status === statusFilter);
     })
     .sort((a, b) => b.updatedAt - a.updatedAt);
+  const projectGroups = categories
+    .map((home) => ({ home, projects: projects.filter((project) => (suggestedProjectHome(project) || 'Needs a home') === home) }))
+    .filter((group) => group.projects.length > 0);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -109,33 +138,43 @@ export function Projects() {
           </div>
         ) : <div className="panel mt-7 p-6 text-sm text-ink-2">No projects match those filters. Try another search or clear the filters.</div>
       ) : (
-        <ul className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {projects.map((project) => {
-            const notes = lib.items.filter((item) => !item.deletedAt && (item.projectIds ?? []).includes(project.id)).length;
-            const works = lib.books.filter((work) => (work.projectIds ?? []).includes(project.id)).length;
-            return (
-              <li key={project.id}>
-                <Link to={'/initiative/' + project.id} className="archive-card project-card group flex h-full flex-col p-5 transition-colors" style={projectColourStyle(project.colour)}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <span className="project-colour-dot mb-3 block" aria-hidden />
-                      {project.category && <p className="eyebrow mb-2">{project.category}</p>}
-                      <h2 className="font-serif text-2xl leading-tight text-ink group-hover:text-accent">{project.title}</h2>
-                    </div>
-                    <ProjectStatusLabel status={project.status} />
-                  </div>
-                  {project.description && <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-ink-2">{project.description}</p>}
-                  <div className="mt-auto flex items-center gap-3 pt-5 text-xs text-muted">
-                    <span>{notes} {notes === 1 ? 'note' : 'notes'}</span>
-                    <span aria-hidden>·</span>
-                    <span>{works} {works === 1 ? 'Work' : 'Works'}</span>
-                    <span className="ml-auto"><ArrowUpRight size={15} /></span>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="mt-7 space-y-9">
+          {projectGroups.map((group) => (
+            <section key={group.home} aria-labelledby={'project-home-' + group.home.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}>
+              <div className="mb-3 flex items-baseline justify-between gap-3">
+                <h2 id={'project-home-' + group.home.replace(/[^a-z0-9]+/gi, '-').toLowerCase()} className="section-heading">{group.home}</h2>
+                <span className="text-xs text-muted">{group.projects.length} {group.projects.length === 1 ? 'project' : 'projects'}</span>
+              </div>
+              <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {group.projects.map((project) => {
+                  const notes = lib.items.filter((item) => !item.deletedAt && (item.projectIds ?? []).includes(project.id)).length;
+                  const works = lib.books.filter((work) => (work.projectIds ?? []).includes(project.id)).length;
+                  return (
+                    <li key={project.id}>
+                      <Link to={'/initiative/' + project.id} className="archive-card project-card group flex h-full flex-col p-5 transition-colors" style={projectColourStyle(project.colour)}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <span className="project-colour-dot mb-3 block" aria-hidden />
+                            <p className="eyebrow mb-2">{group.home === 'Needs a home' ? 'Uncategorised' : group.home}</p>
+                            <h3 className="font-serif text-2xl leading-tight text-ink group-hover:text-accent">{project.title}</h3>
+                          </div>
+                          <ProjectStatusLabel status={project.status} />
+                        </div>
+                        {project.description && <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-ink-2">{project.description}</p>}
+                        <div className="mt-auto flex items-center gap-3 pt-5 text-xs text-muted">
+                          <span>{notes} {notes === 1 ? 'note' : 'notes'}</span>
+                          <span aria-hidden>·</span>
+                          <span>{works} {works === 1 ? 'Work' : 'Works'}</span>
+                          <span className="ml-auto"><ArrowUpRight size={15} /></span>
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
       )}
 
       <Modal open={creating} onClose={() => setCreating(false)} title="New project">
@@ -151,7 +190,7 @@ export function Projects() {
           <div>
             <label className="label" htmlFor="project-category">Category <span className="font-normal text-muted">(optional)</span></label>
             <input id="project-category" className="input" list="project-categories" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="App, Business, Place…" />
-            <datalist id="project-categories">{[...new Set([...PROJECT_CATEGORIES, ...categories])].map((name) => <option key={name} value={name} />)}</datalist>
+            <datalist id="project-categories">{[...new Set([...PROJECT_CATEGORIES, ...categories.filter((name) => name !== 'Needs a home')])].map((name) => <option key={name} value={name} />)}</datalist>
           </div>
           <ProjectColourPicker value={colour} onChange={setColour} />
           {lib.books.length > 0 && (
