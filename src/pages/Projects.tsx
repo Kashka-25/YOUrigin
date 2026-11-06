@@ -7,7 +7,7 @@ import type { ContentType, ProjectColour, ProjectStatus } from '../domain/types'
 import { ProjectColourPicker, projectColourStyle } from '../components/ProjectColourPicker';
 import { createProject, updateProject, deleteProject, addItemsToProject, removeItemFromProject } from '../db/projectRecords';
 import { createContent } from '../db/content';
-import { createBook, updateBook } from '../db/books';
+import { createBook, deleteBook, updateBook } from '../db/books';
 import { ImportDialog } from '../components/ImportDialog';
 import { displayTitle, excerpt } from '../domain/text';
 import { PROJECT_HOME_ORDER, suggestedProjectHome } from '../domain/projects';
@@ -279,13 +279,17 @@ export function ProjectHome() {
   }
 
   async function removeThisProject() {
+    const ownsWorkspace = workspace?.id === id;
     const yes = await confirm({
       title: 'Delete this project?',
-      message: 'The project and its links will be removed. Its notes and creative workspace will remain in your Library.',
+      message: ownsWorkspace
+        ? 'The Project and its creative workspace structure will be removed. The individual pieces of writing will remain in your Library, but the workspace sections and order will be lost.'
+        : 'The Project and its links will be removed. Its related creative records will remain in your Library.',
       confirmLabel: 'Delete project',
       danger: true,
     });
     if (!yes) return;
+    if (ownsWorkspace) await deleteBook(id);
     await deleteProject(id);
     nav('/initiatives');
   }
