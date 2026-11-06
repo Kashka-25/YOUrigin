@@ -24,9 +24,10 @@ export function ImportWorks() {
   const [includeArchived, setIncludeArchived] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  const allUnlinkedWorks = useMemo(() => (lib?.books ?? []).filter((work) => !(work.projectIds ?? []).length), [lib]);
   const unlinkedWorks = useMemo(
-    () => (lib?.books ?? []).filter((work) => !(work.projectIds ?? []).length && (includeArchived || !work.archived)),
-    [lib, includeArchived],
+    () => allUnlinkedWorks.filter((work) => includeArchived || !work.archived),
+    [allUnlinkedWorks, includeArchived],
   );
   const filteredWorks = useMemo(
     () => unlinkedWorks.filter((work) => {
@@ -35,7 +36,8 @@ export function ImportWorks() {
     }),
     [unlinkedWorks, query],
   );
-  const selectedWorks = lib ? selectedIds.map((id) => lib.books.find((work) => work.id === id)).filter((work): work is NonNullable<typeof work> => !!work && !(work.projectIds ?? []).length) : [];
+  const availableIds = new Set(unlinkedWorks.map((work) => work.id));
+  const selectedWorks = lib ? selectedIds.map((id) => lib.books.find((work) => work.id === id)).filter((work): work is NonNullable<typeof work> => !!work && availableIds.has(work.id)) : [];
   const categories = [...new Set([...(lib?.projects.map((project) => project.category).filter(Boolean) ?? []), ...PROJECT_CATEGORIES])].sort((a, b) => a.localeCompare(b));
   const allFilteredSelected = filteredWorks.length > 0 && filteredWorks.every((work) => selectedIds.includes(work.id));
 
@@ -95,7 +97,7 @@ export function ImportWorks() {
         </p>
       </header>
 
-      {unlinkedWorks.length === 0 ? (
+      {allUnlinkedWorks.length === 0 ? (
         <div className="panel mt-8">
           <EmptyState title="Everything is already connected">
             There are no unlinked Works to organise. You can still connect any Work to additional Projects from its Project page.
@@ -129,7 +131,7 @@ export function ImportWorks() {
             </div>
 
             {filteredWorks.length === 0 ? (
-              <div className="panel mt-3 p-5 text-sm text-ink-2">No unlinked Works match this search.</div>
+              <div className="panel mt-3 p-5 text-sm text-ink-2">{includeArchived ? 'No unlinked Works match this search.' : 'No active unlinked Works match this search. Turn on “Include archived Works” to see archived entries.'}</div>
             ) : (
               <ul className="mt-2 divide-y divide-line border-y border-line">
                 {filteredWorks.map((work) => {
