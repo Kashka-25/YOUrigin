@@ -1,11 +1,11 @@
-import type { Book, BookType, ContentType, ProjectKind, Status } from './types';
+import type { Book, BookType, ContentType, ProjectKind, ProjectStatus, Status } from './types';
 
 export const STATUSES: Status[] = ['seed', 'developing', 'polished'];
 
 export const PROJECT_CATEGORIES = ['App', 'Business', 'Creative', 'Place', 'Research', 'Personal', 'Other'] as const;
 
 export const PROJECT_STATUS_META: Record<
-  import('./types').ProjectStatus,
+  ProjectStatus,
   { label: string; description: string; className: string }
 > = {
   idea: { label: 'Idea', description: 'Something you may explore.', className: 'bg-paper-2 text-ink-2' },
