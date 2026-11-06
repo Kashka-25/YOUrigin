@@ -40,7 +40,7 @@ export function Projects() {
   // Existing categories are never overwritten and no notes or Works are changed.
   useEffect(() => {
     const suggestions = (lib?.projects ?? [])
-      .filter((project) => !project.category.trim())
+      .filter((project) => !(project.category ?? '').trim())
       .map((project) => ({ id: project.id, category: suggestedProjectHome(project) }))
       .filter((project) => !!project.category);
     if (suggestions.length) {
