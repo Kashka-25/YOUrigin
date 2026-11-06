@@ -62,7 +62,7 @@ export function Books() {
         <div>
           <p className="eyebrow mb-2">Your creative world, taking shape</p>
           <h1 className="page-title">Works</h1>
-          <p className="mt-3 max-w-xl font-serif text-lg text-ink-2">The things you are bringing into the world. Each one begins somewhere.</p>
+          <p className="mt-3 max-w-xl font-serif text-lg text-ink-2">The individual creative outputs that live within your Projects — books, albums, set lists, collections and other pieces.</p>
         </div>
         <button type="button" className="btn-primary" onClick={() => startNew()}>
           <Plus size={16} /> New work
@@ -71,7 +71,7 @@ export function Books() {
 
       {projects.length === 0 ? (
         <EmptyState title="Nothing here just yet" action={<button className="btn-primary" onClick={() => startNew()}>Start a Work</button>}>
-          Create a book, album, set list, manuscript or another creative output. Projects can contain several Works.
+          Create a Work such as a book, album, set list or manuscript. A Project is the larger undertaking that can hold several Works.
         </EmptyState>
       ) : (
         groups.map((g) => (
