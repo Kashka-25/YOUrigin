@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  BookOpen, Feather, FolderKanban, FolderOpen, Hash, Images, Library, Menu,
+  Feather, FolderKanban, FolderOpen, Hash, Images, Library, Menu,
   Network, Search, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit,
 } from 'lucide-react';
 import { Logo } from './Logo';
@@ -17,7 +17,6 @@ const PRIMARY: NavDef[] = [
   { to: '/', label: 'Gather', icon: Feather, end: true },
   { to: '/library', label: 'Library', icon: Library },
   { to: '/initiatives', label: 'Projects', icon: FolderKanban },
-  { to: '/projects', label: 'Works', icon: BookOpen },
   { to: '/universe', label: 'My Universe', icon: Orbit },
 ];
 const SECONDARY: NavDef[] = [
@@ -45,7 +44,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const galleryOn = loc.pathname === '/library' && new URLSearchParams(loc.search).get('view') === 'gallery';
-  const activeFor = (to: string, isActive: boolean) => to === '/library?view=gallery' ? galleryOn : to === '/library' ? isActive && !galleryOn : to === '/initiatives' ? isActive || loc.pathname.startsWith('/initiative/') : isActive;
+  const activeFor = (to: string, isActive: boolean) => to === '/library?view=gallery' ? galleryOn : to === '/library' ? isActive && !galleryOn : to === '/initiatives' ? isActive || loc.pathname.startsWith('/initiative/') || loc.pathname.startsWith('/projects/') : isActive;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
@@ -95,7 +94,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
       <div className="app-main min-h-dvh flex-1">
         <header className="no-print chrome sticky top-0 z-30 hidden h-14 items-center justify-between border-b border-line/70 bg-paper/75 px-8 backdrop-blur-xl md:flex">
-          <div className="flex items-center gap-2 text-xs text-muted"><span className="h-1.5 w-1.5 rounded-full bg-gold/80"/>{loc.pathname === '/' ? 'A place to begin' : loc.pathname.startsWith('/library') ? 'Your collected thoughts' : loc.pathname.startsWith('/initiatives') || loc.pathname.startsWith('/initiative/') ? 'The things you are building' : loc.pathname.startsWith('/projects') ? 'Your creative works' : 'Your creative codex'}</div>
+          <div className="flex items-center gap-2 text-xs text-muted"><span className="h-1.5 w-1.5 rounded-full bg-gold/80"/>{loc.pathname === '/' ? 'A place to begin' : loc.pathname.startsWith('/library') ? 'Your collected thoughts' : loc.pathname.startsWith('/initiatives') || loc.pathname.startsWith('/initiative/') ? 'The things you are building' : loc.pathname.startsWith('/projects') ? 'Your creative workspace' : 'Your creative codex'}</div>
           <div className="flex items-center gap-3"><span className="text-xs text-muted">A little space to think, make and become.</span><SyncBadge compact /></div>
         </header>
         <header className="no-print chrome sticky top-0 z-30 flex items-center justify-between border-b border-line/70 bg-paper/90 px-4 py-3 backdrop-blur-xl md:hidden">
@@ -104,7 +103,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
         <main id="main" className="min-w-0 pb-24 md:pb-8">{children}</main>
       </div>
-      <nav aria-label="Main" className="mobile-dock no-print chrome fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav aria-label="Main" className="mobile-dock no-print chrome fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t pb-[env(safe-area-inset-bottom)] md:hidden">
         {MOBILE_PRIMARY.map((item) => <NavLink key={item.to} to={item.to} end={item.end} className={({isActive}) => `relative flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] ${activeFor(item.to,isActive) ? 'font-semibold' : 'text-[#9f91a8]'}`}><item.icon size={19} strokeWidth={1.7}/>{item.label}</NavLink>)}
         <button type="button" onClick={() => setMoreOpen(true)} className="flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] text-[#9f91a8]"><Menu size={19}/>More</button>
       </nav>
