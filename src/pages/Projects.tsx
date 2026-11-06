@@ -132,7 +132,9 @@ export function Projects() {
               <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {group.projects.map((project) => {
                   const notes = lib.items.filter((item) => !item.deletedAt && (item.projectIds ?? []).includes(project.id)).length;
-                  const works = lib.books.filter((work) => (work.projectIds ?? []).includes(project.id)).length;
+                  const hasWorkspace = lib.books.some((work) => work.id === project.id
+                    || ((work.projectIds ?? []).includes(project.id)
+                      && work.title.trim().toLocaleLowerCase() === project.title.trim().toLocaleLowerCase()));
                   return (
                     <li key={project.id}>
                       <Link to={'/initiative/' + project.id} className="archive-card project-card group flex h-full flex-col p-5 transition-colors" style={projectColourStyle(project.colour)}>
@@ -148,7 +150,7 @@ export function Projects() {
                         <div className="mt-auto flex items-center gap-3 pt-5 text-xs text-muted">
                           <span>{notes} {notes === 1 ? 'note' : 'notes'}</span>
                           <span aria-hidden>·</span>
-                          <span>{works} {works === 1 ? 'Work' : 'Works'}</span>
+                          <span>{hasWorkspace ? 'Creative workspace' : 'Project space'}</span>
                           <span className="ml-auto"><ArrowUpRight size={15} /></span>
                         </div>
                       </Link>
@@ -217,7 +219,6 @@ export function ProjectHome() {
   const notes = lib.items
     .filter((item) => !item.deletedAt && !item.archived && (item.projectIds ?? []).includes(id))
     .sort((a, b) => b.updatedAt - a.updatedAt);
-  const musicNotes = notes.filter((item) => ['song', 'idea', 'fragment', 'poem'].includes(item.type));
   const visibleNotes = notes
     .filter((item) => {
       const isMusicPiece = ['song', 'idea', 'fragment', 'poem'].includes(item.type);
@@ -227,7 +228,6 @@ export function ProjectHome() {
       const haystack = (noteTitle(item) + ' ' + item.body + ' ' + TYPE_LABEL[item.type]).toLowerCase();
       return matchesType && haystack.includes(noteQuery.trim().toLowerCase());
     });
-  const songNotes = notes.filter((item) => item.type === 'song');
   const workspace = lib.books.find((work) => work.id === id)
     ?? lib.books.find((work) => (work.projectIds ?? []).includes(id)
       && work.title.trim().toLocaleLowerCase() === project.title.trim().toLocaleLowerCase());
