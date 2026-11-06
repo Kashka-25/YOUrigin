@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { db, ensureBuiltIns, SCHEMA_VERSION } from './db';
+import { db, ensureBuiltIns, migrateLegacyWorksToProjects, SCHEMA_VERSION } from './db';
 import { createMany } from './content';
-import { createBook } from './books';
+import { addToBook, createBook } from './books';
 import { exportBackup, replaceWithBackup } from './backup';
 import { addItemsToProject, addWorksToProject, createProject, createProjectForWorks, deleteProject, importWorksAsProjects, removeItemFromProject, updateProject } from './projectRecords';
 import { SYNC_TABLES } from '../sync/tracking';
@@ -99,6 +99,65 @@ describe('independent Projects', () => {
     expect((await db.books.get(unlinked))?.projectIds).toEqual(ids);
   });
 
+  it('converts existing standalone Works into Projects without changing their original records', async () => {
+    const activeWork = await createBook({
+      title: 'YOUrigin field guide',
+      description: 'The original manuscript and its structure stay intact.',
+      templateId: 'tpl-poetry',
+    });
+    const archivedWork = await createBook({
+      title: 'Old collection',
+      templateId: null,
+      kind: 'custom',
+    });
+    await db.books.update(archivedWork, { archived: true });
+
+    const [pieceId] = await createMany([{ body: 'An original piece of writing.', type: 'note', status: 'seed' }]);
+    await addToBook(activeWork, [pieceId]);
+    const sectionsBefore = await db.sections.where('bookId').equals(activeWork).toArray();
+    const entriesBefore = await db.entries.where('bookId').equals(activeWork).toArray();
+
+    const alreadyLinkedWork = await createBook({ title: 'Already organised', templateId: null, kind: 'custom' });
+    const sameNameWork = await createBook({ title: 'Existing Project', templateId: null, kind: 'custom' });
+    const existingProject = await createProject({ title: 'Existing Project' });
+    await addWorksToProject(existingProject, [alreadyLinkedWork]);
+
+    const migrated = await db.transaction('rw', db.books, db.projects, async () =>
+      migrateLegacyWorksToProjects(db.books, db.projects),
+    );
+
+    expect(migrated).toBe(3);
+    const activeProjectId = `legacy-work-${activeWork}`;
+    const archivedProjectId = `legacy-work-${archivedWork}`;
+    expect(await db.projects.get(activeProjectId)).toMatchObject({
+      title: 'YOUrigin field guide',
+      description: 'The original manuscript and its structure stay intact.',
+      status: 'idea',
+    });
+    expect(await db.projects.get(archivedProjectId)).toMatchObject({
+      title: 'Old collection',
+      status: 'resting',
+    });
+    expect((await db.books.get(activeWork))?.projectIds).toEqual([activeProjectId]);
+    expect((await db.books.get(archivedWork))?.projectIds).toEqual([archivedProjectId]);
+    expect((await db.books.get(alreadyLinkedWork))?.projectIds).toEqual([existingProject]);
+    // A single exact-title Project is reused instead of creating a duplicate.
+    expect((await db.books.get(sameNameWork))?.projectIds).toEqual([existingProject]);
+
+    // The Work itself, its manuscript sections and its placed writing remain untouched.
+    expect((await db.books.get(activeWork))?.title).toBe('YOUrigin field guide');
+    expect((await db.books.get(activeWork))?.description).toBe('The original manuscript and its structure stay intact.');
+    expect(await db.sections.where('bookId').equals(activeWork).toArray()).toEqual(sectionsBefore);
+    expect(await db.entries.where('bookId').equals(activeWork).toArray()).toEqual(entriesBefore);
+    expect((await db.content.get(pieceId))?.body).toBe('An original piece of writing.');
+
+    // Opening the app again does not create duplicate Projects.
+    expect(await db.transaction('rw', db.books, db.projects, async () =>
+      migrateLegacyWorksToProjects(db.books, db.projects),
+    )).toBe(0);
+    expect(await db.projects.count()).toBe(3);
+  });
+
   it('groups several selected Works under one new Project', async () => {
     const first = await createBook({ title: 'Field notes', templateId: null, kind: 'custom' });
     const second = await createBook({ title: 'Photographs', templateId: null, kind: 'custom' });
@@ -154,7 +213,7 @@ describe('independent Projects', () => {
   });
 
   it('uses the new local database schema and includes Projects in encrypted sync', () => {
-    expect(SCHEMA_VERSION).toBe(3);
+    expect(SCHEMA_VERSION).toBe(4);
     expect(SYNC_TABLES).toContain('projects');
   });
 });
