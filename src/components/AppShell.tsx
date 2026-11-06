@@ -31,6 +31,8 @@ const SECONDARY: NavDef[] = [
   { to: '/settings', label: 'Settings & backup', icon: Settings },
   { to: '/trash', label: 'Trash', icon: Trash2 },
 ];
+const MOBILE_PRIMARY: NavDef[] = PRIMARY.filter((item) => item.to !== '/universe');
+const MOBILE_MORE: NavDef[] = [{ to: '/universe', label: 'My Universe', icon: Orbit }, ...SECONDARY];
 function isTyping(el: EventTarget | null) {
   const t = el as HTMLElement | null;
   return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
@@ -102,11 +104,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
         <main id="main" className="min-w-0 pb-24 md:pb-8">{children}</main>
       </div>
-      <nav aria-label="Main" className="mobile-dock no-print chrome fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t pb-[env(safe-area-inset-bottom)] md:hidden">
-        {PRIMARY.map((item) => <NavLink key={item.to} to={item.to} end={item.end} className={({isActive}) => `relative flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] ${activeFor(item.to,isActive) ? 'font-semibold' : 'text-[#9f91a8]'}`}><item.icon size={19} strokeWidth={1.7}/>{item.label}</NavLink>)}
+      <nav aria-label="Main" className="mobile-dock no-print chrome fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t pb-[env(safe-area-inset-bottom)] md:hidden">
+        {MOBILE_PRIMARY.map((item) => <NavLink key={item.to} to={item.to} end={item.end} className={({isActive}) => `relative flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] ${activeFor(item.to,isActive) ? 'font-semibold' : 'text-[#9f91a8]'}`}><item.icon size={19} strokeWidth={1.7}/>{item.label}</NavLink>)}
         <button type="button" onClick={() => setMoreOpen(true)} className="flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] text-[#9f91a8]"><Menu size={19}/>More</button>
       </nav>
-      <Modal open={moreOpen} onClose={() => setMoreOpen(false)} title="Studio tools"><nav className="space-y-1" aria-label="More">{SECONDARY.map((i) => navItem(i, i.to === '/orphans' ? orphanCount : undefined))}</nav></Modal>
+      <Modal open={moreOpen} onClose={() => setMoreOpen(false)} title="More"><nav className="space-y-1" aria-label="More">{MOBILE_MORE.map((i) => navItem(i, i.to === '/orphans' ? orphanCount : undefined))}</nav></Modal>
       <SearchPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
