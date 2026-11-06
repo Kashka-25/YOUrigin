@@ -57,18 +57,25 @@ export function BookBuilder() {
   const trayIds = entries.filter((e) => !e.sectionId).map((e) => e.contentId);
   const kind = projectKind(book);
   const isBook = kind === 'book';
+  const isSetList = kind === 'setlist';
+  const parentProject = lib.projects.find((project) => (book.projectIds ?? []).includes(project.id));
+  const projectMaterialIds = isSetList && parentProject
+    ? new Set(lib.items
+      .filter((item) => !item.deletedAt && !item.archived && (item.projectIds ?? []).includes(parentProject.id))
+      .map((item) => item.id))
+    : undefined;
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-6 md:px-8 md:pt-10">
-      <Link to="/projects" className="btn-ghost -ml-3">
-        <ArrowLeft size={16} /> Works
+      <Link to={isSetList && parentProject ? '/initiative/' + parentProject.id : '/projects'} className="btn-ghost -ml-3">
+        <ArrowLeft size={16} /> {isSetList && parentProject ? parentProject.title : 'Works'}
       </Link>
       <header className="mt-3 flex flex-wrap items-start gap-4">
         <div className="h-20 w-2 shrink-0 rounded-full" style={{ background: coverColour(book.cover) }} aria-hidden />
         <div className="min-w-0 flex-1 basis-60">
           <p className="eyebrow">
             {isBook ? BOOK_TYPE_LABEL[book.type] : PROJECT_KIND_META[kind].label}
-            {book.shelf ? ` · ${book.shelf}` : ''}
+            {book.shelf && !isSetList ? ` · ${book.shelf}` : ''}
           </p>
           <h1 className="page-title">{book.title}</h1>
           {book.subtitle && <p className="mt-1 font-serif text-lg text-ink-2 italic">{book.subtitle}</p>}
@@ -86,9 +93,9 @@ export function BookBuilder() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Link to={`/projects/${book.id}/write`} className="btn-primary" title="Open your writing workspace">
+          {!isSetList && <Link to={`/projects/${book.id}/write`} className="btn-primary" title="Open your writing workspace">
             <PenLine size={16} /> Write
-          </Link>
+          </Link>}
           <details className="group relative">
             <summary className="btn list-none cursor-pointer [&::-webkit-details-marker]:hidden">
               More <ChevronDown size={15} className="transition-transform group-open:rotate-180" />
@@ -96,7 +103,7 @@ export function BookBuilder() {
             <div className="absolute right-0 z-20 mt-2 grid min-w-48 gap-1 rounded-2xl border border-line bg-card p-2 shadow-lg">
               {isBook && <Link to={`/projects/${book.id}/print`} className="btn-ghost justify-start"><LayoutTemplate size={15} /> Design & print</Link>}
               {isBook && <Link to={`/projects/${book.id}/cover`} className="btn-ghost justify-start"><BookImage size={15} /> Cover design</Link>}
-              <Link to={`/projects/${book.id}/read`} className="btn-ghost justify-start"><BookOpenText size={15} /> Read</Link>
+              {!isSetList && <Link to={`/projects/${book.id}/read`} className="btn-ghost justify-start"><BookOpenText size={15} /> Read</Link>}
               <ExportMenu book={book} />
               <button type="button" className="btn-ghost justify-start" onClick={() => setEditOpen(true)}><Settings2 size={15} /> Work settings</button>
             </div>
@@ -104,6 +111,7 @@ export function BookBuilder() {
         </div>
       </header>
 
+      {!isSetList && (
       <details className="group mt-6 rounded-2xl border border-line bg-card">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
           <span className="font-serif text-lg">Work progress</span>
@@ -113,7 +121,9 @@ export function BookBuilder() {
           <BookDashboard progress={progress} />
         </div>
       </details>
+      )}
 
+      {!isSetList && (
       <details className="group mt-4 rounded-2xl border border-line bg-card">
         <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
           <span className="font-serif text-xl">Contents</span>
@@ -129,10 +139,11 @@ export function BookBuilder() {
           <ContentsList bookId={book.id} compact />
         </div>
       </details>
+      )}
 
       {isBook && <PublishingChecklist book={book} />}
 
-      {relevantOrphans.length > 0 && (
+      {!isSetList && relevantOrphans.length > 0 && (
         <p className="mt-3 text-sm text-ink-2">
           <Sparkles size={14} className="mr-1 inline text-ai" aria-hidden />
           {relevantOrphans.length} unclaimed piece{relevantOrphans.length === 1 ? '' : 's'} may belong here — see <em>Relevant</em> on the material shelf.
@@ -158,6 +169,7 @@ export function BookBuilder() {
         </section>
       )}
 
+      {isSetList && <p className="mt-5 max-w-2xl text-sm text-ink-2">Your set list is its own arrangement. Drag songs to change the running order, add sections for sets or an encore, and bring in other songs from this Project on the right.</p>}
       <div className="mt-8">
         <StructureBoard
           bookId={book.id}
@@ -167,7 +179,7 @@ export function BookBuilder() {
           sectionProgress={progress.sections}
           numbered={PROJECT_KIND_META[kind].numbered}
           traySlot={trayIds.length >= 2 ? <StructureSuggest bookId={book.id} contentIds={trayIds} entries={entries} /> : null}
-          shelf={<MaterialShelf bookId={book.id} bookTitle={book.title} items={lib.items} bookContentIds={contentIds} ctx={lib.ctx} />}
+          shelf={<MaterialShelf bookId={book.id} bookTitle={book.title} items={lib.items} bookContentIds={contentIds} ctx={lib.ctx} scopeContentIds={projectMaterialIds} scopeLabel={parentProject?.title} />}
         />
       </div>
 
