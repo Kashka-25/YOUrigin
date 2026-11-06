@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import { ensureWorksHaveProjects } from '../db/projectRecords';
@@ -41,12 +41,21 @@ const LibraryCtx = createContext<LibraryData | undefined>(undefined);
  * tables change, so every screen updates the moment something is saved.
  */
 export function LibraryProvider({ children }: { children: ReactNode }) {
-  // Reconcile legacy Works into the unified Projects area; this is idempotent.
+  const [worksMigrated, setWorksMigrated] = useState(false);
+
+  // Finish the idempotent Work-to-Project conversion before exposing the library.
   useEffect(() => {
-    void ensureWorksHaveProjects().catch((error) => console.error('Could not convert existing Works into Projects:', error));
+    let active = true;
+    void ensureWorksHaveProjects()
+      .catch((error) => console.error('Could not convert existing Works into Projects:', error))
+      .finally(() => {
+        if (active) setWorksMigrated(true);
+      });
+    return () => { active = false; };
   }, []);
 
   const raw = useLiveQuery(async () => {
+    if (!worksMigrated) return undefined;
     const [items, tags, families, books, projects, sections, entries, collections, templates] = await Promise.all([
       db.content.toArray(),
       db.tags.toArray(),
@@ -59,7 +68,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       db.templates.toArray(),
     ]);
     return { items, tags, families, books, projects, sections, entries, collections, templates };
-  }, []);
+  }, [worksMigrated]);
 
   const value = useMemo<LibraryData | undefined>(() => {
     if (!raw) return undefined;
