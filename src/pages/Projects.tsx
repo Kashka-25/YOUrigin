@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowUpRight, BookOpen, Link2, Music2, Plus, Search, Trash2, Unlink, Upload } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, BookOpen, Link2, Plus, Search, Trash2, Unlink, Upload } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { DEFAULT_PROJECT_COLOUR, PROJECT_CATEGORIES, PROJECT_KIND_META, PROJECT_STATUS_META, TYPE_LABEL, projectKind } from '../domain/constants';
 import type { ContentType, ProjectColour, ProjectStatus } from '../domain/types';
@@ -35,7 +35,7 @@ export function Projects() {
   const [colour, setColour] = useState<ProjectColour>(DEFAULT_PROJECT_COLOUR);
 
   // Save only clear, title-based suggestions for older Projects that have no home yet.
-  // Existing categories are never overwritten and no notes or Works are changed.
+  // Existing categories are never overwritten. Only Project metadata is suggested.
   useEffect(() => {
     const suggestions = (lib?.projects ?? [])
       .filter((project) => !(project.category ?? '').trim())
