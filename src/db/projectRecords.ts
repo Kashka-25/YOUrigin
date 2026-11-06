@@ -4,6 +4,8 @@ import { DEFAULT_PROJECT_COLOUR } from '../domain/constants';
 import { newId } from '../domain/text';
 
 export interface NewProject {
+  /** Optional stable id when a Project shares the identity of an existing creative workspace. */
+  id?: string;
   title: string;
   description?: string;
   category?: string;
@@ -15,7 +17,7 @@ export type ProjectPatch = Partial<Pick<Project, 'title' | 'description' | 'cate
 
 export async function createProject(input: NewProject): Promise<string> {
   const now = Date.now();
-  const id = newId();
+  const id = input.id ?? newId();
   await db.projects.add({
     id,
     title: input.title.trim() || 'Untitled project',
@@ -106,6 +108,39 @@ export interface WorkImportOptions {
  * Existing Work records and their manuscript content are never copied or changed
  * beyond adding the new Project relationship.
  */
+/**
+ * Make every existing creative Work discoverable as a Project. When a Work
+ * was already imported into a same-title Project, keep that existing Project
+ * rather than creating a duplicate. Otherwise the Project reuses the Work id,
+ * so both records represent one thing and its manuscript data stays in place.
+ */
+export async function ensureWorksHaveProjects(): Promise<string[]> {
+  return db.transaction('rw', db.projects, db.books, async () => {
+    const [works, projects] = await Promise.all([db.books.toArray(), db.projects.toArray()]);
+    const projectById = new Map(projects.map((project) => [project.id, project]));
+    const normalise = (value: string) => value.trim().toLocaleLowerCase();
+    const created = works
+      .filter((work) => {
+        if (projectById.has(work.id)) return false;
+        return !(work.projectIds ?? []).some((projectId) => {
+          const linked = projectById.get(projectId);
+          return !!linked && normalise(linked.title) === normalise(work.title);
+        });
+      })
+      .map((work) => ({
+        id: work.id,
+        title: work.title.trim() || 'Untitled project',
+        description: work.description ?? '',
+        category: '',
+        colour: DEFAULT_PROJECT_COLOUR,
+        status: work.archived ? 'resting' as const : 'building' as const,
+        createdAt: work.createdAt,
+        updatedAt: work.updatedAt,
+      }));
+    if (created.length) await db.projects.bulkAdd(created);
+    return created.map((project) => project.id);
+  });
+}
 export async function importWorksAsProjects(workIds: string[], options: WorkImportOptions = {}): Promise<string[]> {
   const uniqueIds = [...new Set(workIds)];
   if (!uniqueIds.length) return [];
