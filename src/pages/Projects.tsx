@@ -36,19 +36,21 @@ export function Projects() {
   const [colour, setColour] = useState<ProjectColour>(DEFAULT_PROJECT_COLOUR);
   const [workId, setWorkId] = useState('');
 
-  if (!lib) return <Spinner />;
-  const library = lib;
   // Save only clear, title-based suggestions for older Projects that have no home yet.
   // Existing categories are never overwritten and no notes or Works are changed.
   useEffect(() => {
-    const suggestions = lib.projects
+    const suggestions = (lib?.projects ?? [])
       .filter((project) => !project.category.trim())
       .map((project) => ({ id: project.id, category: suggestedProjectHome(project) }))
       .filter((project) => !!project.category);
     if (suggestions.length) {
       void Promise.all(suggestions.map((project) => updateProject(project.id, { category: project.category })));
     }
-  }, [lib.projects]);
+  }, [lib?.projects]);
+
+  if (!lib) return <Spinner />;
+  const library = lib;
+
 
   const categories = [...new Set(lib.projects.map((project) => suggestedProjectHome(project) || 'Needs a home'))]
     .sort((a, b) => {
