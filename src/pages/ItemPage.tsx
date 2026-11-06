@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Archive, ArrowLeft, BookA, BookPlus, ChevronDown, ChevronLeft, ChevronRight, FolderPlus, List, Maximize2, Minimize2, Trash2, X } from 'lucide-react';
+import { Archive, ArrowLeft, BookA, BookPlus, ChevronDown, ChevronLeft, ChevronRight, FolderKanban, FolderPlus, List, Maximize2, Minimize2, Trash2, X } from 'lucide-react';
 import { ContentsList, useBookOrder } from '../components/book/ContentsList';
 import { SpaceControl } from '../components/book/SpaceControl';
 import { displayTitle } from '../domain/text';
@@ -183,14 +183,14 @@ function Editor({ item }: { item: ContentItem }) {
         </div>
       </div>
       {order && at >= 0 && (
-        <nav className="chrome mb-5 flex items-center gap-2 rounded-xl border border-line bg-card px-2 py-1.5 text-sm" aria-label="Move through the project">
+        <nav className="chrome mb-5 flex items-center gap-2 rounded-xl border border-line bg-card px-2 py-1.5 text-sm" aria-label="Move through the Work">
           {prev ? (
             <Link to={`/item/${prev.id}?book=${order.book.id}`} className="btn-ghost min-w-0 px-2" onClick={() => void flush()} title={displayTitle(prev)}>
               <ChevronLeft size={16} /> <span className="hidden truncate sm:inline">{displayTitle(prev)}</span>
               <span className="sm:hidden">Previous</span>
             </Link>
           ) : (
-            <span className="px-2 text-muted">Start of project</span>
+            <span className="px-2 text-muted">Start of Work</span>
           )}
           <Link to={`/projects/${order.book.id}/contents`} className="mx-auto shrink-0 text-xs text-muted hover:text-ink">
             {at + 1} of {order.flat.length}
@@ -201,7 +201,7 @@ function Editor({ item }: { item: ContentItem }) {
               <span className="sm:hidden">Next</span> <ChevronRight size={16} />
             </Link>
           ) : (
-            <span className="px-2 text-muted">End of project</span>
+            <span className="px-2 text-muted">End of Work</span>
           )}
         </nav>
       )}
@@ -348,7 +348,7 @@ function Editor({ item }: { item: ContentItem }) {
             <div className="flex items-center justify-between">
               <h2 className="label">Projects</h2>
               <button type="button" className="btn-ghost -mr-2 text-xs" onClick={() => setAssignProject(true)}>
-                <BookPlus size={14} /> Add
+                <FolderKanban size={14} /> Add
               </button>
             </div>
             {projects.length === 0 ? (
