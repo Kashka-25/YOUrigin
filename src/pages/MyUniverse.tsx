@@ -2,14 +2,13 @@ import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { ArrowUpRight, BookOpen, Compass, Feather, Layers3, Orbit, Sparkles, Stars } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
-import { projectKind, PROJECT_KIND_META } from '../domain/constants';
+import { projectKind, PROJECT_KIND_META, PROJECT_STATUS_META } from '../domain/constants';
 import { shelfNames } from '../domain/projects';
 import { EmptyState, Spinner } from '../components/ui';
 
 /**
  * My Universe is a map of the creative world already living in YOUrigin.
- * It deliberately derives from existing records: no new initiative records,
- * migrations or pretend sample projects are created by this page.
+ * It brings together the independent Projects, Works and Library records.
  */
 export function MyUniverse() {
   const lib = useLibrary();
@@ -72,7 +71,7 @@ export function MyUniverse() {
               <Link key={project.id} to={'/initiative/' + project.id} className="archive-card group p-5">
                 <div className="flex items-center justify-between gap-2">
                   {project.category ? <span className="eyebrow">{project.category}</span> : <span className="eyebrow">Project</span>}
-                  <span className="text-xs text-muted">{project.status}</span>
+                  <span className="text-xs text-muted">{PROJECT_STATUS_META[project.status].label}</span>
                 </div>
                 <h3 className="mt-2 font-serif text-2xl text-ink group-hover:text-accent">{project.title}</h3>
                 {project.description && <p className="mt-2 line-clamp-2 text-sm text-ink-2">{project.description}</p>}
