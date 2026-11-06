@@ -18,7 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
 import { BOOK_TYPE_LABEL, CONTENT_TYPES, TYPE_LABEL } from '../domain/constants';
 import type { BookType } from '../domain/types';
-import { STRATEGY_LABEL, type SplitStrategy } from '../io/splitter';
+import { blocksFromText, STRATEGY_LABEL, type SplitStrategy } from '../io/splitter';
 import { normaliseTagName } from '../domain/text';
 import type { ContentType, Status } from '../domain/types';
 import { StatusPicker } from './ui';
@@ -44,6 +44,7 @@ export function ImportDialog({ open, onClose, projectId, projectTitle, initialTy
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [pasteText, setPasteText] = useState('');
 
   const resplit = (fs: ImportedFile[], s: SplitStrategy) => {
     const r = draftPieces(fs, s);
@@ -68,8 +69,17 @@ export function ImportDialog({ open, onClose, projectId, projectTitle, initialTy
     }
   };
 
+  const addPastedText = () => {
+    if (!pasteText.trim()) return;
+    const next = [...files, { name: 'Pasted from phone.txt', blocks: blocksFromText(pasteText) }];
+    setFiles(next);
+    resplit(next, strategy);
+    setPasteText('');
+  };
+
   const reset = () => {
     setFiles([]);
+    setPasteText('');
     setDrafts(null);
     setTags('');
     setBookTitle('');
@@ -152,6 +162,25 @@ export function ImportDialog({ open, onClose, projectId, projectTitle, initialTy
           }}
         />
       </div>
+
+      {projectId && (
+        <details className="mt-3 rounded-2xl border border-line bg-paper/40 p-3">
+          <summary className="cursor-pointer text-sm font-medium text-ink">Or paste text from your phone’s Notes app</summary>
+          <div className="mt-3 space-y-2">
+            <textarea
+              className="input min-h-32 font-serif text-sm"
+              rows={5}
+              value={pasteText}
+              onChange={(e) => setPasteText(e.target.value)}
+              placeholder="Copy your lyrics or notes on your phone, then paste them here…"
+              aria-label="Paste notes from phone"
+            />
+            <div className="flex justify-end">
+              <button type="button" className="btn" onClick={addPastedText} disabled={!pasteText.trim() || busy}>Use pasted text</button>
+            </div>
+          </div>
+        </details>
+      )}
 
       {errors.length > 0 && (
         <ul className="mt-3 text-sm text-seed">
