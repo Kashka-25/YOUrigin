@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  BookOpen, Feather, FolderKanban, FolderOpen, Hash, Images, Library, Menu,
+  BookOpen, Feather, FolderOpen, Hash, Images, Library, Menu,
   Network, Search, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit,
 } from 'lucide-react';
 import { Logo } from './Logo';
