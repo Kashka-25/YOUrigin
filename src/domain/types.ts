@@ -5,9 +5,18 @@ export type Status = 'seed' | 'developing' | 'polished';
 
 export type ProjectStatus = 'idea' | 'building' | 'resting' | 'complete';
 
+export type ProjectColour = 'rose' | 'coral' | 'terracotta' | 'ochre' | 'amber' | 'olive' | 'moss' | 'jade' | 'teal' | 'sky' | 'indigo' | 'lavender' | 'violet' | 'plum' | 'berry' | 'slate';
+
+export interface ColourScale {
+  light: number;
+  dark: number;
+}
+
 export interface Project extends Syncable {
   title: string;
   description: string;
+  /** Optional visual identifier; missing values use the default ochre tone. */
+  colour?: ProjectColour;
   /** Optional free-form category used only for filtering. Empty means uncategorised. */
   category: string;
   status: ProjectStatus;

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { BookA, Download, HardDrive, Laptop, Monitor, Smartphone, TabletSmartphone, Upload } from 'lucide-react';
+import { BookA, Download, HardDrive, Laptop, Monitor, Palette, RotateCcw, Smartphone, TabletSmartphone, Upload } from 'lucide-react';
 import { setSetting, useSettings } from '../db/settings';
+import { applyColourScale, COLOUR_SCALE_DEFAULT, COLOUR_SCALE_STOPS, DEFAULT_COLOUR_SCALE, coloursAt, stopName } from '../domain/colourScale';
 import { StatusPicker, TypeSelect, Spinner } from '../components/ui';
 import { exportBackup, isBackup, mergeBackup, replaceWithBackup } from '../db/backup';
 import { download, libraryToMarkdown, today } from '../io/export';
@@ -58,6 +59,14 @@ export function Settings() {
   }, []);
 
   if (!s || !lib) return <Spinner />;
+
+  const colourScale = s.colourScale ?? DEFAULT_COLOUR_SCALE;
+  function updateColourScale(mode: 'light' | 'dark', value: number) {
+    const next = { ...colourScale, [mode]: value };
+    const activeMode = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    applyColourScale(next, activeMode);
+    void setSetting('colourScale', next);
+  }
 
   const backupNow = async () => {
     const data = await exportBackup();
@@ -365,6 +374,29 @@ export function Settings() {
             </button>
           ))}
         </div>
+        <div className="border-t border-line pt-5">
+          <div className="mb-4 flex items-start gap-2">
+            <Palette size={17} className="mt-0.5 text-gold" aria-hidden />
+            <div>
+              <p className="text-sm font-semibold text-ink">Colour scale</p>
+              <p className="mt-1 text-sm leading-relaxed text-ink-2">Shape the surfaces and atmosphere separately for day and night. Your writing stays readable, and the gold accents remain unchanged.</p>
+            </div>
+          </div>
+          <ColourScaleSlider mode="light" title="Nature, by day" value={colourScale.light} onChange={(value) => updateColourScale('light', value)} />
+          <ColourScaleSlider mode="dark" title="The Cosmos, by night" value={colourScale.dark} onChange={(value) => updateColourScale('dark', value)} />
+          {(Math.abs(colourScale.light - COLOUR_SCALE_DEFAULT) > 0.5 || Math.abs(colourScale.dark - COLOUR_SCALE_DEFAULT) > 0.5) && (
+            <button
+              type="button"
+              className="btn-ghost -ml-2 mt-1 min-h-9 px-2 text-xs"
+              onClick={() => {
+                applyColourScale(DEFAULT_COLOUR_SCALE, document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+                void setSetting('colourScale', DEFAULT_COLOUR_SCALE);
+              }}
+            >
+              <RotateCcw size={13} /> Restore original colours
+            </button>
+          )}
+        </div>
       </Section>
 
       <Section title="Creative assistant" id="s-ai">
@@ -517,6 +549,52 @@ export function Settings() {
         </dl>
       </Section>
       <p className="pb-6 text-xs text-muted">YOUrigin {__APP_VERSION__} · Your Creative Codex</p>
+    </div>
+  );
+}
+
+
+type ColourScaleMode = 'light' | 'dark';
+
+function ColourScaleSlider({
+  mode,
+  title,
+  value,
+  onChange,
+}: {
+  mode: ColourScaleMode;
+  title: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const stops = COLOUR_SCALE_STOPS[mode];
+  const colours = coloursAt(mode, value);
+  const track = `linear-gradient(90deg, ${stops.map((stop) => stop.paper2).join(', ')})`;
+
+  return (
+    <div className="mb-5">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <label htmlFor={`colour-scale-${mode}`} className="text-sm text-ink">{title}</label>
+        <span className="inline-flex items-center gap-2 text-xs text-ink-2">
+          <span className="h-4 w-4 rounded-full border border-line" style={{ backgroundColor: colours.paper2 }} aria-hidden />
+          {stopName(mode, value)}
+        </span>
+      </div>
+      <input
+        id={`colour-scale-${mode}`}
+        className="colour-scale w-full"
+        type="range"
+        min="0"
+        max="100"
+        step="1"
+        value={Math.round(value)}
+        onChange={(event) => onChange(Number(event.target.value))}
+        aria-valuetext={stopName(mode, value)}
+        style={{ '--track': track } as React.CSSProperties}
+      />
+      <div className="mt-1 flex justify-between text-[10px] text-muted" aria-hidden>
+        {stops.map((stop) => <span key={stop.label}>{stop.label}</span>)}
+      </div>
     </div>
   );
 }

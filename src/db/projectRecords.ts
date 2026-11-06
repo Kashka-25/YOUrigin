@@ -1,15 +1,17 @@
 import { db } from './db';
-import type { Project, ProjectStatus } from '../domain/types';
+import type { Project, ProjectColour, ProjectStatus } from '../domain/types';
+import { DEFAULT_PROJECT_COLOUR } from '../domain/constants';
 import { newId } from '../domain/text';
 
 export interface NewProject {
   title: string;
   description?: string;
   category?: string;
+  colour?: ProjectColour;
   status?: ProjectStatus;
 }
 
-export type ProjectPatch = Partial<Pick<Project, 'title' | 'description' | 'category' | 'status'>>;
+export type ProjectPatch = Partial<Pick<Project, 'title' | 'description' | 'category' | 'colour' | 'status'>>;
 
 export async function createProject(input: NewProject): Promise<string> {
   const now = Date.now();
@@ -19,6 +21,7 @@ export async function createProject(input: NewProject): Promise<string> {
     title: input.title.trim() || 'Untitled project',
     description: input.description?.trim() ?? '',
     category: input.category?.trim() ?? '',
+    colour: input.colour ?? DEFAULT_PROJECT_COLOUR,
     status: input.status ?? 'idea',
     createdAt: now,
     updatedAt: now,
@@ -94,6 +97,7 @@ export async function deleteProject(id: string): Promise<void> {
 
 export interface WorkImportOptions {
   category?: string;
+  colour?: ProjectColour;
   status?: ProjectStatus;
 }
 
@@ -116,6 +120,7 @@ export async function importWorksAsProjects(workIds: string[], options: WorkImpo
       title: work.title.trim() || 'Untitled project',
       description: work.description ?? '',
       category: options.category?.trim() ?? '',
+      colour: options.colour ?? DEFAULT_PROJECT_COLOUR,
       status: options.status ?? 'idea',
       createdAt: now,
       updatedAt: now,
@@ -148,6 +153,7 @@ export async function createProjectForWorks(input: NewProject, workIds: string[]
       title: input.title.trim() || 'Untitled project',
       description: input.description?.trim() ?? '',
       category: input.category?.trim() ?? '',
+      colour: input.colour ?? DEFAULT_PROJECT_COLOUR,
       status: input.status ?? 'idea',
       createdAt: now,
       updatedAt: now,

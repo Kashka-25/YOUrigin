@@ -47,14 +47,19 @@ export function MaterialShelf({
   items,
   bookContentIds,
   ctx,
+  scopeContentIds,
+  scopeLabel,
 }: {
   bookId: string;
   bookTitle: string;
   items: ContentItem[];
   bookContentIds: Set<string>;
   ctx: LibraryContext;
+  /** When set, show only pieces linked to the parent Project (ideal for set lists). */
+  scopeContentIds?: Set<string>;
+  scopeLabel?: string;
 }) {
-  const [mode, setMode] = useState<ShelfMode>('relevant');
+  const [mode, setMode] = useState<ShelfMode>(scopeContentIds ? 'all' : 'relevant');
   const [q, setQ] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const [adding, setAdding] = useState(false);
@@ -63,22 +68,28 @@ export function MaterialShelf({
   const list = useMemo(() => {
     const parsed = parseQuery(q);
     let base: ContentItem[];
-    if (mode === 'relevant') base = relevantToBook(items, bookContentIds, bookTitle, ctx).map((x) => x.item);
-    else
+    if (scopeContentIds) {
+      base = items.filter((item) =>
+        scopeContentIds.has(item.id) && !item.deletedAt && !item.archived && !bookContentIds.has(item.id),
+      );
+    } else if (mode === 'relevant') {
+      base = relevantToBook(items, bookContentIds, bookTitle, ctx).map((x) => x.item);
+    } else {
       base = items
         .filter((i) => !i.deletedAt && !i.archived && !bookContentIds.has(i.id))
         .filter((i) => mode === 'all' || isOrphan(i, ctx))
         .sort((a, b) => b.updatedAt - a.updatedAt);
+    }
     return base.filter((i) => matchesQuery(i, parsed, ctx)).slice(0, 80);
-  }, [items, bookContentIds, bookTitle, ctx, mode, q]);
+  }, [items, bookContentIds, bookTitle, ctx, mode, q, scopeContentIds]);
 
   return (
     <aside className="panel p-4 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto" aria-label="Material shelf">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-serif text-xl">Material</h2>
-        <button type="button" className="btn-ghost px-2 py-1 text-xs" onClick={() => fileRef.current?.click()} disabled={adding}>
+        <h2 className="font-serif text-xl">{scopeContentIds ? 'Project songs' : 'Material'}</h2>
+        {!scopeContentIds && <button type="button" className="btn-ghost px-2 py-1 text-xs" onClick={() => fileRef.current?.click()} disabled={adding}>
           {adding ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />} Add images
-        </button>
+        </button>}
         <input
           ref={fileRef}
           type="file"
@@ -103,8 +114,8 @@ export function MaterialShelf({
           }}
         />
       </div>
-      <p className="text-xs text-muted">Drag into a section, or tap + to put it in the tray. Images are shrunk automatically.</p>
-      <div className="mt-3 flex gap-1" role="tablist" aria-label="Shelf filter">
+      <p className="text-xs text-muted">{scopeContentIds ? 'Only songs and ideas from ' + (scopeLabel || 'this Project') + ' appear here. Drag one into a set, or tap + to add it to the tray.' : 'Drag into a section, or tap + to put it in the tray. Images are shrunk automatically.'}</p>
+      {!scopeContentIds && <div className="mt-3 flex gap-1" role="tablist" aria-label="Shelf filter">
         {(
           [
             ['relevant', 'Relevant'],
@@ -123,15 +134,15 @@ export function MaterialShelf({
             {label}
           </button>
         ))}
-      </div>
-      <input type="search" className="input mt-3" placeholder="Filter words or #tags" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Filter material" />
+      </div>}
+      <input type="search" className="input mt-3" placeholder={scopeContentIds ? 'Find a song…' : 'Filter words or #tags'} value={q} onChange={(e) => setQ(e.target.value)} aria-label={scopeContentIds ? 'Filter project songs' : 'Filter material'} />
       <ul className="mt-3 space-y-1.5">
         {list.map((item) => (
           <ShelfItem key={item.id} item={item} bookId={bookId} ctx={ctx} />
         ))}
         {list.length === 0 && (
           <li className="py-6 text-center text-sm text-muted">
-            {mode === 'relevant' ? 'Nothing obviously related yet — try Unclaimed or All.' : 'Nothing here.'}
+            {scopeContentIds ? 'All of the Project songs are already in this set list. Go back to the Project to add more.' : mode === 'relevant' ? 'Nothing obviously related yet — try Unclaimed or All.' : 'Nothing here.'}
           </li>
         )}
       </ul>
