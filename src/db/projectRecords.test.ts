@@ -69,7 +69,7 @@ describe('independent Projects', () => {
     expect(projectIds).toHaveLength(2);
     const created = await db.projects.bulkGet(projectIds);
     expect(created.map((project) => project?.title).sort()).toEqual(['Empatherapy', 'YOU App architecture']);
-    expect(created.every((project) => project?.category === 'Business' && project.status === 'building')).toBe(true);
+    expect(created.every((project) => !!project && project.category === 'Business' && project.status === 'building')).toBe(true);
     expect((await db.books.get(firstWork))?.description).toBe('The personal operating system');
     expect((await db.books.get(secondWork))?.description).toBe('A healing venture');
     expect((await db.books.get(firstWork))?.projectIds).toEqual([projectIds[0]]);
