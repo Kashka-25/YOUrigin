@@ -3,6 +3,16 @@
 
 export type Status = 'seed' | 'developing' | 'polished';
 
+export type ProjectStatus = 'idea' | 'building' | 'resting' | 'complete';
+
+export interface Project extends Syncable {
+  title: string;
+  description: string;
+  /** Optional free-form category used only for filtering. Empty means uncategorised. */
+  category: string;
+  status: ProjectStatus;
+}
+
 export type ContentType =
   | 'poem'
   | 'song'
@@ -60,6 +70,8 @@ export interface ContentItem extends Syncable {
   inspiration?: boolean;
   /** For type 'image': progress shots, oldest first (asset ids). The finished work is assetId. */
   processAssetIds?: string[];
+  /** Projects this note belongs to. A note can be shared by several projects. */
+  projectIds?: string[];
 }
 
 export interface ArtDetails {
@@ -106,6 +118,8 @@ export type ProjectKind = 'book' | 'album' | 'setlist' | 'series' | 'ideas' | 'c
 
 /** A project (stored in the `books` table, so sync and old backups carry on unchanged). */
 export interface Book extends Syncable {
+  /** Projects this Work contributes to. A Work can belong to several projects. */
+  projectIds?: string[];
   title: string;
   subtitle: string;
   description: string;
