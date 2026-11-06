@@ -90,3 +90,74 @@ export async function deleteProject(id: string): Promise<void> {
     await db.projects.delete(id);
   });
 }
+
+
+export interface WorkImportOptions {
+  category?: string;
+  status?: ProjectStatus;
+}
+
+/**
+ * Creates one Project for each unlinked Work, using its title and description.
+ * Existing Work records and their manuscript content are never copied or changed
+ * beyond adding the new Project relationship.
+ */
+export async function importWorksAsProjects(workIds: string[], options: WorkImportOptions = {}): Promise<string[]> {
+  const uniqueIds = [...new Set(workIds)];
+  if (!uniqueIds.length) return [];
+
+  return db.transaction('rw', db.projects, db.books, async () => {
+    const works = (await db.books.bulkGet(uniqueIds)).filter(
+      (work): work is NonNullable<typeof work> => !!work && !(work.projectIds ?? []).length,
+    );
+    const now = Date.now();
+    const projects = works.map((work) => ({
+      id: newId(),
+      title: work.title.trim() || 'Untitled project',
+      description: work.description ?? '',
+      category: options.category?.trim() ?? '',
+      status: options.status ?? 'idea',
+      createdAt: now,
+      updatedAt: now,
+    }));
+    if (!projects.length) return [];
+    await db.projects.bulkAdd(projects);
+    for (const [index, work] of works.entries()) {
+      await db.books.update(work.id, {
+        projectIds: [...(work.projectIds ?? []), projects[index].id],
+        updatedAt: now,
+      });
+    }
+    return projects.map((project) => project.id);
+  });
+}
+
+/** Creates one shared Project and links every selected Work to it atomically. */
+export async function createProjectForWorks(input: NewProject, workIds: string[]): Promise<string> {
+  const uniqueIds = [...new Set(workIds)];
+  if (!uniqueIds.length) throw new Error('Choose at least one Work');
+  return db.transaction('rw', db.projects, db.books, async () => {
+    const works = (await db.books.bulkGet(uniqueIds)).filter(
+      (work): work is NonNullable<typeof work> => !!work,
+    );
+    if (works.length !== uniqueIds.length) throw new Error('One or more selected Works could not be found');
+    const now = Date.now();
+    const id = newId();
+    await db.projects.add({
+      id,
+      title: input.title.trim() || 'Untitled project',
+      description: input.description?.trim() ?? '',
+      category: input.category?.trim() ?? '',
+      status: input.status ?? 'idea',
+      createdAt: now,
+      updatedAt: now,
+    });
+    for (const work of works) {
+      const projectIds = work.projectIds ?? [];
+      if (!projectIds.includes(id)) {
+        await db.books.update(work.id, { projectIds: [...projectIds, id], updatedAt: now });
+      }
+    }
+    return id;
+  });
+}
