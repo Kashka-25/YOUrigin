@@ -7,7 +7,7 @@ import { ConfirmProvider } from './components/Modal';
 import { AppShell } from './components/AppShell';
 import { Onboarding } from './components/Onboarding';
 import { useSettings } from './db/settings';
-import { applyColourScale, COLOUR_SCALE_DEFAULT } from './domain/colourScale';
+import { applyColourScale, DEFAULT_COLOUR_SCALE } from './domain/colourScale';
 import type { ColourScale } from './domain/types';
 import { Gathering } from './pages/Gathering';
 import { MyUniverse } from './pages/MyUniverse';
@@ -78,7 +78,7 @@ function useTheme(theme: 'system' | 'light' | 'dark' | undefined, colourScale: C
       const dark = theme === 'dark' || ((theme ?? 'system') === 'system' && mq.matches);
       const mode = dark ? 'dark' : 'light';
       document.documentElement.classList.toggle('dark', dark);
-      applyColourScale(colourScale ?? COLOUR_SCALE_DEFAULT, mode);
+      applyColourScale(colourScale ?? DEFAULT_COLOUR_SCALE, mode);
       const background = window.getComputedStyle(document.documentElement).getPropertyValue('--paper').trim();
       document.querySelector('meta[name="theme-color"]')?.setAttribute('content', background || (dark ? '#090711' : '#f4efe7'));
     };
