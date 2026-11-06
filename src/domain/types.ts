@@ -113,17 +113,17 @@ export interface Collection extends Syncable {
 
 export type BookType = 'journal' | 'poetry' | 'essay' | 'codex' | 'custom';
 
-/** What a project is for. Only books get print, cover and manuscript tools. */
+/** What kind of creative Work this is. Only book Works get print, cover and manuscript tools. */
 export type ProjectKind = 'book' | 'album' | 'setlist' | 'series' | 'ideas' | 'custom';
 
-/** A project (stored in the `books` table, so sync and old backups carry on unchanged). */
+/** A creative Work. The historical `books` table name is retained for backward compatibility. */
 export interface Book extends Syncable {
   /** Projects this Work contributes to. A Work can belong to several projects. */
   projectIds?: string[];
   title: string;
   subtitle: string;
   description: string;
-  /** Book style — used by book projects only. */
+  /** Book style — used by book Works only. */
   type: BookType;
   /** Missing on records made before projects: those are books. */
   kind?: ProjectKind;
