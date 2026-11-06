@@ -12,6 +12,7 @@ import { MyUniverse } from './pages/MyUniverse';
 import { Library } from './pages/Library';
 import { ItemPage } from './pages/ItemPage';
 import { Books } from './pages/Books';
+import { Projects, ProjectHome } from './pages/Projects';
 import { BookBuilder } from './pages/BookBuilder';
 import { Manuscript } from './pages/Manuscript';
 import { BookContents } from './pages/BookContents';
@@ -129,6 +130,8 @@ export default function App() {
                       <Route path="/library" element={<Library />} />
                       <Route path="/universe" element={<MyUniverse />} />
                       <Route path="/item/:id" element={<ItemPage />} />
+                      <Route path="/initiatives" element={<Projects />} />
+                      <Route path="/initiative/:id" element={<ProjectHome />} />
                       <Route path="/projects" element={<Books />} />
                       <Route path="/projects/:id" element={<BookBuilder />} />
                       <Route path="/projects/:id/contents" element={<BookContents />} />
