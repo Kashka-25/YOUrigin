@@ -28,19 +28,19 @@ import { useOnline } from '../hooks/useOnline';
 
 type NavDef = { to: string; label: string; icon: typeof Feather; end?: boolean };
 
+// Keep the everyday workspace deliberately small. The deeper tools live in More.
 const PRIMARY: NavDef[] = [
-  { to: '/', label: 'Gathering', icon: Feather, end: true },
+  { to: '/', label: 'Gather', icon: Feather, end: true },
   { to: '/library', label: 'Library', icon: Library },
-  { to: '/map', label: 'Book Map', icon: Network },
-  { to: '/projects', label: 'Projects', icon: FolderKanban },
-  { to: '/tags', label: 'Tags', icon: Hash },
-  { to: '/orphans', label: 'Orphans', icon: Sprout },
+  { to: '/projects', label: 'Works', icon: FolderKanban },
 ];
 
-const GALLERY: NavDef = { to: '/library?view=gallery', label: 'Gallery', icon: Images };
-
-const SECONDARY = [
+const SECONDARY: NavDef[] = [
+  { to: '/map', label: 'Book Map', icon: Network },
+  { to: '/library?view=gallery', label: 'Gallery', icon: Images },
   { to: '/collections', label: 'Collections', icon: FolderOpen },
+  { to: '/tags', label: 'Tags', icon: Hash },
+  { to: '/orphans', label: 'Unsorted', icon: Sprout },
   { to: '/spelling', label: 'Spelling', icon: SpellCheck },
   { to: '/shared', label: 'Shared to YOU', icon: Share2 },
   { to: '/settings', label: 'Settings & backup', icon: Settings },
@@ -59,14 +59,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const online = useOnline();
   const [searchOpen, setSearchOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-  const craft = useSettings()?.craft ?? 'words';
-  // Gallery is a Library view, so the two share a path; tell them apart by ?view.
+  // Gallery shares the Library route; keep its active state distinct.
   const galleryOn = loc.pathname === '/library' && new URLSearchParams(loc.search).get('view') === 'gallery';
-  const activeFor = (to: string, isActive: boolean) => (to === GALLERY.to ? galleryOn : to === '/library' ? isActive && !galleryOn : isActive);
-  const sidebar = craft === 'words' ? PRIMARY : [PRIMARY[0], PRIMARY[1], GALLERY, ...PRIMARY.slice(2)];
-  const bottom = craft === 'art' ? [PRIMARY[0], PRIMARY[1], GALLERY, PRIMARY[3]] : [PRIMARY[0], PRIMARY[1], PRIMARY[3], PRIMARY[5]];
-  const more =
-    craft === 'art' ? [PRIMARY[5], PRIMARY[2], PRIMARY[4], ...SECONDARY] : craft === 'both' ? [GALLERY, PRIMARY[2], PRIMARY[4], ...SECONDARY] : [PRIMARY[2], PRIMARY[4], ...SECONDARY];
+  const activeFor = (to: string, isActive: boolean) => (to === '/library?view=gallery' ? galleryOn : to === '/library' ? isActive && !galleryOn : isActive);
+  const more = SECONDARY;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -130,11 +126,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           <kbd className="rounded border border-line px-1.5 text-[11px]">Ctrl K</kbd>
         </button>
         <nav aria-label="Main" className="mt-5 space-y-0.5">
-          {sidebar.map((i) => navItem(i, i.to === '/orphans' ? orphanCount : undefined))}
+          {PRIMARY.map((i) => navItem(i))}
         </nav>
         {recentProjects.length > 0 && (
           <div className="mt-6">
-            <p className="eyebrow px-3">Projects</p>
+            <p className="eyebrow px-3">Recent works</p>
             <ul className="mt-2 space-y-0.5">
               {recentProjects.map((b) => (
                 <li key={b.id}>
@@ -181,9 +177,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Mobile bottom navigation */}
       <nav
         aria-label="Main"
-        className="no-print chrome fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+        className="no-print chrome fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
       >
-        {bottom.map((item) => (
+        {PRIMARY.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -191,10 +187,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             className={({ isActive }) => `relative flex flex-col items-center gap-0.5 py-2 text-[11px] ${activeFor(item.to, isActive) ? 'font-semibold text-accent' : 'text-ink-2'}`}
           >
             <item.icon size={21} aria-hidden />
-            {item.label === 'Gathering' ? 'Gather' : item.label}
-            {item.to === '/orphans' && orphanCount > 0 && (
-              <span className="absolute top-1 right-[calc(50%-1.4rem)] h-2 w-2 rounded-full bg-accent" aria-hidden />
-            )}
+            {item.label}
           </NavLink>
         ))}
         <button type="button" onClick={() => setMoreOpen(true)} className="flex flex-col items-center gap-0.5 py-2 text-[11px] text-ink-2">
