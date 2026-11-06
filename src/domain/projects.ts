@@ -64,7 +64,7 @@ export function suggestedProjectHome(project: {
     'terrasenga': 'Place',
     'lyricideas': 'Creative',
   };
-  const known = knownHomes[compact];
+  const known = knownHomes[compact] ?? Object.entries(knownHomes).find(([name]) => name !== 'you' && compact.startsWith(name))?.[1];
   if (known) return known;
 
   if (/\b(lyrics?|songwriting|songs?|music|band|album|gig|set ?lists?)\b/.test(title)) return 'Creative';
