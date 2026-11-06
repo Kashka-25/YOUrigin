@@ -57,12 +57,12 @@ export function Books() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 pt-8 md:px-8 md:pt-12">
+    <div className="page-frame">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="eyebrow">A home for the things you’re making</p>
+          <p className="eyebrow mb-2">Your creative world, taking shape</p>
           <h1 className="page-title">Works</h1>
-          <p className="mt-2 max-w-xl text-sm text-ink-2">Books, albums, collections and creative projects — gathered in one place.</p>
+          <p className="mt-3 max-w-xl font-serif text-lg text-ink-2">The things you are bringing into the world. Each one begins somewhere.</p>
         </div>
         <button type="button" className="btn-primary" onClick={() => startNew()}>
           <Plus size={16} /> New work
@@ -309,9 +309,9 @@ function ProjectCard({ book: b, lib }: { book: Book; lib: LibraryData }) {
   const kind = projectKind(b);
   const pieceCount = lib.entries.filter((entry) => entry.bookId === b.id).length;
   return (
-    <Link to={`/projects/${b.id}`} className="panel group block overflow-hidden transition-colors hover:bg-paper-2">
+    <Link to={`/projects/${b.id}`} className="archive-card group block overflow-hidden">
       <div className="h-1.5" style={{ background: coverColour(b.cover) }} />
-      <div className="p-5">
+      <div className="p-6">
         <p className="eyebrow">{kind === 'book' ? BOOK_TYPE_LABEL[b.type] : PROJECT_KIND_META[kind].label}</p>
         <h3 className="mt-1 font-serif text-2xl leading-tight group-hover:underline">{b.title}</h3>
         {b.subtitle && <p className="mt-1 font-serif text-ink-2 italic">{b.subtitle}</p>}
