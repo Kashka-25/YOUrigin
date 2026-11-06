@@ -3,7 +3,7 @@ import { db, ensureBuiltIns, SCHEMA_VERSION } from './db';
 import { createMany } from './content';
 import { createBook } from './books';
 import { exportBackup, replaceWithBackup } from './backup';
-import { addItemsToProject, addWorksToProject, createProject, deleteProject, removeItemFromProject } from './projectRecords';
+import { addItemsToProject, addWorksToProject, createProject, createProjectForWorks, deleteProject, importWorksAsProjects, removeItemFromProject } from './projectRecords';
 import { SYNC_TABLES } from '../sync/tracking';
 
 beforeEach(async () => {
@@ -43,6 +43,71 @@ describe('independent Projects', () => {
     await addWorksToProject(first, [workId]);
     await addWorksToProject(second, [workId]);
     expect((await db.books.get(workId))?.projectIds?.sort()).toEqual([first, second].sort());
+  });
+
+  it('imports several unlinked Works as separate Projects without changing their contents or structure', async () => {
+    const firstWork = await createBook({
+      title: 'YOU App architecture',
+      description: 'The personal operating system',
+      templateId: null,
+      kind: 'custom',
+    });
+    const secondWork = await createBook({
+      title: 'Empatherapy',
+      description: 'A healing venture',
+      templateId: null,
+      kind: 'custom',
+    });
+    const firstSections = await db.sections.where('bookId').equals(firstWork).toArray();
+    const secondSections = await db.sections.where('bookId').equals(secondWork).toArray();
+
+    const projectIds = await importWorksAsProjects([firstWork, secondWork, firstWork], {
+      category: 'Business',
+      status: 'building',
+    });
+
+    expect(projectIds).toHaveLength(2);
+    const created = await db.projects.bulkGet(projectIds);
+    expect(created.map((project) => project?.title).sort()).toEqual(['Empatherapy', 'YOU App architecture']);
+    expect(created.every((project) => project?.category === 'Business' && project.status === 'building')).toBe(true);
+    expect((await db.books.get(firstWork))?.description).toBe('The personal operating system');
+    expect((await db.books.get(secondWork))?.description).toBe('A healing venture');
+    expect((await db.books.get(firstWork))?.projectIds).toEqual([projectIds[0]]);
+    expect((await db.books.get(secondWork))?.projectIds).toEqual([projectIds[1]]);
+    expect(await db.sections.where('bookId').equals(firstWork).toArray()).toEqual(firstSections);
+    expect(await db.sections.where('bookId').equals(secondWork).toArray()).toEqual(secondSections);
+  });
+
+  it('does not create a second wrapper for Works already linked to a Project', async () => {
+    const alreadyLinked = await createBook({ title: 'Already organised', templateId: null, kind: 'custom' });
+    const unlinked = await createBook({ title: 'Still to organise', templateId: null, kind: 'custom' });
+    const existingProject = await createProject({ title: 'Existing Project' });
+    await addWorksToProject(existingProject, [alreadyLinked]);
+
+    const ids = await importWorksAsProjects([alreadyLinked, unlinked]);
+    expect(ids).toHaveLength(1);
+    expect((await db.books.get(alreadyLinked))?.projectIds).toEqual([existingProject]);
+    expect((await db.books.get(unlinked))?.projectIds).toEqual(ids);
+  });
+
+  it('groups several selected Works under one new Project', async () => {
+    const first = await createBook({ title: 'Field notes', templateId: null, kind: 'custom' });
+    const second = await createBook({ title: 'Photographs', templateId: null, kind: 'custom' });
+    const projectId = await createProjectForWorks({
+      title: 'Terra Senga',
+      description: 'The land and its development',
+      category: 'Place',
+      status: 'resting',
+    }, [first, second]);
+
+    expect(await db.projects.get(projectId)).toMatchObject({
+      title: 'Terra Senga',
+      description: 'The land and its development',
+      category: 'Place',
+      status: 'resting',
+    });
+    expect((await db.books.get(first))?.projectIds).toContain(projectId);
+    expect((await db.books.get(second))?.projectIds).toContain(projectId);
   });
 
   it('deletes a Project without deleting its notes or Works', async () => {
