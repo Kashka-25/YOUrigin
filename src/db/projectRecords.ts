@@ -104,11 +104,6 @@ export interface WorkImportOptions {
 }
 
 /**
- * Creates one Project for each unlinked Work, using its title and description.
- * Existing Work records and their manuscript content are never copied or changed
- * beyond adding the new Project relationship.
- */
-/**
  * Make every existing creative Work discoverable as a Project. When a Work
  * was already imported into a same-title Project, keep that existing Project
  * rather than creating a duplicate. Otherwise the Project reuses the Work id,
