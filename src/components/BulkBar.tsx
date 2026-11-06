@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Archive, ArchiveRestore, BookPlus, FolderPlus, Tag as TagIcon, Trash2, X } from 'lucide-react';
+import { Archive, ArchiveRestore, BookPlus, FolderKanban, FolderPlus, Tag as TagIcon, Trash2, X } from 'lucide-react';
 import type { ContentType, Status } from '../domain/types';
 import { CONTENT_TYPES, STATUSES, STATUS_META, TYPE_LABEL } from '../domain/constants';
 import { addTagsToItems, moveToTrash, removeTagFromItems, setArchived, setStatus, setType } from '../db/content';
@@ -8,6 +8,7 @@ import { useToast } from './Toast';
 import { useLibrary } from '../hooks/useLibrary';
 import { AssignDialog } from './AssignDialog';
 import { Modal } from './Modal';
+import { ProjectAssignDialog } from './ProjectAssignDialog';
 
 export function BulkBar({
   ids,
@@ -21,6 +22,7 @@ export function BulkBar({
   const lib = useLibrary();
   const toast = useToast();
   const [assign, setAssign] = useState<'book' | 'collection' | null>(null);
+  const [assignProject, setAssignProject] = useState(false);
   const [tagMode, setTagMode] = useState<'add' | 'remove' | null>(null);
   const [tagDraft, setTagDraft] = useState('');
   const n = ids.length;
@@ -82,10 +84,13 @@ export function BulkBar({
           Untag
         </button>
         <button type="button" className="btn-ghost" onClick={() => setAssign('book')}>
-          <BookPlus size={15} /> Project
+          <BookPlus size={15} /> Work
         </button>
         <button type="button" className="btn-ghost" onClick={() => setAssign('collection')}>
           <FolderPlus size={15} /> Collection
+        </button>
+        <button type="button" className="btn-ghost" onClick={() => setAssignProject(true)} disabled={!lib?.projects.length}>
+          <FolderKanban size={15} /> Project
         </button>
         <button
           type="button"
@@ -119,6 +124,7 @@ export function BulkBar({
       </div>
 
       {assign && <AssignDialog open mode={assign} contentIds={ids} onClose={() => setAssign(null)} onDone={onClear} />}
+      <ProjectAssignDialog open={assignProject} contentIds={ids} onClose={() => setAssignProject(false)} onDone={onClear} />
 
       <Modal open={tagMode === 'add'} onClose={() => setTagMode(null)} title={`Tag ${n} piece${n === 1 ? '' : 's'}`}>
         <form

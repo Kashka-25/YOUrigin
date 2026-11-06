@@ -8,6 +8,7 @@ const TABLES = [
   'tags',
   'content',
   'collections',
+  'projects',
   'templates',
   'books',
   'sections',

@@ -2,20 +2,20 @@ import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { ArrowUpRight, BookOpen, Compass, Feather, Layers3, Orbit, Sparkles, Stars } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
-import { projectKind, PROJECT_KIND_META } from '../domain/constants';
+import { projectKind, PROJECT_KIND_META, PROJECT_STATUS_META } from '../domain/constants';
 import { shelfNames } from '../domain/projects';
 import { EmptyState, Spinner } from '../components/ui';
 
 /**
  * My Universe is a map of the creative world already living in YOUrigin.
- * It deliberately derives from existing records: no new initiative records,
- * migrations or pretend sample projects are created by this page.
+ * It brings together the independent Projects, Works and Library records.
  */
 export function MyUniverse() {
   const lib = useLibrary();
   if (!lib) return <Spinner />;
 
   const works = lib.books.filter((b) => !b.archived).sort((a, b) => b.updatedAt - a.updatedAt);
+  const projects = [...lib.projects].sort((a, b) => b.updatedAt - a.updatedAt);
   const pieces = lib.items.filter((i) => !i.deletedAt && !i.archived);
   const collections = lib.collections;
   const shelves = shelfNames(works);
@@ -53,15 +53,36 @@ export function MyUniverse() {
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-3" aria-label="Your universe at a glance">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Your universe at a glance">
         <Stat icon={<Layers3 size={18}/>} label="Collected pieces" value={pieces.length} detail="Thoughts, notes and images"/>
-        <Stat icon={<BookOpen size={18}/>} label="Works in progress" value={works.length} detail="Books and creative projects"/>
+        <Stat icon={<Orbit size={18}/>} label="Projects" value={projects.length} detail="Ventures, places and ideas"/>
+        <Stat icon={<BookOpen size={18}/>} label="Works" value={works.length} detail="Books and creative outputs"/>
         <Stat icon={<Compass size={18}/>} label="Collections" value={collections.length} detail="Groups you have gathered"/>
       </section>
 
+      {projects.length > 0 && (
+        <section className="mt-10">
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <div><p className="eyebrow">What you're building</p><h2 className="section-heading mt-1">Your projects</h2></div>
+            <Link to="/initiatives" className="text-sm text-ink-2 hover:text-ink">All projects <ArrowUpRight size={14} className="inline"/></Link>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.slice(0, 6).map((project) => (
+              <Link key={project.id} to={'/initiative/' + project.id} className="archive-card group p-5">
+                <div className="flex items-center justify-between gap-2">
+                  {project.category ? <span className="eyebrow">{project.category}</span> : <span className="eyebrow">Project</span>}
+                  <span className="text-xs text-muted">{PROJECT_STATUS_META[project.status].label}</span>
+                </div>
+                <h3 className="mt-2 font-serif text-2xl text-ink group-hover:text-accent">{project.title}</h3>
+                {project.description && <p className="mt-2 line-clamp-2 text-sm text-ink-2">{project.description}</p>}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
       <section className="mt-10">
         <div className="mb-4 flex items-end justify-between gap-3">
-          <div><p className="eyebrow">The bigger picture</p><h2 className="section-heading mt-1">Your constellations</h2></div>
+          <div><p className="eyebrow">The bigger picture</p><h2 className="section-heading mt-1">Your creative works</h2></div>
           <Link to="/projects" className="text-sm text-ink-2 hover:text-ink">All works <ArrowUpRight size={14} className="inline"/></Link>
         </div>
         {works.length === 0 ? (

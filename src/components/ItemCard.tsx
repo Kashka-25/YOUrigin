@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, FolderOpen, Pencil } from 'lucide-react';
+import { BookOpen, FolderKanban, FolderOpen, Pencil } from 'lucide-react';
 import type { ContentItem } from '../domain/types';
 import { bodyAfterTitle, displayTitle, excerpt } from '../domain/text';
 import { TYPE_LABEL } from '../domain/constants';
@@ -21,6 +21,7 @@ export function ItemCard({
   const lib = useLibrary();
   const books = [...(lib?.ctx.booksOf.get(item.id) ?? [])].map((id) => lib?.ctx.bookTitle.get(id)).filter(Boolean);
   const cols = [...(lib?.ctx.collectionsOf.get(item.id) ?? [])].map((id) => lib?.ctx.collectionName.get(id)).filter(Boolean);
+  const projects = (item.projectIds ?? []).map((id) => lib?.projects.find((project) => project.id === id)).filter((project) => !!project);
   const title = displayTitle(item);
 
   return (
@@ -59,6 +60,17 @@ export function ItemCard({
           {books.length > 0 && (
             <span className="inline-flex items-center gap-1">
               <BookOpen size={12} aria-hidden /> {books.join(', ')}
+            </span>
+          )}
+          {projects.length > 0 && (
+            <span className="inline-flex flex-wrap items-center gap-1">
+              <FolderKanban size={12} aria-hidden />
+              {projects.map((project, index) => (
+                <span key={project.id}>
+                  {index > 0 ? ', ' : ''}
+                  <Link to={'/initiative/' + project.id} className="hover:text-ink hover:underline">{project.title}</Link>
+                </span>
+              ))}
             </span>
           )}
           {cols.length > 0 && (

@@ -12,6 +12,8 @@ import { MyUniverse } from './pages/MyUniverse';
 import { Library } from './pages/Library';
 import { ItemPage } from './pages/ItemPage';
 import { Books } from './pages/Books';
+import { Projects, ProjectHome } from './pages/Projects';
+import { ImportWorks } from './pages/ImportWorks';
 import { BookBuilder } from './pages/BookBuilder';
 import { Manuscript } from './pages/Manuscript';
 import { BookContents } from './pages/BookContents';
@@ -32,7 +34,7 @@ const Workspace = lazy(() => import('./pages/Workspace').then((m) => ({ default:
 
 const CoverDesigner = lazy(() => import('./pages/CoverDesigner').then((m) => ({ default: m.CoverDesigner })));
 
-/** One workspace per project, so the open piece and its pages never carry over. */
+/** One workspace per Work, so the open piece and its pages never carry over. */
 function WorkspaceRoute() {
   const { id } = useParams();
   return (
@@ -51,7 +53,7 @@ function CoverRoute() {
   );
 }
 
-/** A fresh print view per book project, so one book's pages never linger while another lays out. */
+/** A fresh print view per Work, so one manuscript's pages never linger while another lays out. */
 function PrintRoute() {
   const { id } = useParams();
   return (
@@ -61,7 +63,7 @@ function PrintRoute() {
   );
 }
 
-/** Books became projects: old /books links (bookmarks, history) still land in the right place. */
+/** Legacy /books links still resolve to the Works area without breaking bookmarks or history. */
 function BooksRedirect() {
   const { pathname, search } = useLocation();
   return <Navigate replace to={pathname.replace(/^\/books/, '/projects') + search} />;
@@ -129,6 +131,9 @@ export default function App() {
                       <Route path="/library" element={<Library />} />
                       <Route path="/universe" element={<MyUniverse />} />
                       <Route path="/item/:id" element={<ItemPage />} />
+                      <Route path="/initiatives" element={<Projects />} />
+                      <Route path="/initiatives/import-works" element={<ImportWorks />} />
+                      <Route path="/initiative/:id" element={<ProjectHome />} />
                       <Route path="/projects" element={<Books />} />
                       <Route path="/projects/:id" element={<BookBuilder />} />
                       <Route path="/projects/:id/contents" element={<BookContents />} />

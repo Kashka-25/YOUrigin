@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, FileText, FolderOpen, Hash, Search } from 'lucide-react';
+import { BookOpen, FileText, FolderKanban, FolderOpen, Hash, Search } from 'lucide-react';
 import { Modal } from './Modal';
 import { useLibrary } from '../hooks/useLibrary';
 import { EMPTY_FILTERS, filterItems } from '../domain/query';
@@ -9,7 +9,7 @@ import { StatusBadge } from './ui';
 
 interface Result {
   key: string;
-  kind: 'piece' | 'tag' | 'book' | 'collection' | 'all';
+  kind: 'piece' | 'tag' | 'book' | 'project' | 'collection' | 'all';
   label: string;
   detail?: string;
   to: string;
@@ -41,6 +41,15 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
     for (const b of lib.books.filter((b) => `${b.title} ${b.subtitle}`.toLowerCase().includes(lower)).slice(0, 3)) {
       out.push({ key: 'b' + b.id, kind: 'book', label: b.title, detail: b.subtitle, to: `/projects/${b.id}` });
     }
+    for (const project of lib.projects.filter((project) => `${project.title} ${project.description} ${project.category}`.toLowerCase().includes(lower)).slice(0, 4)) {
+      out.push({
+        key: 'project' + project.id,
+        kind: 'project',
+        label: project.title,
+        detail: [project.category, project.status].filter(Boolean).join(' · '),
+        to: `/initiative/${project.id}`,
+      });
+    }
     for (const c of lib.collections.filter((c) => c.name.toLowerCase().includes(lower)).slice(0, 3)) {
       out.push({ key: 'c' + c.id, kind: 'collection', label: c.name, detail: `${c.contentIds.length} pieces`, to: `/collections/${c.id}` });
     }
@@ -69,6 +78,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
       piece: <FileText size={16} />,
       tag: <Hash size={16} />,
       book: <BookOpen size={16} />,
+      project: <FolderKanban size={16} />,
       collection: <FolderOpen size={16} />,
       all: <Search size={16} />,
     })[k];

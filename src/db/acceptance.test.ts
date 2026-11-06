@@ -24,6 +24,7 @@ async function context(): Promise<LibraryContext> {
     collectionsOf,
     bookTitle: new Map(books.map((b) => [b.id, b.title])),
     collectionName: new Map(collections.map((c) => [c.id, c.name])),
+    projectTitle: new Map(),
   };
 }
 

@@ -9,7 +9,7 @@ import { PROJECT_KINDS, PROJECT_KIND_META } from '../domain/constants';
 import type { ProjectKind } from '../domain/types';
 
 /**
- * Adds a set of pieces to a project (optionally a specific section) or a
+ * Adds a set of pieces to a creative Work (optionally a specific section) or a
  * collection — existing or new. Only references are created; content is never copied.
  */
 export function AssignDialog({
@@ -51,7 +51,7 @@ export function AssignDialog({
   );
 
   const n = contentIds.length;
-  const noun = mode === 'book' ? 'project' : 'collection';
+  const noun = mode === 'book' ? 'Work' : 'collection';
 
   async function submit() {
     setBusy(true);
@@ -59,7 +59,7 @@ export function AssignDialog({
       if (mode === 'book') {
         const bookId = targetId === 'new' ? await createBook({ title: name, templateId: kind === 'book' ? templateId : null, kind }) : targetId;
         const created = await addToBook(bookId, contentIds, sectionId || null);
-        const title = (await db.books.get(bookId))?.title ?? 'project';
+        const title = (await db.books.get(bookId))?.title ?? 'Work';
         const skipped = n - created.length;
         toast(`Added ${created.length} to “${title}”${skipped ? ` (${skipped} already there)` : ''}`, {
           undo: async () => {
@@ -87,7 +87,7 @@ export function AssignDialog({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={`Add ${n} piece${n === 1 ? '' : 's'} to a ${noun}`}>
+    <Modal open={open} onClose={onClose} title={`Add ${n} piece${n === 1 ? '' : 's'} to ${noun === 'Work' ? 'a Work' : 'a collection'}`}>
       <form
         onSubmit={(e) => {
           e.preventDefault();

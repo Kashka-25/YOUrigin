@@ -10,6 +10,7 @@ import type {
   Tag,
   TagFamily,
   Template,
+  Project,
 } from '../domain/types';
 import type { LibraryContext } from '../domain/query';
 import type { AIContext } from '../ai';
@@ -19,6 +20,7 @@ export interface LibraryData {
   tags: Tag[];
   families: TagFamily[];
   books: Book[];
+  projects: Project[];
   sections: Section[];
   entries: BookEntry[];
   collections: Collection[];
@@ -39,22 +41,23 @@ const LibraryCtx = createContext<LibraryData | undefined>(undefined);
  */
 export function LibraryProvider({ children }: { children: ReactNode }) {
   const raw = useLiveQuery(async () => {
-    const [items, tags, families, books, sections, entries, collections, templates] = await Promise.all([
+    const [items, tags, families, books, projects, sections, entries, collections, templates] = await Promise.all([
       db.content.toArray(),
       db.tags.toArray(),
       db.tagFamilies.orderBy('order').toArray(),
       db.books.toArray(),
+      db.projects.toArray(),
       db.sections.toArray(),
       db.entries.toArray(),
       db.collections.toArray(),
       db.templates.toArray(),
     ]);
-    return { items, tags, families, books, sections, entries, collections, templates };
+    return { items, tags, families, books, projects, sections, entries, collections, templates };
   }, []);
 
   const value = useMemo<LibraryData | undefined>(() => {
     if (!raw) return undefined;
-    const { items, tags, books, sections, entries, collections } = raw;
+    const { items, tags, books, projects, sections, entries, collections } = raw;
     const contentById = new Map(items.map((i) => [i.id, i]));
     const tagById = new Map(tags.map((t) => [t.id, t]));
     const tagName = new Map(tags.map((t) => [t.id, t.name]));
@@ -85,6 +88,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       collectionsOf,
       bookTitle: new Map(books.map((b) => [b.id, b.title])),
       collectionName: new Map(collections.map((c) => [c.id, c.name])),
+      projectTitle: new Map(projects.map((p) => [p.id, p.title])),
     };
     const ai: AIContext = {
       items: items.filter((i) => !i.deletedAt && !i.archived),

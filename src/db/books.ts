@@ -13,6 +13,7 @@ export interface NewBook {
   /** Defaults to a book. Other kinds skip templates and print pages. */
   kind?: ProjectKind;
   shelf?: string;
+  projectIds?: string[];
   /** Name for the title and copyright pages. */
   author?: string;
   /** Start with the copyright page template (defaults to the template's setting). */
@@ -44,6 +45,7 @@ export async function createBook(input: NewBook): Promise<string> {
       type,
       kind,
       shelf: input.shelf?.trim() ?? '',
+      projectIds: [...new Set(input.projectIds ?? [])],
       templateId: tpl?.id ?? null,
       cover: COVER_COLOURS[count % COVER_COLOURS.length],
       notes: '',

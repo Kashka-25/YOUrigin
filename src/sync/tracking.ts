@@ -7,6 +7,7 @@ export const SYNC_TABLES = [
   'tags',
   'content',
   'collections',
+  'projects',
   'templates',
   'books',
   'sections',

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Archive, ArrowLeft, BookA, BookPlus, ChevronDown, ChevronLeft, ChevronRight, FolderPlus, List, Maximize2, Minimize2, Trash2, X } from 'lucide-react';
+import { Archive, ArrowLeft, BookA, BookPlus, ChevronDown, ChevronLeft, ChevronRight, FolderKanban, FolderPlus, List, Maximize2, Minimize2, Trash2, X } from 'lucide-react';
 import { ContentsList, useBookOrder } from '../components/book/ContentsList';
 import { SpaceControl } from '../components/book/SpaceControl';
 import { displayTitle } from '../domain/text';
@@ -19,9 +19,11 @@ import {
 } from '../db/content';
 import { removeEntries } from '../db/books';
 import { removeFromCollection } from '../db/collections';
+import { removeItemFromProject } from '../db/projectRecords';
 import { SaveIndicator, Spinner, StatusPicker, TypeSelect, EmptyState } from '../components/ui';
 import { TagInput } from '../components/TagInput';
 import { AssignDialog } from '../components/AssignDialog';
+import { ProjectAssignDialog } from '../components/ProjectAssignDialog';
 import { useToast } from '../components/Toast';
 import { PendingSuggestions } from '../components/Suggestions';
 import { AssistantPanel } from '../components/AssistantPanel';
@@ -72,6 +74,7 @@ function Editor({ item }: { item: ContentItem }) {
   const [body, setBody] = useState(item.body);
   const [notes, setNotes] = useState(item.notes);
   const [assign, setAssign] = useState<'book' | 'collection' | null>(null);
+  const [assignProject, setAssignProject] = useState(false);
   const [focus, setFocus] = useFocusMode();
   const [viewing, setViewing] = useState(false);
   const [bodyEl, setBodyEl] = useState<HTMLTextAreaElement | null>(null);
@@ -157,6 +160,7 @@ function Editor({ item }: { item: ContentItem }) {
   const tagNames = item.tagIds.map((t) => lib.ctx.tagName.get(t)).filter((x): x is string => !!x);
   const memberships = lib.entries.filter((e) => e.contentId === item.id);
   const collections = lib.collections.filter((c) => c.contentIds.includes(item.id));
+  const projects = lib.projects.filter((project) => (item.projectIds ?? []).includes(project.id));
   const editCategory = settings ? resolveEditCategory(settings.editNotesCategory, lib.tags, lib.collections) : null;
 
   return (
@@ -179,14 +183,14 @@ function Editor({ item }: { item: ContentItem }) {
         </div>
       </div>
       {order && at >= 0 && (
-        <nav className="chrome mb-5 flex items-center gap-2 rounded-xl border border-line bg-card px-2 py-1.5 text-sm" aria-label="Move through the project">
+        <nav className="chrome mb-5 flex items-center gap-2 rounded-xl border border-line bg-card px-2 py-1.5 text-sm" aria-label="Move through the Work">
           {prev ? (
             <Link to={`/item/${prev.id}?book=${order.book.id}`} className="btn-ghost min-w-0 px-2" onClick={() => void flush()} title={displayTitle(prev)}>
               <ChevronLeft size={16} /> <span className="hidden truncate sm:inline">{displayTitle(prev)}</span>
               <span className="sm:hidden">Previous</span>
             </Link>
           ) : (
-            <span className="px-2 text-muted">Start of project</span>
+            <span className="px-2 text-muted">Start of Work</span>
           )}
           <Link to={`/projects/${order.book.id}/contents`} className="mx-auto shrink-0 text-xs text-muted hover:text-ink">
             {at + 1} of {order.flat.length}
@@ -197,7 +201,7 @@ function Editor({ item }: { item: ContentItem }) {
               <span className="sm:hidden">Next</span> <ChevronRight size={16} />
             </Link>
           ) : (
-            <span className="px-2 text-muted">End of project</span>
+            <span className="px-2 text-muted">End of Work</span>
           )}
         </nav>
       )}
@@ -313,13 +317,13 @@ function Editor({ item }: { item: ContentItem }) {
 
           <section>
             <div className="flex items-center justify-between">
-              <h2 className="label">Projects</h2>
+              <h2 className="label">Works</h2>
               <button type="button" className="btn-ghost -mr-2 text-xs" onClick={() => setAssign('book')}>
                 <BookPlus size={14} /> Add
               </button>
             </div>
             {memberships.length === 0 ? (
-              <p className="text-sm text-muted">Not in a project yet.</p>
+              <p className="text-sm text-muted">Not in a Work yet.</p>
             ) : (
               <ul className="space-y-1">
                 {memberships.map((e) => {
@@ -330,12 +334,35 @@ function Editor({ item }: { item: ContentItem }) {
                         <span className="font-serif text-base">{lib.ctx.bookTitle.get(e.bookId)}</span>
                         <span className="text-muted"> · {section?.title ?? 'Tray'}</span>
                       </Link>
-                      <button type="button" className="btn-ghost p-1" aria-label="Remove from project" onClick={() => void removeEntries([e.id])}>
+                      <button type="button" className="btn-ghost p-1" aria-label="Remove from Work" onClick={() => void removeEntries([e.id])}>
                         <X size={14} />
                       </button>
                     </li>
                   );
                 })}
+              </ul>
+            )}
+          </section>
+
+          <section>
+            <div className="flex items-center justify-between">
+              <h2 className="label">Projects</h2>
+              <button type="button" className="btn-ghost -mr-2 text-xs" onClick={() => setAssignProject(true)}>
+                <FolderKanban size={14} /> Add
+              </button>
+            </div>
+            {projects.length === 0 ? (
+              <p className="text-sm text-muted">Not linked to a Project yet.</p>
+            ) : (
+              <ul className="space-y-1">
+                {projects.map((project) => (
+                  <li key={project.id} className="flex items-center justify-between gap-2 text-sm">
+                    <Link to={'/initiative/' + project.id} className="min-w-0 truncate font-serif text-base hover:underline">{project.title}</Link>
+                    <button type="button" className="btn-ghost p-1" aria-label="Remove from Project" onClick={() => void removeItemFromProject(project.id, item.id)}>
+                      <X size={14} />
+                    </button>
+                  </li>
+                ))}
               </ul>
             )}
           </section>
@@ -442,6 +469,7 @@ function Editor({ item }: { item: ContentItem }) {
       {lookup && <WordPanel key={`${lookup.start}:${lookup.text}`} query={lookup.text} onSwap={(w, e) => void swap(w, e)} onClose={() => setLookup(null)} />}
 
       {assign && <AssignDialog open mode={assign} contentIds={[item.id]} onClose={() => setAssign(null)} />}
+      <ProjectAssignDialog open={assignProject} contentIds={[item.id]} onClose={() => setAssignProject(false)} />
     </div>
   );
 }
