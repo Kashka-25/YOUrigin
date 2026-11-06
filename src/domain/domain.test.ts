@@ -31,6 +31,7 @@ function ctx(tags: Record<string, string>, booksOf: Record<string, string[]> = {
     collectionsOf: new Map(),
     bookTitle: new Map(),
     collectionName: new Map(),
+    projectTitle: new Map(),
   };
 }
 
@@ -104,6 +105,22 @@ describe('library queries', () => {
   it('finds orphans', () => {
     const r = filterItems(items, { ...EMPTY_FILTERS, orphansOnly: true }, ctx(tags, { a: ['book1'] }));
     expect(r.map((i) => i.id).sort()).toEqual(['b', 'c', 'd']);
+  });
+
+  it('filters Library notes by their independent Project links', () => {
+    const linked = [
+      { ...item('a', 'seed'), projectIds: ['p1'] },
+      { ...item('b', 'seed'), projectIds: ['p2'] },
+      item('c', 'seed'),
+    ];
+    const r = filterItems(linked, { ...EMPTY_FILTERS, projectId: 'p1' }, ctx(tags));
+    expect(r.map((i) => i.id)).toEqual(['a']);
+  });
+
+  it('does not count Project-linked notes as unclaimed', () => {
+    const linked = [{ ...item('a', 'seed'), projectIds: ['p1'] }];
+    const r = filterItems(linked, { ...EMPTY_FILTERS, orphansOnly: true }, ctx(tags));
+    expect(r).toEqual([]);
   });
 
   it('hides trashed pieces', () => {
