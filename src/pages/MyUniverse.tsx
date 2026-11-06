@@ -54,15 +54,35 @@ export function MyUniverse() {
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-3" aria-label="Your universe at a glance">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Your universe at a glance">
         <Stat icon={<Layers3 size={18}/>} label="Collected pieces" value={pieces.length} detail="Thoughts, notes and images"/>
         <Stat icon={<Orbit size={18}/>} label="Projects" value={projects.length} detail="Ventures, places and ideas"/>\n        <Stat icon={<BookOpen size={18}/>} label="Works" value={works.length} detail="Books and creative outputs"/>
         <Stat icon={<Compass size={18}/>} label="Collections" value={collections.length} detail="Groups you have gathered"/>
       </section>
 
+      {projects.length > 0 && (
+        <section className="mt-10">
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <div><p className="eyebrow">What you're building</p><h2 className="section-heading mt-1">Your projects</h2></div>
+            <Link to="/initiatives" className="text-sm text-ink-2 hover:text-ink">All projects <ArrowUpRight size={14} className="inline"/></Link>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.slice(0, 6).map((project) => (
+              <Link key={project.id} to={'/initiative/' + project.id} className="archive-card group p-5">
+                <div className="flex items-center justify-between gap-2">
+                  {project.category ? <span className="eyebrow">{project.category}</span> : <span className="eyebrow">Project</span>}
+                  <span className="text-xs text-muted">{project.status}</span>
+                </div>
+                <h3 className="mt-2 font-serif text-2xl text-ink group-hover:text-accent">{project.title}</h3>
+                {project.description && <p className="mt-2 line-clamp-2 text-sm text-ink-2">{project.description}</p>}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
       <section className="mt-10">
         <div className="mb-4 flex items-end justify-between gap-3">
-          <div><p className="eyebrow">The bigger picture</p><h2 className="section-heading mt-1">Your constellations</h2></div>
+          <div><p className="eyebrow">The bigger picture</p><h2 className="section-heading mt-1">Your creative works</h2></div>
           <Link to="/projects" className="text-sm text-ink-2 hover:text-ink">All works <ArrowUpRight size={14} className="inline"/></Link>
         </div>
         {works.length === 0 ? (
