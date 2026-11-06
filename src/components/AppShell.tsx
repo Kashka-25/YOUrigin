@@ -95,7 +95,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
       <div className="app-main min-h-dvh flex-1">
         <header className="no-print chrome sticky top-0 z-30 hidden h-14 items-center justify-between border-b border-line/70 bg-paper/75 px-8 backdrop-blur-xl md:flex">
-          <div className="flex items-center gap-2 text-xs text-muted"><span className="h-1.5 w-1.5 rounded-full bg-gold/80"/>{loc.pathname === '/' ? 'A place to begin' : loc.pathname.startsWith('/library') ? 'Your collected thoughts' : loc.pathname.startsWith('/initiatives') || loc.pathname.startsWith('/initiative/') ? 'The things you're building' : loc.pathname.startsWith('/projects') ? 'Your creative works' : 'Your creative codex'}</div>
+          <div className="flex items-center gap-2 text-xs text-muted"><span className="h-1.5 w-1.5 rounded-full bg-gold/80"/>{loc.pathname === '/' ? 'A place to begin' : loc.pathname.startsWith('/library') ? 'Your collected thoughts' : loc.pathname.startsWith('/initiatives') || loc.pathname.startsWith('/initiative/') ? 'The things you are building' : loc.pathname.startsWith('/projects') ? 'Your creative works' : 'Your creative codex'}</div>
           <div className="flex items-center gap-3"><span className="text-xs text-muted">A little space to think, make and become.</span><SyncBadge compact /></div>
         </header>
         <header className="no-print chrome sticky top-0 z-30 flex items-center justify-between border-b border-line/70 bg-paper/90 px-4 py-3 backdrop-blur-xl md:hidden">
