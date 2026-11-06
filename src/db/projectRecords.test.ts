@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db, ensureBuiltIns, SCHEMA_VERSION } from './db';
 import { createMany } from './content';
-import { createBook } from './books';
+import { addToBook, createBook } from './books';
 import { exportBackup, replaceWithBackup } from './backup';
 import { addItemsToProject, addWorksToProject, createProject, createProjectForWorks, deleteProject, ensureWorksHaveProjects, importWorksAsProjects, removeItemFromProject, updateProject } from './projectRecords';
 import { SYNC_TABLES } from '../sync/tracking';
@@ -62,7 +62,7 @@ describe('independent Projects', () => {
     });
     const [pieceId] = await createMany([{ title: 'Opening', body: 'The first passage', type: 'teaching', status: 'developing' }]);
     const sectionsBefore = await db.sections.where('bookId').equals(workId).toArray();
-    const entriesBefore = await import('./books').then(({ addToBook }) => addToBook(workId, [pieceId]));
+    const entriesBefore = await addToBook(workId, [pieceId]);
     await db.books.update(workId, {
       cover: 'moss',
       notes: 'Keep these manuscript notes',
