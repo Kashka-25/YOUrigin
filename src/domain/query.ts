@@ -10,8 +10,11 @@ export interface LibraryContext {
   booksOf: Map<string, Set<string>>;
   /** contentId -> collection ids */
   collectionsOf: Map<string, Set<string>>;
+  /** contentId -> Project ids */
+  projectsOf: Map<string, Set<string>>;
   bookTitle: Map<string, string>;
   collectionName: Map<string, string>;
+  projectTitle: Map<string, string>;
 }
 
 export interface ParsedQuery {
@@ -32,7 +35,7 @@ export function parseQuery(q: string): ParsedQuery {
 }
 
 export function isOrphan(item: ContentItem, ctx: LibraryContext): boolean {
-  return !(ctx.booksOf.get(item.id)?.size || ctx.collectionsOf.get(item.id)?.size);
+  return !(item.projectIds?.length || ctx.booksOf.get(item.id)?.size || ctx.collectionsOf.get(item.id)?.size);
 }
 
 function haystack(item: ContentItem, ctx: LibraryContext): string {
@@ -40,6 +43,7 @@ function haystack(item: ContentItem, ctx: LibraryContext): string {
   for (const t of item.tagIds) parts.push('#' + (ctx.tagName.get(t) ?? ''));
   for (const b of ctx.booksOf.get(item.id) ?? []) parts.push(ctx.bookTitle.get(b) ?? '');
   for (const c of ctx.collectionsOf.get(item.id) ?? []) parts.push(ctx.collectionName.get(c) ?? '');
+  for (const p of item.projectIds ?? []) parts.push(ctx.projectTitle.get(p) ?? '');
   return parts.join('\n').toLowerCase();
 }
 
@@ -67,6 +71,7 @@ export interface LibraryFilters {
   tagIds: string[];
   bookId: string | null;
   collectionId: string | null;
+  projectId: string | null;
   orphansOnly: boolean;
   showArchived: boolean;
   sort: SortKey;
@@ -79,6 +84,7 @@ export const EMPTY_FILTERS: LibraryFilters = {
   tagIds: [],
   bookId: null,
   collectionId: null,
+  projectId: null,
   orphansOnly: false,
   showArchived: false,
   sort: 'updated',
@@ -96,6 +102,7 @@ export function filterItems(items: ContentItem[], f: LibraryFilters, ctx: Librar
     if (f.tagIds.length && !f.tagIds.every((t) => item.tagIds.includes(t))) return false;
     if (f.bookId && !ctx.booksOf.get(item.id)?.has(f.bookId)) return false;
     if (f.collectionId && !ctx.collectionsOf.get(item.id)?.has(f.collectionId)) return false;
+    if (f.projectId && !(item.projectIds ?? []).includes(f.projectId)) return false;
     if (f.orphansOnly && !isOrphan(item, ctx)) return false;
     return matchesQuery(item, q, ctx);
   });
