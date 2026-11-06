@@ -59,7 +59,7 @@ export function AssignDialog({
       if (mode === 'book') {
         const bookId = targetId === 'new' ? await createBook({ title: name, templateId: kind === 'book' ? templateId : null, kind }) : targetId;
         const created = await addToBook(bookId, contentIds, sectionId || null);
-        const title = (await db.books.get(bookId))?.title ?? 'project';
+        const title = (await db.books.get(bookId))?.title ?? 'Work';
         const skipped = n - created.length;
         toast(`Added ${created.length} to “${title}”${skipped ? ` (${skipped} already there)` : ''}`, {
           undo: async () => {
