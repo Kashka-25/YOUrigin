@@ -444,7 +444,7 @@ function BookSettings({ book, onClose }: { book: Book; onClose: () => void }) {
               const ok = await confirm({
                 title: `Delete “${book.title}”?`,
                 message: 'Its sections and placements will be removed. Every piece of writing stays safely in your Library.',
-                confirmLabel: 'Delete project',
+                confirmLabel: 'Delete work',
                 danger: true,
               });
               if (!ok) return;
@@ -452,7 +452,7 @@ function BookSettings({ book, onClose }: { book: Book; onClose: () => void }) {
               nav('/projects');
             }}
           >
-            Delete project
+            Delete work
           </button>
         </div>
       </div>
