@@ -10,6 +10,7 @@ import type {
   Tag,
   TagFamily,
   Template,
+  Project,
 } from '../domain/types';
 import type { LibraryContext } from '../domain/query';
 import type { AIContext } from '../ai';
@@ -19,6 +20,7 @@ export interface LibraryData {
   tags: Tag[];
   families: TagFamily[];
   books: Book[];
+  projects: Project[];
   sections: Section[];
   entries: BookEntry[];
   collections: Collection[];
@@ -39,17 +41,18 @@ const LibraryCtx = createContext<LibraryData | undefined>(undefined);
  */
 export function LibraryProvider({ children }: { children: ReactNode }) {
   const raw = useLiveQuery(async () => {
-    const [items, tags, families, books, sections, entries, collections, templates] = await Promise.all([
+    const [items, tags, families, books, projects, sections, entries, collections, templates] = await Promise.all([
       db.content.toArray(),
       db.tags.toArray(),
       db.tagFamilies.orderBy('order').toArray(),
       db.books.toArray(),
+      db.projects.toArray(),
       db.sections.toArray(),
       db.entries.toArray(),
       db.collections.toArray(),
       db.templates.toArray(),
     ]);
-    return { items, tags, families, books, sections, entries, collections, templates };
+    return { items, tags, families, books, projects, sections, entries, collections, templates };
   }, []);
 
   const value = useMemo<LibraryData | undefined>(() => {
