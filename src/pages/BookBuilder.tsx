@@ -14,6 +14,7 @@ import { EmptyState, Spinner } from '../components/ui';
 import { Modal, useConfirm } from '../components/Modal';
 import { useToast } from '../components/Toast';
 import { addSection, deleteBook, moveEntry, templateFromBook, updateBook } from '../db/books';
+import { updateProject } from '../db/projectRecords';
 import { bookToMarkdown, download, downloadBlob, slug, today } from '../io/export';
 import { resolveDesign } from '../print/design';
 import { db } from '../db/db';
@@ -343,6 +344,7 @@ function BookSettings({ book, onClose }: { book: Book; onClose: () => void }) {
         onSubmit={async (e) => {
           e.preventDefault();
           await updateBook(book.id, { ...form, shelf: form.shelf.trim() });
+          if (homeProject) await updateProject(homeProject.id, { title: form.title, description: form.description });
           onClose();
         }}
       >
