@@ -46,11 +46,11 @@ export function suggestedProjectHome(project: {
   if (existing) return existing;
 
   const title = project.title.normalize('NFKD')
-    .replace(/[\\u0300-\\u036f]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
-  const compact = title.replace(/\\s+/g, '');
+  const compact = title.replace(/\s+/g, '');
 
   const knownHomes: Record<string, string> = {
     'you': 'App',
@@ -67,10 +67,10 @@ export function suggestedProjectHome(project: {
   const known = knownHomes[compact];
   if (known) return known;
 
-  if (/\\b(lyrics?|songwriting|songs?|music|band|album|gig|set ?lists?)\\b/.test(title)) return 'Creative';
-  if (/\\b(apps?|software|platforms?|websites?|pwa)\\b/.test(title)) return 'App';
-  if (/\\b(property|farm|farmland|land|homestead|estate)\\b/.test(title)) return 'Place';
-  if (/\\b(research|study|experiment|investigation)\\b/.test(title)) return 'Research';
-  if (/\\b(business|company|brand|shop|store|venture)\\b/.test(title)) return 'Business';
+  if (/\b(lyrics?|songwriting|songs?|music|band|album|gig|set ?lists?)\b/.test(title)) return 'Creative';
+  if (/\b(apps?|software|platforms?|websites?|pwa)\b/.test(title)) return 'App';
+  if (/\b(property|farm|farmland|land|homestead|estate)\b/.test(title)) return 'Place';
+  if (/\b(research|study|experiment|investigation)\b/.test(title)) return 'Research';
+  if (/\b(business|company|brand|shop|store|venture)\b/.test(title)) return 'Business';
   return '';
 }
