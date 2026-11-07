@@ -43,6 +43,10 @@ export interface PortfolioItem {
   alt: string;
   /** Optional live destination for a Project card; only HTTPS links are published. */
   destinationUrl?: string;
+  /** Optional visual width in the portfolio canvas. */
+  layoutSpan?: 1 | 2;
+  /** Crop used when this item includes an image. */
+  imageShape?: 'natural' | 'square' | 'portrait' | 'landscape';
 }
 
 export interface ContactLink {
@@ -209,7 +213,7 @@ export function newPortfolio(purpose: PortfolioPurpose, ownerName = '', now = Da
 }
 
 function baseItem(kind: PortfolioItemKind, sourceId: string): PortfolioItem {
-  return { id: newId(), kind, sourceId, heading: '', description: '', textMode: 'none', image: 'default', alt: '' };
+  return { id: newId(), kind, sourceId, heading: '', description: '', textMode: 'none', image: 'default', alt: '', layoutSpan: 1, imageShape: 'natural' };
 }
 
 export function headingItem(text: string): PortfolioItem {
@@ -280,6 +284,8 @@ export interface SnapshotItem {
   image: SnapshotImage | null;
   /** Safe external destination for a Project card. */
   destinationUrl?: string | null;
+  layoutSpan?: 1 | 2;
+  imageShape?: 'natural' | 'square' | 'portrait' | 'landscape';
 }
 
 export interface SnapshotSection {
@@ -419,6 +425,7 @@ function snapshotItem(item: PortfolioItem, src: PortfolioSources): SnapshotItem 
       title: custom || r.project.title, subtitle: '', description, meta: [],
       text: [], textMode: 'none', truncated: false, image: null,
       destinationUrl: normalizeHttps(item.destinationUrl ?? ''),
+      layoutSpan: item.layoutSpan ?? 1, imageShape: item.imageShape ?? 'natural',
     };
   }
   if (r.work) {
@@ -427,6 +434,7 @@ function snapshotItem(item: PortfolioItem, src: PortfolioSources): SnapshotItem 
       key: item.id, kind: 'work', label: PROJECT_KIND_META[projectKind(r.work)].label,
       title: custom || r.work.title || 'Untitled', subtitle: r.work.subtitle.trim(), description, meta: [],
       text: t.text, textMode: item.textMode, truncated: t.truncated, image,
+      layoutSpan: item.layoutSpan ?? 1, imageShape: item.imageShape ?? 'natural',
     };
   }
   const piece = r.piece!;
