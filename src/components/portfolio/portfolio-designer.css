@@ -42,6 +42,7 @@
 .pfd-heading-preview { display: flex; flex-direction: column; gap: 5px; padding: 24px; }
 .pfd-heading-preview span { color: #9a8c7c; font-size: 9px; font-weight: 700; letter-spacing: .13em; }
 .pfd-heading-preview strong { color: #29231d; font: 400 27px 'Newsreader Variable', Georgia, serif; }
+.pfd-heading-preview p { margin: 2px 0 0; color: #655e55; font-size: 13px; line-height: 1.65; white-space: pre-wrap; }
 .pfd-block-index { position: absolute; right: 10px; bottom: 8px; color: #aaa196; font-size: 9px; pointer-events: none; }
 .pfd-footer { display: flex; justify-content: space-between; gap: 12px; padding: 20px 28px; border-top: 1px solid #e3ddd3; color: #82796f; font-size: 11px; }
 .pfd-empty { padding: 20px; color: #82796f; font: italic 17px 'Newsreader Variable', Georgia, serif; }
