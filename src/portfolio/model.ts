@@ -291,6 +291,7 @@ export interface SnapshotItem {
 export interface SnapshotSection {
   key: string;
   heading: string;
+  description: string;
   items: SnapshotItem[];
 }
 
@@ -443,6 +444,7 @@ function snapshotItem(item: PortfolioItem, src: PortfolioSources): SnapshotItem 
     key: item.id, kind: 'piece', label: piece.type === 'image' ? 'Artwork' : TYPE_LABEL[piece.type],
     title: custom || (piece.type === 'image' && !piece.title.trim() ? 'Untitled' : displayTitle(piece)), subtitle: '', description,
     meta: artMeta(piece), text: t.text, textMode: item.textMode, truncated: t.truncated, image,
+    layoutSpan: item.layoutSpan ?? 1, imageShape: item.imageShape ?? 'natural',
   };
 }
 
@@ -479,7 +481,7 @@ export function buildSnapshot(p: Portfolio, src: PortfolioSources): { snapshot: 
   let current: SnapshotSection | null = null;
   for (const item of p.items) {
     if (item.kind === 'heading') {
-      current = { key: item.id, heading: item.heading.trim().slice(0, LIMITS.heading), items: [] };
+      current = { key: item.id, heading: item.heading.trim().slice(0, LIMITS.heading), description: item.description.trim().slice(0, LIMITS.description), items: [] };
       sections.push(current);
       continue;
     }
@@ -491,7 +493,7 @@ export function buildSnapshot(p: Portfolio, src: PortfolioSources): { snapshot: 
     const s = snapshotItem(item, src);
     if (!s) continue;
     if (!current) {
-      current = { key: 'start', heading: '', items: [] };
+      current = { key: 'start', heading: '', description: '', items: [] };
       sections.push(current);
     }
     current.items.push(s);
