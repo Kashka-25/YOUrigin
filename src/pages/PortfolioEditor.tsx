@@ -74,7 +74,7 @@ function Field({ label, htmlFor, count, children }: { label: string; htmlFor: st
 function sourceSummary(item: PortfolioItem, built: BuiltPortfolio): { kindLabel: string; title: string; hasImage: boolean; hasText: boolean; problem?: string } {
   const r = resolveItem(item, built.sources);
   if (r.problem) return { kindLabel: item.kind === 'project' ? 'Project' : item.kind === 'work' ? 'Work' : 'Piece', title: '', hasImage: false, hasText: false, problem: r.problem };
-  if (r.project) return { kindLabel: 'Project', title: r.project.title, hasImage: false, hasText: false };
+  if (r.project) return { kindLabel: 'Project', title: r.project.title, hasImage: !!r.project.coverAssetId, hasText: false };
   if (r.work) return { kindLabel: `Work · ${PROJECT_KIND_META[projectKind(r.work)].label}`, title: r.work.title || 'Untitled', hasImage: !!r.work.coverAssetId, hasText: true };
   const c = r.piece!;
   return { kindLabel: c.type === 'image' ? 'Artwork' : TYPE_LABEL[c.type], title: displayTitle(c), hasImage: c.type === 'image', hasText: c.body.trim().length > 0 };
@@ -168,7 +168,7 @@ function ItemEditor({
               {s.hasImage && (
                 <Field label="Picture" htmlFor={`${id}-i`}>
                   <select id={`${id}-i`} className="input" value={item.image} onChange={(e) => onChange({ image: e.target.value as PortfolioItem['image'] })}>
-                    <option value="default">{item.kind === 'work' ? 'Show the cover' : 'Show the artwork'}</option>
+                    <option value="default">{item.kind === 'project' ? 'Show the project cover' : item.kind === 'work' ? 'Show the cover' : 'Show the artwork'}</option>
                     <option value="none">No picture</option>
                   </select>
                 </Field>

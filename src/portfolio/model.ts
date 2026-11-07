@@ -410,7 +410,7 @@ function artMeta(piece: ContentItem): string[] {
 /** The picture an item shows: chosen per item, from the source's own artwork. */
 function itemImage(item: PortfolioItem, r: ReturnType<typeof resolveItem>): SnapshotImage | null {
   if (item.image === 'none') return null;
-  const ref = r.piece?.type === 'image' ? r.piece.assetId : r.work?.coverAssetId;
+  const ref = r.piece?.type === 'image' ? r.piece.assetId : r.work?.coverAssetId ?? r.project?.coverAssetId;
   return ref ? { ref, alt: item.alt.trim().slice(0, LIMITS.alt) } : null;
 }
 
@@ -424,7 +424,7 @@ function snapshotItem(item: PortfolioItem, src: PortfolioSources): SnapshotItem 
     return {
       key: item.id, kind: 'project', label: 'Project',
       title: custom || r.project.title, subtitle: '', description, meta: [],
-      text: [], textMode: 'none', truncated: false, image: null,
+      text: [], textMode: 'none', truncated: false, image,
       destinationUrl: normalizeHttps(item.destinationUrl ?? ''),
       layoutSpan: item.layoutSpan ?? 1, imageShape: item.imageShape ?? 'natural',
     };

@@ -119,6 +119,12 @@ describe('snapshot', () => {
     expect(item).toMatchObject({ kind: 'project', title: 'Tidewater', description: 'Written for recruiters', image: null });
   });
 
+  it('includes a Project cover image in the portfolio snapshot', () => {
+    const p = withItems(newPortfolio('creative', 'Ana'), itemFromProject(project({ coverAssetId: 'project-cover' })));
+    const item = buildSnapshot(p, sources()).snapshot.sections[0].items[0];
+    expect(item.image).toEqual({ ref: 'project-cover', alt: '' });
+  });
+
   it('publishes a secure destination URL for a Project and rejects unsafe schemes', () => {
     const src = sources();
     const p = withItems(

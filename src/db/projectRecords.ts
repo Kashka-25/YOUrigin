@@ -13,7 +13,7 @@ export interface NewProject {
   status?: ProjectStatus;
 }
 
-export type ProjectPatch = Partial<Pick<Project, 'title' | 'description' | 'category' | 'colour' | 'status'>>;
+export type ProjectPatch = Partial<Pick<Project, 'title' | 'description' | 'category' | 'colour' | 'status' | 'coverAssetId'>>;
 
 export async function createProject(input: NewProject): Promise<string> {
   const now = Date.now();

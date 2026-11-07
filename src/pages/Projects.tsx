@@ -5,6 +5,8 @@ import { useLibrary } from '../hooks/useLibrary';
 import { DEFAULT_PROJECT_COLOUR, PROJECT_CATEGORIES, PROJECT_KIND_META, PROJECT_STATUS_META, TYPE_LABEL, projectKind } from '../domain/constants';
 import type { ContentType, ProjectColour, ProjectStatus } from '../domain/types';
 import { ProjectColourPicker, projectColourStyle } from '../components/ProjectColourPicker';
+import { AssetImage } from '../components/AssetImage';
+import { IMAGE_ACCEPT, removeAssetIfUnused, saveImage } from '../db/assets';
 import { createProject, updateProject, deleteProject, addItemsToProject, removeItemFromProject } from '../db/projectRecords';
 import { createContent } from '../db/content';
 import { createBook, deleteBook, updateBook } from '../db/books';
@@ -138,6 +140,7 @@ export function Projects() {
                   return (
                     <li key={project.id}>
                       <Link to={'/initiative/' + project.id} className="archive-card project-card group flex h-full flex-col p-5 transition-colors" style={projectColourStyle(project.colour)}>
+                        {project.coverAssetId && <AssetImage id={project.coverAssetId} alt="" className="mb-4 aspect-[16/9] w-full rounded-lg object-cover" />}
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <span className="project-colour-dot mb-3 block" aria-hidden />
@@ -202,6 +205,9 @@ export function ProjectHome() {
   const [editDescription, setEditDescription] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [editColour, setEditColour] = useState<ProjectColour>(DEFAULT_PROJECT_COLOUR);
+  const [editCoverAssetId, setEditCoverAssetId] = useState<string | undefined>(undefined);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [coverError, setCoverError] = useState('');
   const [newNoteType, setNewNoteType] = useState<ContentType>('song');
   const [noteQuery, setNoteQuery] = useState('');
   const [noteTypeFilter, setNoteTypeFilter] = useState<ContentType | 'all' | 'music'>('music');
@@ -247,12 +253,16 @@ export function ProjectHome() {
     setEditDescription(currentProject.description);
     setEditCategory(currentProject.category);
     setEditColour(currentProject.colour ?? DEFAULT_PROJECT_COLOUR);
+    setEditCoverAssetId(currentProject.coverAssetId);
+    setCoverError('');
     setEditing(true);
   }
 
   async function saveProject(e: React.FormEvent) {
     e.preventDefault();
-    await updateProject(id, { title: editTitle, description: editDescription, category: editCategory, colour: editColour });
+    const previousCover = currentProject.coverAssetId;
+    await updateProject(id, { title: editTitle, description: editDescription, category: editCategory, colour: editColour, coverAssetId: editCoverAssetId });
+    if (previousCover && previousCover !== editCoverAssetId) await removeAssetIfUnused(previousCover);
     if (workspace) await updateBook(workspace.id, { title: editTitle, description: editDescription });
     setEditing(false);
   }
@@ -311,6 +321,9 @@ export function ProjectHome() {
         </div>
         <h1 className="page-title mt-3 flex items-center gap-3"><span className="project-colour-dot shrink-0" style={projectColourStyle(project.colour)} aria-hidden />{project.title}</h1>
         {project.description && <p className="mt-3 max-w-2xl font-serif text-lg leading-relaxed text-ink-2">{project.description}</p>}
+        {project.coverAssetId && (
+          <AssetImage id={project.coverAssetId} alt={project.title + ' project cover'} className="mt-6 max-h-[28rem] w-full rounded-2xl border border-line object-cover" />
+        )}
       </header>
 
       <section className="mt-9" aria-labelledby="project-material">
@@ -395,6 +408,40 @@ export function ProjectHome() {
           <div><label className="label" htmlFor="edit-project-description">Description</label><textarea id="edit-project-description" className="input min-h-24" rows={3} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} /></div>
           <div><label className="label" htmlFor="edit-project-category">Category <span className="font-normal text-muted">(optional)</span></label><input id="edit-project-category" className="input" list="edit-project-categories" value={editCategory} onChange={(e) => setEditCategory(e.target.value)} placeholder="App, Business, Place…" /><datalist id="edit-project-categories">{PROJECT_CATEGORIES.map((name) => <option key={name} value={name} />)}</datalist></div>
           <ProjectColourPicker value={editColour} onChange={setEditColour} />
+          <div>
+            <label className="label" htmlFor="edit-project-cover">Project cover image</label>
+            {editCoverAssetId && (
+              <div className="mb-3 overflow-hidden rounded-xl border border-line">
+                <AssetImage id={editCoverAssetId} alt="Project cover preview" className="max-h-56 w-full object-cover" />
+                <button type="button" className="btn-ghost m-2 text-xs" onClick={() => setEditCoverAssetId(undefined)}>Remove cover</button>
+              </div>
+            )}
+            <input
+              id="edit-project-cover"
+              className="input"
+              type="file"
+              accept={IMAGE_ACCEPT}
+              disabled={coverUploading}
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (!file) return;
+                setCoverUploading(true);
+                setCoverError('');
+                try {
+                  const { asset } = await saveImage(file);
+                  setEditCoverAssetId(asset.id);
+                } catch {
+                  setCoverError('That image could not be added. Please try another image file.');
+                } finally {
+                  setCoverUploading(false);
+                }
+              }}
+            />
+            <p className="mt-1 text-xs text-muted">Choose a cover image from your device. YOUrigin automatically reduces its file size and stores it in your private library.</p>
+            {coverUploading && <p className="mt-1 text-xs text-muted">Preparing image…</p>}
+            {coverError && <p className="mt-1 text-xs text-seed" role="alert">{coverError}</p>}
+          </div>
           <div className="flex justify-end gap-2"><button type="button" className="btn" onClick={() => setEditing(false)}>Cancel</button><button type="submit" className="btn-primary">Save details</button></div>
         </form>
       </Modal>
