@@ -93,7 +93,7 @@ beforeEach(() => {
   broken = false;
   row = {
     id: 'p-1', user_id: OWNER, local_id: 'local-1', share_token: TOKEN, status: 'live',
-    visibility: 'unlisted', password_version: 0, expires_at: null, snapshot,
+    visibility: 'unlisted', access_version: 0, expires_at: null, snapshot,
   };
 });
 
@@ -186,7 +186,7 @@ describe('what a visitor receives', () => {
 describe('password-protected portfolios', () => {
   beforeEach(() => {
     row.visibility = 'password';
-    row.password_version = 3;
+    row.access_version = 3;
   });
 
   it('ask for the password, refuse a wrong one, and give a pass for the right one', async () => {
@@ -215,9 +215,12 @@ describe('password-protected portfolios', () => {
       expect((await visit({ pass })).status).toBe(200);
     });
 
-    it('turned off', async () => {
+    it('turned off, and still after turning back on (the database moves the access version on)', async () => {
       row.status = 'disabled';
+      row.access_version++;
       expect((await visit({ pass })).status).toBe(404);
+      row.status = 'live';
+      expect((await visit({ pass })).body).toEqual({ error: 'password_required' });
     });
 
     it('link ended', async () => {
@@ -232,7 +235,7 @@ describe('password-protected portfolios', () => {
     });
 
     it('password changed', async () => {
-      row.password_version = 4;
+      row.access_version = 4;
       expect((await visit({ pass })).body).toEqual({ error: 'password_required' });
     });
 

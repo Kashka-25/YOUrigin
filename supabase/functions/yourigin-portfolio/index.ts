@@ -23,7 +23,7 @@ if (SECRET.length < 32) throw new Error('PORTFOLIO_PASS_SECRET must be set (at l
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
 
-const COLUMNS = 'id,user_id,local_id,share_token,status,visibility,password_version,expires_at,snapshot';
+const COLUMNS = 'id,user_id,local_id,share_token,status,visibility,access_version,expires_at,snapshot';
 
 Deno.serve(
   createHandler({

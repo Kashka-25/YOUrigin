@@ -33,7 +33,7 @@ export interface PortfolioRow {
   share_token: string;
   status: 'live' | 'disabled';
   visibility: 'unlisted' | 'password' | 'public';
-  password_version: number;
+  access_version: number;
   expires_at: string | null;
   snapshot: unknown;
 }
@@ -115,7 +115,7 @@ function serve(deps: Deps): (req: Request) => Promise<Response> {
 
     let pass: string | undefined;
     if (row.visibility === 'password') {
-      const current = { id: row.id, passwordVersion: row.password_version, shareToken: row.share_token };
+      const current = { id: row.id, accessVersion: row.access_version, shareToken: row.share_token };
       const passOk = await verifyPass(deps.secret, body.pass, current, now);
       if (!passOk) {
         const password = body.password;
@@ -125,7 +125,7 @@ function serve(deps: Deps): (req: Request) => Promise<Response> {
         if (result === 'locked') return fail('locked', 429);
         if (result !== 'ok') return fail('wrong_password', 401);
         const expires = row.expires_at ? Math.min(Date.parse(row.expires_at), now + PASS_HOURS * 3_600_000) : now + PASS_HOURS * 3_600_000;
-        pass = await signPass(deps.secret, { p: row.id, v: row.password_version, t: await tokenTag(row.share_token), e: expires });
+        pass = await signPass(deps.secret, { p: row.id, v: row.access_version, t: await tokenTag(row.share_token), e: expires });
       }
     }
 

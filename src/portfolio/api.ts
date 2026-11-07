@@ -248,7 +248,7 @@ export async function refreshPublication(p: Portfolio): Promise<PublishedStatus>
   const { c } = await signedIn();
   const { data, error } = await c
     .from('yourigin_portfolios')
-    .select('id,local_id,share_token,status,visibility,expires_at,published_at,view_count,password_version')
+    .select('id,local_id,share_token,status,visibility,expires_at,published_at,view_count,access_version')
     .eq('local_id', p.id)
     .maybeSingle();
   if (error) throw friendly(error.message);
@@ -256,7 +256,7 @@ export async function refreshPublication(p: Portfolio): Promise<PublishedStatus>
     if (p.publication) await savePublication(p.id, null);
     return { publication: null, views: 0 };
   }
-  const r = data as ServerResult & { password_version: number };
+  const r = data as ServerResult & { access_version: number };
   const publication = toPublication(
     { ...r, password_set: r.visibility === 'password' },
     p.publication?.remoteId === r.id && p.publication.publishedAt === Date.parse(r.published_at) ? p.publication.publishedHash : '',

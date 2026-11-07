@@ -195,17 +195,17 @@ export function withImageUrls(s: StoredSnapshot, urls: Record<string, string>): 
 
 // ---- access passes -----------------------------------------------------------
 // After a correct password the visitor's browser gets a pass, so reloading
-// doesn't ask again. A pass names the portfolio, the password version and the
+// doesn't ask again. A pass names the portfolio, its access version and the
 // link it was issued for, and is checked against the current row on every
 // request: turning the portfolio off, ending or replacing its link, or
-// changing or removing its password all end every pass at once.
+// changing or removing its password all end every pass at once, and for good.
 
 export const PASS_HOURS = 12;
 
 export interface PassClaims {
   /** Portfolio id. */
   p: string;
-  /** Password version it was issued for. */
+  /** Access version it was issued for (moves on with password changes and turning off). */
   v: number;
   /** Hash of the link token it was issued for. */
   t: string;
@@ -251,8 +251,8 @@ export async function signPass(secret: string, claims: PassClaims): Promise<stri
   return `${body}.${b64url(sig)}`;
 }
 
-/** True only for an untampered, unexpired pass issued for exactly this portfolio, password version and link. */
-export async function verifyPass(secret: string, pass: unknown, current: { id: string; passwordVersion: number; shareToken: string }, now: number): Promise<boolean> {
+/** True only for an untampered, unexpired pass issued for exactly this portfolio, access version and link. */
+export async function verifyPass(secret: string, pass: unknown, current: { id: string; accessVersion: number; shareToken: string }, now: number): Promise<boolean> {
   if (typeof pass !== 'string' || pass.length > 600) return false;
   const [body, sig, extra] = pass.split('.');
   if (!body || !sig || extra !== undefined) return false;
@@ -269,7 +269,7 @@ export async function verifyPass(secret: string, pass: unknown, current: { id: s
   }
   return (
     claims.p === current.id &&
-    claims.v === current.passwordVersion &&
+    claims.v === current.accessVersion &&
     claims.t === (await tokenTag(current.shareToken)) &&
     typeof claims.e === 'number' &&
     claims.e > now
