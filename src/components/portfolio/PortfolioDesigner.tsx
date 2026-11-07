@@ -17,7 +17,7 @@ import './portfolio-designer.css';
 type Props = {
   portfolio: Portfolio;
   built: BuiltPortfolio;
-  saveState: 'idle' | 'saving' | 'saved' | 'error';
+  saveState: 'saved' | 'unsaved' | 'saving' | 'error';
   onChange: (patch: Partial<Portfolio>) => void;
   onChangeItem: (id: string, patch: Partial<PortfolioItem>) => void;
   onExit: () => void;
@@ -36,7 +36,6 @@ function SortableBlock({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    gridColumn: item.layoutSpan === 2 ? 'span 2' : 'span 1',
     opacity: isDragging ? 0.55 : 1,
     zIndex: isDragging ? 2 : 0,
   };
@@ -93,7 +92,7 @@ export function PortfolioDesigner({ portfolio, built, saveState, onChange, onCha
         <button type="button" className="btn-ghost" onClick={onExit}><ArrowLeft size={16} /> Back to portfolio settings</button>
         <div className="pfd-toolbar-center">
           <span className="pfd-live-dot" />
-          <span>{saveState === 'saving' ? 'Saving changes…' : saveState === 'error' ? 'Could not save' : 'Design mode'}</span>
+          <span>{saveState === 'saving' ? 'Saving changes…' : saveState === 'unsaved' ? 'Changes pending' : saveState === 'error' ? 'Could not save' : 'All changes saved'}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="pfd-device-switch" role="group" aria-label="Canvas preview size">
