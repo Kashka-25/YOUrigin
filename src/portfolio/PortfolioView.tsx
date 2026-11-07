@@ -1,5 +1,5 @@
-import { useId, useState } from 'react';
-import type { ContactKind, PortfolioSnapshot, SnapshotItem, TextBlock } from './model';
+import { useId, useState, type CSSProperties } from 'react';
+import { backgroundStyle, type ContactKind, type PortfolioSnapshot, type SnapshotItem, type TextBlock } from './model';
 import './viewer.css';
 
 // The page a visitor sees. It renders a snapshot and nothing else, so the
@@ -107,7 +107,7 @@ export function PortfolioView({
 }) {
   const s = snapshot;
   return (
-    <div className={`pf pf--${s.theme}`}>
+    <div className={`pf pf--${s.theme}${s.background ? ' pf--custom-bg' : ''}`} style={backgroundStyle(s.background) as CSSProperties | undefined}>
       <header className="pf-hero">
         <div className="pf-wrap">
           {s.title && <p className="pf-kicker">{s.title}</p>}

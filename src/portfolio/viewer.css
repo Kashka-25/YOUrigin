@@ -56,6 +56,10 @@
   --pf-name-weight: 500; --pf-name-track: -0.02em;
 }
 
+/* A chosen background: the hero joins the page, so its accents follow the page. */
+.pf--custom-bg.pf--venture .pf-kicker, .pf--custom-bg.pf--venture .pf-contact-icon { color: var(--pf-accent); }
+.pf--custom-bg .pf-hero { border-bottom: 1px solid var(--pf-line); }
+
 .pf-wrap { width: 100%; max-width: 1080px; margin-inline: auto; padding-inline: 20px; }
 
 /* Hero */

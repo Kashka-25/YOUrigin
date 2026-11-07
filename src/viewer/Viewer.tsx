@@ -91,6 +91,18 @@ export function Viewer({ deps = browserDeps() }: { deps?: ClientDeps }) {
     if (r.kind === 'ok') setPassword('');
   };
 
+  // The page's own background shows past the end of the content and when scrolling past it.
+  const pageBackground = view.kind === 'ok' ? view.snapshot.background ?? null : null;
+  useEffect(() => {
+    if (!pageBackground) return;
+    document.documentElement.style.background = pageBackground;
+    document.body.style.background = pageBackground;
+    return () => {
+      document.documentElement.style.background = '';
+      document.body.style.background = '';
+    };
+  }, [pageBackground]);
+
   switch (view.kind) {
     case 'loading':
       return (

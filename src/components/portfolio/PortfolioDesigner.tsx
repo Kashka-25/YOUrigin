@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import {
   DndContext, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors,
   type DragEndEvent,
@@ -8,13 +8,14 @@ import { CSS } from '@dnd-kit/utilities';
 import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, GripVertical, LayoutGrid, Loader2, Monitor, Plus, Smartphone, Trash2, Type } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { BuiltPortfolio } from '../../portfolio/usePortfolioSnapshot';
-import { LIMITS, headingItem, resolveItem, type Portfolio, type PortfolioItem, type PortfolioSources, type SnapshotItem } from '../../portfolio/model';
+import { LIMITS, backgroundStyle, headingItem, resolveItem, type Portfolio, type PortfolioItem, type PortfolioSources, type SnapshotItem } from '../../portfolio/model';
 import { PortfolioView } from '../../portfolio/PortfolioView';
 import { updateProject } from '../../db/projectRecords';
 import { removeAssetIfUnused } from '../../db/assets';
 import type { SaveState } from '../../hooks/useAutosave';
 import { CoverPicker } from '../CoverPicker';
 import { AddItemsDialog } from './AddItemsDialog';
+import { BackgroundPicker } from './BackgroundPicker';
 import './portfolio-designer.css';
 
 type Props = {
@@ -265,6 +266,7 @@ export function PortfolioDesigner({ portfolio, built, saveState, onChange, onCha
               <input id="pfd-line" className="input" value={portfolio.ownerLine} maxLength={LIMITS.ownerLine} onChange={(e) => onChange({ ownerLine: e.target.value })} />
               <label className="label" htmlFor="pfd-intro">Introduction</label>
               <textarea id="pfd-intro" className="input min-h-40 resize-y font-serif" value={portfolio.intro} maxLength={LIMITS.intro} onChange={(e) => onChange({ intro: e.target.value })} />
+              <div className="mt-3"><BackgroundPicker value={portfolio.background} onChange={(background) => onChange({ background })} /></div>
             </section>
           )}
 
@@ -281,7 +283,7 @@ export function PortfolioDesigner({ portfolio, built, saveState, onChange, onCha
                 <PortfolioView snapshot={built.snapshot} resolveImage={built.resolveImage} />
               </div>
             ) : (
-              <div className={`pf pf--${portfolio.theme} pfd-frame pfd-canvas`}>
+              <div className={`pf pf--${portfolio.theme}${portfolio.background ? ' pf--custom-bg' : ''} pfd-frame pfd-canvas`} style={backgroundStyle(portfolio.background) as CSSProperties | undefined}>
                 <button type="button" className={`pfd-hero${selectedId === null ? ' is-selected' : ''}`} onClick={() => setSelectedId(null)} aria-pressed={selectedId === null}>
                   {portfolio.title && <span className="pf-kicker">{portfolio.title}</span>}
                   <span className="pfd-name">{portfolio.ownerName || 'Your name'}</span>
