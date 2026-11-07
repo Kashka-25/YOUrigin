@@ -120,9 +120,12 @@ describe('snapshot', () => {
   });
 
   it('includes a Project cover image in the portfolio snapshot', () => {
-    const p = withItems(newPortfolio('creative', 'Ana'), itemFromProject(project({ coverAssetId: 'project-cover' })));
-    const item = buildSnapshot(p, sources()).snapshot.sections[0].items[0];
+    const covered = project({ coverAssetId: 'project-cover' });
+    const p = withItems(newPortfolio('creative', 'Ana'), itemFromProject(covered));
+    const item = buildSnapshot(p, sources({ projects: new Map([['p1', covered]]) })).snapshot.sections[0].items[0];
     expect(item.image).toEqual({ ref: 'project-cover', alt: '' });
+    const hidden = withItems(newPortfolio('creative', 'Ana'), { ...itemFromProject(covered), image: 'none' as const });
+    expect(buildSnapshot(hidden, sources({ projects: new Map([['p1', covered]]) })).snapshot.sections[0].items[0].image).toBeNull();
   });
 
   it('publishes a secure destination URL for a Project and rejects unsafe schemes', () => {

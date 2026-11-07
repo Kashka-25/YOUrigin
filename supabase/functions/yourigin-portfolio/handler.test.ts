@@ -171,6 +171,25 @@ describe('what a visitor receives', () => {
     for (const bad of ['http://plain.example', 'data:text/html,x', 'javascript:alert(1)', 'mailto:not-an-email']) expect(safeHref(bad)).toBeNull();
   });
 
+  it('keeps layout choices, text sections and a Project’s own https link, and nothing unsafe', () => {
+    const s = cleanSnapshot({ sections: [
+      { heading: 'About', description: 'A few words.', items: [] },
+      { heading: 'Empty', items: [] },
+      { heading: 'Work', items: [
+        { kind: 'project', destinationUrl: 'https://site.example/', layoutSpan: 2, imageShape: 'portrait' },
+        { kind: 'project', destinationUrl: 'javascript:alert(1)', layoutSpan: 7, imageShape: 'giant' },
+        { kind: 'project', destinationUrl: 'mailto:a@b.example' },
+        { kind: 'piece', destinationUrl: 'https://site.example/' },
+      ] },
+    ] }, PREFIX);
+    expect(s.sections.map((x) => [x.heading, x.description, x.items.length])).toEqual([['About', 'A few words.', 0], ['Work', '', 4]]);
+    const [a, b, c, d] = s.sections[1].items;
+    expect(a).toMatchObject({ destinationUrl: 'https://site.example/', layoutSpan: 2, imageShape: 'portrait' });
+    expect(b).toMatchObject({ destinationUrl: null, layoutSpan: 1, imageShape: 'natural' });
+    expect(c.destinationUrl).toBeNull();
+    expect(d).not.toHaveProperty('destinationUrl');
+  });
+
   it('pictures outside the portfolio’s own folder are never signed', () => {
     const s = cleanSnapshot({ sections: [{ items: [
       { image: { path: `${PREFIX}../other/x.webp` } },

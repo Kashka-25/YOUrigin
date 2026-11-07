@@ -9,6 +9,7 @@ export const ITEM_KINDS = ['project', 'work', 'piece'] as const;
 export const TEXT_MODES = ['none', 'excerpt', 'full'] as const;
 export const BLOCK_KINDS = ['section', 'title', 'body'] as const;
 export const CONTACT_KINDS = ['email', 'website', 'linkedin', 'github', 'instagram', 'cv', 'other'] as const;
+export const IMAGE_SHAPES = ['natural', 'square', 'portrait', 'landscape'] as const;
 
 /** A picture as stored with a published snapshot: a path in the private "portfolios" bucket. */
 export interface StoredImage {
@@ -38,6 +39,11 @@ export interface WireItem<I> {
   textMode: (typeof TEXT_MODES)[number];
   truncated: boolean;
   image: I | null;
+  /** A Project's own site (https only). */
+  destinationUrl?: string | null;
+  /** 2 = a wide card across two columns. */
+  layoutSpan?: 1 | 2;
+  imageShape?: (typeof IMAGE_SHAPES)[number];
 }
 
 export interface WireSnapshot<I> {
@@ -49,7 +55,7 @@ export interface WireSnapshot<I> {
   ownerLine: string;
   intro: string;
   contact: { kind: (typeof CONTACT_KINDS)[number]; label: string; href: string }[];
-  sections: { key: string; heading: string; items: WireItem<I>[] }[];
+  sections: { key: string; heading: string; description: string; items: WireItem<I>[] }[];
 }
 
 export type StoredSnapshot = WireSnapshot<StoredImage>;
@@ -140,9 +146,11 @@ export function cleanSnapshot(raw: unknown, prefix: string): StoredSnapshot {
         }
         const img = obj(it.image);
         const path = imagePathFor(prefix, img.path);
+        const kind = pick(it.kind, ITEM_KINDS, 'piece');
+        const link = kind === 'project' ? safeHref(it.destinationUrl) : null;
         out.push({
           key: str(it.key, 64) || `i${items}`,
-          kind: pick(it.kind, ITEM_KINDS, 'piece'),
+          kind,
           label: str(it.label, 40),
           title: str(it.title, 200),
           subtitle: str(it.subtitle, 200),
@@ -152,12 +160,16 @@ export function cleanSnapshot(raw: unknown, prefix: string): StoredSnapshot {
           textMode: pick(it.textMode, TEXT_MODES, 'none'),
           truncated: it.truncated === true,
           image: path ? { path, width: dim(img.width), height: dim(img.height), alt: str(img.alt, 300) } : null,
+          ...(kind === 'project' ? { destinationUrl: link && link.startsWith('https:') ? link : null } : {}),
+          layoutSpan: it.layoutSpan === 2 ? 2 : 1,
+          imageShape: pick(it.imageShape, IMAGE_SHAPES, 'natural'),
         });
         items++;
       }
-      return { key: str(sec.key, 64) || `s${si}`, heading: str(sec.heading, 120), items: out };
+      return { key: str(sec.key, 64) || `s${si}`, heading: str(sec.heading, 120), description: str(sec.description, 2000), items: out };
     })
-    .filter((sec) => sec.items.length);
+    // A text section stands on its own; an empty heading doesn't.
+    .filter((sec) => sec.items.length || sec.description.trim());
   return {
     version: 1,
     title: str(s.title, 120),
