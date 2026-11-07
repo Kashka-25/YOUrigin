@@ -15,6 +15,8 @@ export interface ColourScale {
 export interface Project extends Syncable {
   title: string;
   description: string;
+  /** Optional cover image stored in the local asset library. */
+  coverAssetId?: string;
   /** Optional visual identifier; missing values use the default ochre tone. */
   colour?: ProjectColour;
   /** Optional free-form category used only for filtering. Empty means uncategorised. */
