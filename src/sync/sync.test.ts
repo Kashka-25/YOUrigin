@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { YOUriginDB, ensureBuiltIns } from '../db/db';
 import { Outbox, type KeyValueStore } from './outbox';
-import { installChangeTracking } from './tracking';
-import { SyncEngine, type PushRow, type RemoteRow, type SyncTransport } from './engine';
+import { installChangeTracking, SYNC_TABLES } from './tracking';
+import { newPortfolio } from '../portfolio/model';
+import { needsFullPull, SyncEngine, type PushRow, type RemoteRow, type SyncTransport } from './engine';
 import { createKeyInfo, unlockWithPassphrase } from './crypto';
 import { newId } from '../domain/text';
 import type { ContentItem, Tag } from '../domain/types';
@@ -221,5 +222,27 @@ describe('two-device sync', () => {
       expect((await d.db.content.toArray()).map((c) => c.body).sort()).toEqual(['laptop poem', 'phone poem']);
       expect(await d.db.templates.count()).toBeGreaterThanOrEqual(6);
     }
+  });
+});
+
+describe('portfolios', () => {
+  it('sync between devices, encrypted like the rest of the library', async () => {
+    const server = new FakeServer();
+    const { key } = await createKeyInfo('pass phrase one');
+    const phone = await device('phone', server, key);
+    const laptop = await device('laptop', server, key);
+
+    const draft = { ...newPortfolio('professional', 'Ana'), intro: 'Hello from a private draft' };
+    await phone.db.portfolios.add(draft);
+    await phone.engine.syncOnce();
+    for (const r of server.rows.values()) expect(r.payload ?? '').not.toContain('private draft');
+    await laptop.engine.syncOnce();
+    expect(await laptop.db.portfolios.get(draft.id)).toMatchObject({ intro: 'Hello from a private draft', publication: null });
+  });
+
+  it('a device that never synced a newer table pulls everything once', () => {
+    expect(needsFullPull(undefined)).toBe(true);
+    expect(needsFullPull(SYNC_TABLES.filter((t) => t !== 'portfolios'))).toBe(true);
+    expect(needsFullPull([...SYNC_TABLES])).toBe(false);
   });
 });

@@ -27,6 +27,15 @@ export interface SyncCursor {
   set(rev: number): Promise<void>;
 }
 
+/**
+ * True when this version syncs a table the device's cursor never covered:
+ * records for it were skipped by an older version, so pull everything once.
+ * Re-applying is safe; unsent local edits still win.
+ */
+export function needsFullPull(knownTables: readonly string[] | undefined): boolean {
+  return !knownTables || SYNC_TABLES.some((t) => !knownTables.includes(t));
+}
+
 const PUSH_BATCH = 200;
 const PUSH_MAX_CHARS = 3_000_000;
 const PULL_PAGE = 500;
