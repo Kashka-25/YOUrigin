@@ -193,7 +193,22 @@ A portfolio is a private draft on your devices (synced end-to-end encrypted with
 
 - **What a visitor can see** is exactly the snapshot `buildSnapshot` (`src/portfolio/model.ts`) returns: the portfolio's own title, introduction and contact links, and for each chosen item its title, the description written for this portfolio, the text you chose to show (none, an excerpt or the full text) and its picture. Notes, tags, statuses, categories, file names and anything you didn't choose are never part of it. Inspiration images (other people's work) can't be added.
 - **The preview** renders that snapshot with the same component (`PortfolioView`) the published page will use. Its layout follows the width of its frame (CSS container queries), so the phone, tablet and desktop previews are the real layouts.
-- **Sharing:** unlisted (the default), password or public, plus an optional end date. Publishing, revoking and the public page are being built in the next phases; until then nothing leaves the device except through encrypted sync.
+- **Sharing:** unlisted (the default), password or public, plus an optional end date. Visitors never need an account.
+- **Publishing** (signed in with a YOU account on YOUrigin's allowlist) sends one snapshot and display-sized copies (1600px) of its pictures. Edits stay private until *Update published version*.
+- **Ending access** always works, even for an account no longer on the allowlist: *Turn link off*, *Replace link* (the old link dies at once), an end date, or *Unpublish* (deletes the server copy and its pictures).
+- **Server** (`supabase/migrations/20261107120000_yourigin_portfolios.sql`): `yourigin_portfolios` (owners can read their rows, except the password hash, and can't write directly; every change goes through owner-checked functions), a private `portfolios` bucket in folders named by a one-way hash so signed links never show an account id, and bcrypt passwords checked inside the database with a lockout after 8 wrong tries.
+- **Visitors** are served by the `yourigin-portfolio` Edge Function (`supabase/functions/yourigin-portfolio/`). It re-checks the link, status, end date and password version on every request, so no earlier pass (12 hours at most) or picture link (10 minutes) outlives turning a portfolio off. Unknown, turned-off and expired links all get the same answer. It counts visits anonymously.
+
+Deploying the server side (once, after review):
+
+```bash
+# 1. Run supabase/migrations/20261107120000_yourigin_portfolios.sql in the SQL editor
+#    (not `db push`: the earlier sync migration was applied by hand, so push would try it again)
+supabase secrets set PORTFOLIO_PASS_SECRET=<64 random characters> --project-ref yikoymzktspamahrsuje
+supabase functions deploy yourigin-portfolio --no-verify-jwt --project-ref yikoymzktspamahrsuje
+```
+
+`npm test` runs the migration on PGlite (real Postgres) with Supabase's roles and default privileges, and the visitor flow with fakes.
 - **Separate from Showcase:** portfolios never read or write YOU Showcase data.
 
 ## V1.1 — next
