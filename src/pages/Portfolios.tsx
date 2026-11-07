@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BriefcaseBusiness, Copy, Lock, Plus, Trash2 } from 'lucide-react';
+import { BriefcaseBusiness, Copy, Download, Lock, Plus, Trash2 } from 'lucide-react';
 import { EmptyState, Spinner } from '../components/ui';
 import { Modal, useConfirm } from '../components/Modal';
 import { useToast } from '../components/Toast';
-import { createPortfolio, deletePortfolio, duplicatePortfolio, usePortfolios } from '../db/portfolios';
+import { createPortfolio, createStarterPortfolio, deletePortfolio, duplicatePortfolio, usePortfolios } from '../db/portfolios';
 import { PURPOSES, PURPOSE_ORDER, STATE_LABELS, portfolioState, type Portfolio, type PortfolioPurpose } from '../portfolio/model';
 
 /** Choose what a new portfolio is for; it starts with a matching look and first heading. */
@@ -102,7 +102,19 @@ function PortfolioCard({ p }: { p: Portfolio }) {
 export function Portfolios() {
   const portfolios = usePortfolios();
   const [creating, setCreating] = useState(false);
+  const navigate = useNavigate();
+  const toast = useToast();
   const live = portfolios?.filter((p) => !p.archived) ?? [];
+
+  const buildStarter = async () => {
+    try {
+      const result = await createStarterPortfolio();
+      toast(`Starter portfolio ready: ${result.createdProjects} Projects created, ${result.addedItems} portfolio items added.`);
+      navigate(`/portfolios/${result.portfolioId}`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : String(e));
+    }
+  };
 
   return (
     <div className="page-frame">
@@ -114,9 +126,14 @@ export function Portfolios() {
             Curated pages made from the Projects, Works and pieces you choose, to send to an employer, collaborator, investor or client.
           </p>
         </div>
-        <button type="button" className="btn-primary" onClick={() => setCreating(true)}>
-          <Plus size={16} /> New portfolio
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn" onClick={() => void buildStarter()}>
+            <Download size={16} /> Build my starter portfolio
+          </button>
+          <button type="button" className="btn-primary" onClick={() => setCreating(true)}>
+            <Plus size={16} /> New portfolio
+          </button>
+        </div>
       </header>
 
       {!portfolios ? (
@@ -125,13 +142,17 @@ export function Portfolios() {
         <EmptyState
           title="No portfolios yet"
           action={
-            <button type="button" className="btn-primary" onClick={() => setCreating(true)}>
-              <BriefcaseBusiness size={16} /> Make your first portfolio
-            </button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <button type="button" className="btn-primary" onClick={() => void buildStarter()}>
+                <BriefcaseBusiness size={16} /> Build my starter portfolio
+              </button>
+              <button type="button" className="btn" onClick={() => setCreating(true)}>
+                <Plus size={16} /> Start from scratch
+              </button>
+            </div>
           }
         >
-          Make one for each audience: a professional portfolio for employers, a creative one for galleries and publishers, one for investors, one for friends. Each is
-          its own selection, and choosing something for a portfolio never shares it anywhere else, including YOU’s Showcase.
+          Start with a curated portfolio of your existing ventures, or make a blank one and choose what to include. The starter is a private draft; nothing is published or shared.
         </EmptyState>
       ) : (
         <ul className="space-y-3">
