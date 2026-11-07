@@ -121,6 +121,7 @@ export function PortfolioView({ snapshot, resolveImage }: { snapshot: PortfolioS
           s.sections.map((sec) => (
             <section key={sec.key} className="pf-section" aria-label={sec.heading || undefined}>
               {sec.heading && <h2 className="pf-section-title">{sec.heading}</h2>}
+              {sec.description && <p className="pf-section-description">{sec.description}</p>}
               <div className="pf-grid">
                 {sec.items.map((item) => (
                   <Item key={item.key} item={item} image={item.image ? resolveImage(item.image.ref) : undefined} />
