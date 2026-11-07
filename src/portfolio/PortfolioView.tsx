@@ -48,7 +48,7 @@ function Blocks({ blocks }: { blocks: TextBlock[] }) {
   );
 }
 
-function Item({ item, image }: { item: SnapshotItem; image?: string }) {
+function Item({ item, image, onImageError }: { item: SnapshotItem; image?: string; onImageError?: () => void }) {
   const [open, setOpen] = useState(false);
   const readId = useId();
   const hasFull = item.textMode === 'full' && item.text.length > 0;
@@ -56,7 +56,15 @@ function Item({ item, image }: { item: SnapshotItem; image?: string }) {
     <article className={`pf-item${image ? ' pf-item--pictured' : ''} pf-item--${item.kind}${item.layoutSpan === 2 ? ' pf-item--wide' : ''} pf-image--${item.imageShape ?? 'natural'}`}>
       {image && (
         <figure className="pf-figure">
-          <img src={image} alt={item.image?.alt ?? ''} loading="lazy" decoding="async" />
+          <img
+            src={image}
+            alt={item.image?.alt ?? ''}
+            width={item.image?.width || undefined}
+            height={item.image?.height || undefined}
+            loading="lazy"
+            decoding="async"
+            onError={onImageError}
+          />
         </figure>
       )}
       <div className="pf-item-body">
@@ -87,7 +95,16 @@ function Item({ item, image }: { item: SnapshotItem; image?: string }) {
   );
 }
 
-export function PortfolioView({ snapshot, resolveImage }: { snapshot: PortfolioSnapshot; resolveImage: ImageResolver }) {
+export function PortfolioView({
+  snapshot,
+  resolveImage,
+  onImageError,
+}: {
+  snapshot: PortfolioSnapshot;
+  resolveImage: ImageResolver;
+  /** The public page fetches fresh picture links when one has expired. */
+  onImageError?: () => void;
+}) {
   const s = snapshot;
   return (
     <div className={`pf pf--${s.theme}`}>
@@ -124,7 +141,7 @@ export function PortfolioView({ snapshot, resolveImage }: { snapshot: PortfolioS
               {sec.description && <p className="pf-section-description">{sec.description}</p>}
               <div className="pf-grid">
                 {sec.items.map((item) => (
-                  <Item key={item.key} item={item} image={item.image ? resolveImage(item.image.ref) : undefined} />
+                  <Item key={item.key} item={item} image={item.image ? resolveImage(item.image.ref) : undefined} onImageError={onImageError} />
                 ))}
               </div>
             </section>

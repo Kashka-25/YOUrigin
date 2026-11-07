@@ -262,9 +262,12 @@ export interface PortfolioSources {
 export type TextBlock = { kind: 'section' | 'title' | 'body'; text: string };
 
 export interface SnapshotImage {
-  /** Local asset id. Publishing uploads a display copy and swaps this for its storage path. */
+  /** Local asset id. Publishing uploads a display copy and swaps this for its storage path. On the public page, the picture's link. */
   ref: string;
   alt: string;
+  /** Known once published; lets the page keep its layout steady while pictures load. */
+  width?: number;
+  height?: number;
 }
 
 export interface SnapshotItem {

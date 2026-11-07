@@ -88,7 +88,7 @@
   padding-bottom: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--pf-line);
 }
 .pf--gallery .pf-section-title, .pf--journal .pf-section-title { font-weight: 400; font-size: 28px; }
-.pf-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+.pf-grid { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
 .pf-item { display: flex; flex-direction: column; background: var(--pf-surface); border: 1px solid var(--pf-line); border-radius: var(--pf-radius); overflow: hidden; }
 .pf--gallery .pf-item { border: 0; background: transparent; border-radius: 0; }
 .pf-figure { background: color-mix(in srgb, var(--pf-ink) 5%, var(--pf-bg)); }
