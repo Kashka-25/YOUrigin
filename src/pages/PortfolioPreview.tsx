@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { ArrowLeft, Lock, Monitor, Smartphone, Tablet } from 'lucide-react';
 import { EmptyState, Spinner } from '../components/ui';
 import { usePortfolio } from '../db/portfolios';
@@ -22,6 +22,7 @@ const DEVICES: { key: Device; label: string; width: number | null; icon: typeof 
 export function PortfolioPreview() {
   const { id } = useParams();
   const p = usePortfolio(id);
+  const back = (useLocation().state as { back?: string } | null)?.back;
   const built = usePortfolioSnapshot(p);
   const [device, setDevice] = useState<Device>(() => (window.innerWidth < 700 ? 'desktop' : 'phone'));
 
@@ -36,7 +37,7 @@ export function PortfolioPreview() {
   return (
     <div className="flex h-dvh flex-col bg-paper-2">
       <div className="no-print flex flex-wrap items-center gap-2 border-b border-line bg-card px-3 py-2">
-        <Link to={`/portfolios/${p.id}`} className="btn-ghost"><ArrowLeft size={16} /> Back to editing</Link>
+        <Link to={back?.startsWith(`/portfolios/${p.id}`) ? back : `/portfolios/${p.id}`} className="btn-ghost"><ArrowLeft size={16} /> Back to editing</Link>
         <p className="mr-auto inline-flex items-center gap-1.5 text-sm text-ink-2" role="status">
           {state === 'draft' && <Lock size={14} aria-hidden="true" />}
           Visitor preview · {STATE_LABELS[state]}

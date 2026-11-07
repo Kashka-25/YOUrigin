@@ -119,6 +119,27 @@ describe('snapshot', () => {
     expect(item).toMatchObject({ kind: 'project', title: 'Tidewater', description: 'Written for recruiters', image: null });
   });
 
+  it('includes a Project cover image in the portfolio snapshot', () => {
+    const covered = project({ coverAssetId: 'project-cover' });
+    const p = withItems(newPortfolio('creative', 'Ana'), itemFromProject(covered));
+    const item = buildSnapshot(p, sources({ projects: new Map([['p1', covered]]) })).snapshot.sections[0].items[0];
+    expect(item.image).toEqual({ ref: 'project-cover', alt: '' });
+    const hidden = withItems(newPortfolio('creative', 'Ana'), { ...itemFromProject(covered), image: 'none' as const });
+    expect(buildSnapshot(hidden, sources({ projects: new Map([['p1', covered]]) })).snapshot.sections[0].items[0].image).toBeNull();
+  });
+
+  it('publishes a secure destination URL for a Project and rejects unsafe schemes', () => {
+    const src = sources();
+    const p = withItems(
+      newPortfolio('creative', 'Ana'),
+      { ...itemFromProject(project()), destinationUrl: 'https://example.com/creation' },
+      { ...itemFromProject(project({ id: 'p1', title: 'Unsafe' })), destinationUrl: 'javascript:alert(1)' },
+    );
+    const items = buildSnapshot(p, src).snapshot.sections[0].items;
+    expect(items[0].destinationUrl).toBe('https://example.com/creation');
+    expect(items[1].destinationUrl).toBeNull();
+  });
+
   it('a Work’s full text follows its reading order and leaves the tray out', () => {
     const p = withItems(newPortfolio('creative', 'Ana'), { ...itemFromWork(work()), textMode: 'full' });
     const item = buildSnapshot(p, sources()).snapshot.sections[0].items[0];
@@ -177,6 +198,19 @@ describe('snapshot', () => {
     const p: Portfolio = { ...newPortfolio('creative', 'Ana'), items: [itemFromPiece(src.content.get('poem')!), headingItem('Empty'), headingItem('Art'), itemFromPiece(src.content.get('art')!)] };
     const sections = buildSnapshot(p, src).snapshot.sections;
     expect(sections.map((s) => [s.heading, s.items.length])).toEqual([['', 1], ['Art', 1]]);
+  });
+
+  it('keeps standalone text sections and their copy in the visitor snapshot', () => {
+    const textSection = { ...headingItem('A little about me'), description: 'I make things with care.' };
+    const snapshot = buildSnapshot(withItems(newPortfolio('creative', 'Ana'), textSection), sources()).snapshot;
+    expect(snapshot.sections).toMatchObject([{ heading: 'A little about me', description: 'I make things with care.', items: [] }]);
+  });
+
+  it('carries canvas width and image crop choices into the visitor snapshot', () => {
+    const src = sources();
+    const art = itemFromPiece(src.content.get('art')!);
+    const snapshot = buildSnapshot(withItems(newPortfolio('creative', 'Ana'), { ...art, layoutSpan: 2, imageShape: 'portrait' }), src).snapshot;
+    expect(snapshot.sections[0].items[0]).toMatchObject({ layoutSpan: 2, imageShape: 'portrait' });
   });
 
   it('only working contact links are shown', () => {

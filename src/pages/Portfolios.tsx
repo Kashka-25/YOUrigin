@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BriefcaseBusiness, Copy, Lock, Plus, Trash2 } from 'lucide-react';
+import { BriefcaseBusiness, Copy, Download, Lock, Plus, Trash2 } from 'lucide-react';
 import { EmptyState, Spinner } from '../components/ui';
 import { Modal, useConfirm } from '../components/Modal';
 import { useToast } from '../components/Toast';
-import { createPortfolio, deletePortfolio, duplicatePortfolio, usePortfolios } from '../db/portfolios';
+import { createPortfolio, importStarterPortfolio, deletePortfolio, duplicatePortfolio, usePortfolios } from '../db/portfolios';
+import { parseStarterPack } from '../portfolio/starter';
 import { PURPOSES, PURPOSE_ORDER, STATE_LABELS, portfolioState, type Portfolio, type PortfolioPurpose } from '../portfolio/model';
 
 /** Choose what a new portfolio is for; it starts with a matching look and first heading. */
@@ -102,7 +103,33 @@ function PortfolioCard({ p }: { p: Portfolio }) {
 export function Portfolios() {
   const portfolios = usePortfolios();
   const [creating, setCreating] = useState(false);
+  const navigate = useNavigate();
+  const toast = useToast();
   const live = portfolios?.filter((p) => !p.archived) ?? [];
+
+  const starterFile = useRef<HTMLInputElement>(null);
+  const [building, setBuilding] = useState(false);
+
+  // The starter is a file you bring; nothing about anyone's work is built into the app.
+  const buildStarter = async (file: File | undefined) => {
+    if (!file) return;
+    setBuilding(true);
+    try {
+      const r = await importStarterPortfolio(parseStarterPack(await file.text()));
+      const made = r.createdProjects ? ` ${r.createdProjects} new Project${r.createdProjects === 1 ? '' : 's'}.` : '';
+      toast(r.created ? `Starter portfolio ready, as a private draft.${made}` : r.addedItems ? `Added ${r.addedItems} to your starter portfolio.${made}` : 'Your starter portfolio already has everything.');
+      navigate(`/portfolios/${r.portfolioId}`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBuilding(false);
+    }
+  };
+  const starterButton = (className: string) => (
+    <button type="button" className={className} disabled={building} onClick={() => starterFile.current?.click()}>
+      <Download size={16} /> {building ? 'Building…' : 'Build my starter portfolio'}
+    </button>
+  );
 
   return (
     <div className="page-frame">
@@ -114,9 +141,12 @@ export function Portfolios() {
             Curated pages made from the Projects, Works and pieces you choose, to send to an employer, collaborator, investor or client.
           </p>
         </div>
-        <button type="button" className="btn-primary" onClick={() => setCreating(true)}>
-          <Plus size={16} /> New portfolio
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {live.length > 0 && starterButton('btn')}
+          <button type="button" className="btn-primary" onClick={() => setCreating(true)}>
+            <Plus size={16} /> New portfolio
+          </button>
+        </div>
       </header>
 
       {!portfolios ? (
@@ -125,9 +155,12 @@ export function Portfolios() {
         <EmptyState
           title="No portfolios yet"
           action={
-            <button type="button" className="btn-primary" onClick={() => setCreating(true)}>
-              <BriefcaseBusiness size={16} /> Make your first portfolio
-            </button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <button type="button" className="btn-primary" onClick={() => setCreating(true)}>
+                <BriefcaseBusiness size={16} /> Make your first portfolio
+              </button>
+              {starterButton('btn')}
+            </div>
           }
         >
           Make one for each audience: a professional portfolio for employers, a creative one for galleries and publishers, one for investors, one for friends. Each is
@@ -141,6 +174,19 @@ export function Portfolios() {
         </ul>
       )}
 
+      <input
+        ref={starterFile}
+        type="file"
+        accept=".json,application/json"
+        className="sr-only"
+        tabIndex={-1}
+        aria-label="Starter portfolio file"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = '';
+          void buildStarter(file);
+        }}
+      />
       <NewPortfolioDialog open={creating} onClose={() => setCreating(false)} />
     </div>
   );

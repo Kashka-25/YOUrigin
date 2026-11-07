@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { ArrowDown, ArrowLeft, ArrowUp, Eye, Heading, Lock, Plus, Trash2, TriangleAlert, X } from 'lucide-react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { ArrowDown, ArrowLeft, ArrowUp, Eye, Heading, Lock, Palette, Plus, Trash2, TriangleAlert, X } from 'lucide-react';
 import { EmptyState, SaveIndicator, Spinner } from '../components/ui';
 import { useAutoGrow } from '../hooks/useAutoGrow';
 import { AddItemsDialog } from '../components/portfolio/AddItemsDialog';
+import { PortfolioDesigner } from '../components/portfolio/PortfolioDesigner';
 import { PublishPanel } from '../components/portfolio/PublishPanel';
 import { useAutosave } from '../hooks/useAutosave';
 import { updatePortfolio, usePortfolio, type PortfolioPatch } from '../db/portfolios';
@@ -74,7 +75,7 @@ function Field({ label, htmlFor, count, children }: { label: string; htmlFor: st
 function sourceSummary(item: PortfolioItem, built: BuiltPortfolio): { kindLabel: string; title: string; hasImage: boolean; hasText: boolean; problem?: string } {
   const r = resolveItem(item, built.sources);
   if (r.problem) return { kindLabel: item.kind === 'project' ? 'Project' : item.kind === 'work' ? 'Work' : 'Piece', title: '', hasImage: false, hasText: false, problem: r.problem };
-  if (r.project) return { kindLabel: 'Project', title: r.project.title, hasImage: false, hasText: false };
+  if (r.project) return { kindLabel: 'Project', title: r.project.title, hasImage: !!r.project.coverAssetId, hasText: false };
   if (r.work) return { kindLabel: `Work · ${PROJECT_KIND_META[projectKind(r.work)].label}`, title: r.work.title || 'Untitled', hasImage: !!r.work.coverAssetId, hasText: true };
   const c = r.piece!;
   return { kindLabel: c.type === 'image' ? 'Artwork' : TYPE_LABEL[c.type], title: displayTitle(c), hasImage: c.type === 'image', hasText: c.body.trim().length > 0 };
@@ -140,6 +141,20 @@ function ItemEditor({
           <Field label="Description for this portfolio" htmlFor={`${id}-d`} count={[item.description.length, LIMITS.description]}>
             <GrowingText id={`${id}-d`} min={72} value={item.description} onChange={(v) => onChange({ description: v })} />
           </Field>
+          {item.kind === 'project' && (
+            <Field label="Link to the live project" htmlFor={`${id}-url`}>
+              <input
+                id={`${id}-url`}
+                className="input"
+                type="url"
+                inputMode="url"
+                value={item.destinationUrl ?? ''}
+                placeholder="https://your-project.com"
+                onChange={(e) => onChange({ destinationUrl: e.target.value })}
+              />
+              <p className="mt-1 text-xs text-muted">Visitors will get an Explore project link. Only secure HTTPS addresses are accepted.</p>
+            </Field>
+          )}
           {(textModes.length > 0 && s.hasText) || s.hasImage ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {textModes.length > 0 && s.hasText && (
@@ -154,7 +169,7 @@ function ItemEditor({
               {s.hasImage && (
                 <Field label="Picture" htmlFor={`${id}-i`}>
                   <select id={`${id}-i`} className="input" value={item.image} onChange={(e) => onChange({ image: e.target.value as PortfolioItem['image'] })}>
-                    <option value="default">{item.kind === 'work' ? 'Show the cover' : 'Show the artwork'}</option>
+                    <option value="default">{item.kind === 'project' ? 'Show the project cover' : item.kind === 'work' ? 'Show the cover' : 'Show the artwork'}</option>
                     <option value="none">No picture</option>
                   </select>
                 </Field>
@@ -227,6 +242,9 @@ export function PortfolioEditor() {
   const stored = usePortfolio(id);
   const [draft, setDraft] = useState<Portfolio | null>(null);
   const [adding, setAdding] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const designMode = params.get('design') === '1';
+  const setDesignMode = (on: boolean) => setParams(on ? { design: '1' } : {}, { replace: true });
   const save = useCallback(async (p: Portfolio) => updatePortfolio(p.id, toPatch(p)), []);
   const { state: saveState, schedule, flush } = useAutosave(save);
 
@@ -255,12 +273,27 @@ export function PortfolioEditor() {
   const state = portfolioState(view, built.hash);
   const blockers = publishBlockers(view, built);
 
+  if (designMode) {
+    return (
+      <PortfolioDesigner
+        portfolio={view}
+        built={built}
+        saveState={saveState}
+        onChange={change}
+        onChangeItem={changeItem}
+        onRetrySave={() => void flush()}
+        onExit={() => setDesignMode(false)}
+      />
+    );
+  }
+
   return (
     <div className="page-frame max-w-none xl:w-[min(100%-2rem,1440px)]">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <Link to="/portfolios" className="btn-ghost -ml-3"><ArrowLeft size={16} /> Portfolios</Link>
         <div className="flex flex-wrap items-center gap-3">
           <SaveIndicator state={saveState} />
+          <button type="button" className="btn" onClick={() => setDesignMode(true)}><Palette size={16} /> Design page</button>
           <Link to={`/portfolios/${view.id}/preview`} className="btn-primary"><Eye size={16} /> Preview as a visitor</Link>
         </div>
       </div>

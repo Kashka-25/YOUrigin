@@ -129,7 +129,7 @@ export async function restoreFromTrash(ids: string[]): Promise<void> {
 export async function purgeContent(ids: string[]): Promise<void> {
   await db.transaction(
     'rw',
-    [db.content, db.entries, db.relationships, db.suggestions, db.revisions, db.collections, db.assets, db.books, db.sections],
+    [db.content, db.entries, db.relationships, db.suggestions, db.revisions, db.collections, db.assets, db.books, db.projects, db.sections],
     async () => {
       const assetIds = (await db.content.bulkGet(ids)).flatMap((c) => [c?.assetId, ...(c?.processAssetIds ?? [])]).filter((a): a is string => !!a);
       await db.content.bulkDelete(ids);

@@ -53,7 +53,7 @@ function Item({ item, image, onImageError }: { item: SnapshotItem; image?: strin
   const readId = useId();
   const hasFull = item.textMode === 'full' && item.text.length > 0;
   return (
-    <article className={`pf-item${image ? ' pf-item--pictured' : ''} pf-item--${item.kind}`}>
+    <article className={`pf-item${image ? ' pf-item--pictured' : ''} pf-item--${item.kind}${item.layoutSpan === 2 ? ' pf-item--wide' : ''} pf-image--${item.imageShape ?? 'natural'}`}>
       {image && (
         <figure className="pf-figure">
           <img
@@ -73,6 +73,11 @@ function Item({ item, image, onImageError }: { item: SnapshotItem; image?: strin
         {item.subtitle && <p className="pf-subtitle">{item.subtitle}</p>}
         {item.meta.length > 0 && <p className="pf-meta">{item.meta.join(' · ')}</p>}
         <Paragraphs text={item.description} className="pf-description" />
+        {item.kind === 'project' && item.destinationUrl && (
+          <a className="pf-project-link" href={item.destinationUrl} target="_blank" rel="noopener noreferrer">
+            Explore project <span aria-hidden="true">↗</span>
+          </a>
+        )}
         {item.textMode === 'excerpt' && item.text.length > 0 && <div className="pf-text pf-excerpt">{item.text[0].text}</div>}
         {hasFull && (
           <>
@@ -133,6 +138,7 @@ export function PortfolioView({
           s.sections.map((sec) => (
             <section key={sec.key} className="pf-section" aria-label={sec.heading || undefined}>
               {sec.heading && <h2 className="pf-section-title">{sec.heading}</h2>}
+              {sec.description && <p className="pf-section-description">{sec.description}</p>}
               <div className="pf-grid">
                 {sec.items.map((item) => (
                   <Item key={item.key} item={item} image={item.image ? resolveImage(item.image.ref) : undefined} onImageError={onImageError} />
