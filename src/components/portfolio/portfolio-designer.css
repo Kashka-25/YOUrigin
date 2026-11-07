@@ -4,7 +4,7 @@
    colours and type. Layout follows the canvas width (container queries), so
    the phone view is a true phone layout. */
 
-.pfd-shell { min-height: 100dvh; margin: -1rem; background: var(--paper-2); color: var(--ink); }
+.pfd-shell { min-height: 100dvh; background: var(--paper-2); color: var(--ink); }
 
 .pfd-toolbar {
   position: sticky; top: 0; z-index: 20;
