@@ -8,3 +8,6 @@ coverage
 
 # Personal starter portfolio files: imported from the app, never committed.
 /starters/
+
+# Supabase CLI working files
+supabase/.temp/
