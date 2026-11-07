@@ -25,6 +25,9 @@ import { Trash } from './pages/Trash';
 import { Settings } from './pages/Settings';
 import { Spelling } from './pages/Spelling';
 import { Shared } from './pages/Shared';
+import { Portfolios } from './pages/Portfolios';
+import { PortfolioEditor } from './pages/PortfolioEditor';
+import { PortfolioPreview } from './pages/PortfolioPreview';
 import { EmptyState, Spinner } from './components/ui';
 
 // The print designer (and its page-layout engine) only loads when opened.
@@ -124,6 +127,8 @@ export default function App() {
               />
               <Route path="/projects/:id/cover" element={<CoverRoute />} />
               <Route path="/projects/:id/write" element={<WorkspaceRoute />} />
+              {/* The visitor preview is outside the app chrome too: it should look like its own website. */}
+              <Route path="/portfolios/:id/preview" element={<PortfolioPreview />} />
               <Route path="/books/*" element={<BooksRedirect />} />
               <Route
                 path="*"
@@ -149,6 +154,8 @@ export default function App() {
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/spelling" element={<Spelling />} />
                       <Route path="/shared" element={<Shared />} />
+                      <Route path="/portfolios" element={<Portfolios />} />
+                      <Route path="/portfolios/:id" element={<PortfolioEditor />} />
                       <Route path="*" element={<EmptyState title="Nothing here" />} />
                     </Routes>
                   </AppShell>

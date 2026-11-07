@@ -61,6 +61,7 @@ On the phone, the installed app also:
 - **Tags:** usage counts, rename (merges if the name exists), delete, families (Element, Theme, Archetype, Project, Material + your own), and multi-select to view an intersection.
 - **Book Map:** a calm relationship graph of tags, books and collections.
 - **Collections:** lightweight groupings that can become books.
+- **Portfolios:** curated pages for an employer, collaborator, investor or client, made from the Projects, Works and pieces you choose. Each one has its own title, introduction, contact links, order and descriptions, a look matched to its purpose (Professional, Creative, Entrepreneurial, Personal) and a visitor preview at phone, tablet and desktop width. A new portfolio is a private draft; choosing something for one never shares it anywhere else, including YOU's Showcase. See [Portfolios](#portfolios).
 - **Import:** many `.txt`, `.md` and `.docx` files at once. Optional splitting of one file into many pieces. The original text is preserved exactly.
 - **Export:** book → Word manuscript (.docx) / ebook (.epub) / Markdown / JSON / print-PDF; library → Markdown; full JSON backup with merge or replace. Word and EPUB follow the book's order and its front and back pages from Design & print; pictures become JPEG so every reader and store accepts them.
 - **Safety:** soft delete to Trash, confirmation before anything destructive, Undo toasts, revision history, and a request for persistent storage so the browser doesn't evict data.
@@ -138,6 +139,7 @@ templates      id, name, bookType, sections[], builtIn
 suggestions    id, contentId, kind, value, state (pending|accepted|dismissed), provider
 revisions      id, contentId, title, body, createdAt
 settings       key, value
+portfolios     id, title, purpose, theme, intro, ownerName, ownerLine, contactLinks[], items[], visibility, expiresAt, publication|null
 ```
 
 Every syncable record has `id` (UUID) + `createdAt` + `updatedAt`, which is what makes merging backups (and future sync) possible.
@@ -184,6 +186,15 @@ Sync is optional and **end-to-end encrypted**: the server never sees readable wr
   - Tags or book placements created separately on two devices are merged deterministically.
 - **When it runs:** a few seconds after a change, when you return to the app or come back online, and every minute while the app is open.
 - **Not synced:** device settings, the Claude API key and the capture draft.
+
+## Portfolios
+
+A portfolio is a private draft on your devices (synced end-to-end encrypted with everything else) until you publish it.
+
+- **What a visitor can see** is exactly the snapshot `buildSnapshot` (`src/portfolio/model.ts`) returns: the portfolio's own title, introduction and contact links, and for each chosen item its title, the description written for this portfolio, the text you chose to show (none, an excerpt or the full text) and its picture. Notes, tags, statuses, categories, file names and anything you didn't choose are never part of it. Inspiration images (other people's work) can't be added.
+- **The preview** renders that snapshot with the same component (`PortfolioView`) the published page will use. Its layout follows the width of its frame (CSS container queries), so the phone, tablet and desktop previews are the real layouts.
+- **Sharing:** unlisted (the default), password or public, plus an optional end date. Publishing, revoking and the public page are being built in the next phases; until then nothing leaves the device except through encrypted sync.
+- **Separate from Showcase:** portfolios never read or write YOU Showcase data.
 
 ## V1.1 — next
 
