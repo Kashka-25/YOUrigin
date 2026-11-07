@@ -111,6 +111,18 @@ describe('the public page', () => {
     expect(requests).toEqual([]);
   });
 
+  it('stays put when the address is re-announced with the same link, and opens another portfolio when it changes', async () => {
+    render(<Viewer deps={deps()} />);
+    await screen.findByRole('heading', { name: 'Ana Rivers' });
+    await act(async () => window.dispatchEvent(new HashChangeEvent('hashchange')));
+    expect(screen.getByRole('heading', { name: 'Ana Rivers' })).toBeTruthy();
+    expect(requests).toHaveLength(1);
+    window.location.hash = '#BBBBBBBBBBBBBBBBBBBBBBBB';
+    await act(async () => window.dispatchEvent(new HashChangeEvent('hashchange')));
+    expect(await screen.findByRole('heading', { name: 'This portfolio isn’t available' })).toBeTruthy();
+    expect(requests.map((r) => r.body.token)).toEqual([TOKEN, 'BBBBBBBBBBBBBBBBBBBBBBBB']);
+  });
+
   it('fetches fresh picture links when one has expired, but not in a loop', async () => {
     render(<Viewer deps={deps()} />);
     await screen.findByRole('heading', { name: 'Ana Rivers' });
