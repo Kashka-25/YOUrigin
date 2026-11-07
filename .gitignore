@@ -5,3 +5,6 @@ dev-dist
 .env
 coverage
 .claude/
+
+# Personal starter portfolio files: imported from the app, never committed.
+/starters/

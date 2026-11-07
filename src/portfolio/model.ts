@@ -88,6 +88,8 @@ export interface Portfolio extends Syncable {
   /** null: a private draft that has never been published. */
   publication: PortfolioPublication | null;
   archived: boolean;
+  /** Set when the draft was built from a starter file, so importing it again extends this one. */
+  starterKey?: string;
 }
 
 // ---- labels and presets -------------------------------------------------------
