@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowDown, ArrowLeft, ArrowUp, Eye, Heading, Lock, Plus, Trash2, TriangleAlert, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, Eye, Heading, Lock, Palette, Plus, Trash2, TriangleAlert, X } from 'lucide-react';
 import { EmptyState, SaveIndicator, Spinner } from '../components/ui';
 import { useAutoGrow } from '../hooks/useAutoGrow';
 import { AddItemsDialog } from '../components/portfolio/AddItemsDialog';
+import { PortfolioDesigner } from '../components/portfolio/PortfolioDesigner';
 import { useAutosave } from '../hooks/useAutosave';
 import { updatePortfolio, usePortfolio, type PortfolioPatch } from '../db/portfolios';
 import { PortfolioView } from '../portfolio/PortfolioView';
@@ -240,6 +241,7 @@ export function PortfolioEditor() {
   const stored = usePortfolio(id);
   const [draft, setDraft] = useState<Portfolio | null>(null);
   const [adding, setAdding] = useState(false);
+  const [designMode, setDesignMode] = useState(false);
   const save = useCallback(async (p: Portfolio) => updatePortfolio(p.id, toPatch(p)), []);
   const { state: saveState, schedule } = useAutosave(save);
 
@@ -267,12 +269,26 @@ export function PortfolioEditor() {
   const state = portfolioState(view, built.hash);
   const blockers = publishBlockers(view, built);
 
+  if (designMode) {
+    return (
+      <PortfolioDesigner
+        portfolio={view}
+        built={built}
+        saveState={saveState}
+        onChange={change}
+        onChangeItem={changeItem}
+        onExit={() => setDesignMode(false)}
+      />
+    );
+  }
+
   return (
     <div className="page-frame max-w-none xl:w-[min(100%-2rem,1440px)]">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <Link to="/portfolios" className="btn-ghost -ml-3"><ArrowLeft size={16} /> Portfolios</Link>
         <div className="flex flex-wrap items-center gap-3">
           <SaveIndicator state={saveState} />
+          <button type="button" className="btn" onClick={() => setDesignMode(true)}><Palette size={16} /> Design page</button>
           <Link to={`/portfolios/${view.id}/preview`} className="btn-primary"><Eye size={16} /> Preview as a visitor</Link>
         </div>
       </div>
