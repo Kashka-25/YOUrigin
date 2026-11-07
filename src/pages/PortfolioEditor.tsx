@@ -4,6 +4,7 @@ import { ArrowDown, ArrowLeft, ArrowUp, Eye, Heading, Lock, Plus, Trash2, Triang
 import { EmptyState, SaveIndicator, Spinner } from '../components/ui';
 import { useAutoGrow } from '../hooks/useAutoGrow';
 import { AddItemsDialog } from '../components/portfolio/AddItemsDialog';
+import { PublishPanel } from '../components/portfolio/PublishPanel';
 import { useAutosave } from '../hooks/useAutosave';
 import { updatePortfolio, usePortfolio, type PortfolioPatch } from '../db/portfolios';
 import { PortfolioView } from '../portfolio/PortfolioView';
@@ -227,14 +228,15 @@ export function PortfolioEditor() {
   const [draft, setDraft] = useState<Portfolio | null>(null);
   const [adding, setAdding] = useState(false);
   const save = useCallback(async (p: Portfolio) => updatePortfolio(p.id, toPatch(p)), []);
-  const { state: saveState, schedule } = useAutosave(save);
+  const { state: saveState, schedule, flush } = useAutosave(save);
 
   // Take the stored copy once per portfolio; after that the editor's own copy leads.
   useEffect(() => {
     if (stored && (!draft || draft.id !== stored.id)) setDraft(stored);
   }, [stored, draft]);
 
-  const view = draft ?? stored ?? null;
+  // The draft is edited here; whether and how it's published always comes from the stored record.
+  const view = useMemo(() => (draft && stored ? { ...draft, publication: stored.publication } : (draft ?? stored ?? null)), [draft, stored]);
   const built = usePortfolioSnapshot(view);
 
   const change = (patch: Partial<Portfolio>) => {
@@ -336,7 +338,7 @@ export function PortfolioEditor() {
             </div>
           </Section>
 
-          <Section title="Sharing" hint="Your choice for when you publish. Visitors never need a YOU or YOUrigin account.">
+          <Section title="Sharing" hint="Who can open it, and for how long. Visitors never need a YOU or YOUrigin account.">
             <fieldset>
               <legend className="label">Who can open it</legend>
               <div className="space-y-2">
@@ -358,17 +360,7 @@ export function PortfolioEditor() {
                 {view.expiresAt !== null && <button type="button" className="btn-ghost" onClick={() => change({ expiresAt: null })}>No end date</button>}
               </div>
             </Field>
-            <div className="rounded-xl bg-paper-2 p-3 text-sm">
-              <p className="font-semibold">Before publishing</p>
-              {blockers.length ? (
-                <ul className="mt-1 list-disc space-y-0.5 pl-5 text-ink-2">{blockers.map((b) => <li key={b}>{b}</li>)}</ul>
-              ) : (
-                <p className="mt-1 text-ink-2">Ready. Check the visitor preview on a phone width before you publish.</p>
-              )}
-              <p className="mt-2 text-xs text-muted">
-                Publishing isn’t switched on in this version yet. Until it is, this portfolio stays a private draft on your devices (synced end-to-end encrypted).
-              </p>
-            </div>
+            <PublishPanel portfolio={view} built={built} blockers={blockers} flush={flush} />
           </Section>
         </div>
 
