@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowLeft, ArrowUp, Eye, Heading, Lock, Palette, Plus, Trash2, TriangleAlert, X } from 'lucide-react';
 import { EmptyState, SaveIndicator, Spinner } from '../components/ui';
 import { useAutoGrow } from '../hooks/useAutoGrow';
@@ -242,7 +242,9 @@ export function PortfolioEditor() {
   const stored = usePortfolio(id);
   const [draft, setDraft] = useState<Portfolio | null>(null);
   const [adding, setAdding] = useState(false);
-  const [designMode, setDesignMode] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const designMode = params.get('design') === '1';
+  const setDesignMode = (on: boolean) => setParams(on ? { design: '1' } : {}, { replace: true });
   const save = useCallback(async (p: Portfolio) => updatePortfolio(p.id, toPatch(p)), []);
   const { state: saveState, schedule, flush } = useAutosave(save);
 
@@ -279,6 +281,7 @@ export function PortfolioEditor() {
         saveState={saveState}
         onChange={change}
         onChangeItem={changeItem}
+        onRetrySave={() => void flush()}
         onExit={() => setDesignMode(false)}
       />
     );

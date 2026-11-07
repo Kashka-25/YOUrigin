@@ -6,7 +6,8 @@ import { DEFAULT_PROJECT_COLOUR, PROJECT_CATEGORIES, PROJECT_KIND_META, PROJECT_
 import type { ContentType, ProjectColour, ProjectStatus } from '../domain/types';
 import { ProjectColourPicker, projectColourStyle } from '../components/ProjectColourPicker';
 import { AssetImage } from '../components/AssetImage';
-import { IMAGE_ACCEPT, removeAssetIfUnused, saveImage } from '../db/assets';
+import { removeAssetIfUnused } from '../db/assets';
+import { CoverPicker } from '../components/CoverPicker';
 import { createProject, updateProject, deleteProject, addItemsToProject, removeItemFromProject } from '../db/projectRecords';
 import { createContent } from '../db/content';
 import { createBook, deleteBook, updateBook } from '../db/books';
@@ -206,8 +207,8 @@ export function ProjectHome() {
   const [editCategory, setEditCategory] = useState('');
   const [editColour, setEditColour] = useState<ProjectColour>(DEFAULT_PROJECT_COLOUR);
   const [editCoverAssetId, setEditCoverAssetId] = useState<string | undefined>(undefined);
-  const [coverUploading, setCoverUploading] = useState(false);
-  const [coverError, setCoverError] = useState('');
+  // Pictures added while the details are open; the ones not kept are cleared away afterwards.
+  const [coverUploads, setCoverUploads] = useState<string[]>([]);
   const [newNoteType, setNewNoteType] = useState<ContentType>('song');
   const [noteQuery, setNoteQuery] = useState('');
   const [noteTypeFilter, setNoteTypeFilter] = useState<ContentType | 'all' | 'music'>('music');
@@ -254,7 +255,7 @@ export function ProjectHome() {
     setEditCategory(currentProject.category);
     setEditColour(currentProject.colour ?? DEFAULT_PROJECT_COLOUR);
     setEditCoverAssetId(currentProject.coverAssetId);
-    setCoverError('');
+    setCoverUploads([]);
     setEditing(true);
   }
 
@@ -262,9 +263,15 @@ export function ProjectHome() {
     e.preventDefault();
     const previousCover = currentProject.coverAssetId;
     await updateProject(id, { title: editTitle, description: editDescription, category: editCategory, colour: editColour, coverAssetId: editCoverAssetId });
-    if (previousCover && previousCover !== editCoverAssetId) await removeAssetIfUnused(previousCover);
     if (workspace) await updateBook(workspace.id, { title: editTitle, description: editDescription });
+    await closeDetails(previousCover);
+  }
+
+  /** Closes the details and clears away pictures nothing uses any more (only ever unused ones). */
+  async function closeDetails(previousCover?: string) {
     setEditing(false);
+    for (const assetId of new Set([...coverUploads, previousCover])) await removeAssetIfUnused(assetId);
+    setCoverUploads([]);
   }
 
   async function saveNewNote(e: React.FormEvent) {
@@ -402,47 +409,21 @@ export function ProjectHome() {
           <div className="panel p-5 text-sm text-ink-2">Create a writing and creative workspace for this Project. Your notes and project details remain in place.</div>
         )}
       </section>
-      <Modal open={editing} onClose={() => setEditing(false)} title="Project details">
+      <Modal open={editing} onClose={() => void closeDetails()} title="Project details">
         <form className="space-y-4" onSubmit={saveProject}>
           <div><label className="label" htmlFor="edit-project-title">Name</label><input id="edit-project-title" className="input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} data-autofocus /></div>
           <div><label className="label" htmlFor="edit-project-description">Description</label><textarea id="edit-project-description" className="input min-h-24" rows={3} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} /></div>
           <div><label className="label" htmlFor="edit-project-category">Category <span className="font-normal text-muted">(optional)</span></label><input id="edit-project-category" className="input" list="edit-project-categories" value={editCategory} onChange={(e) => setEditCategory(e.target.value)} placeholder="App, Business, Place…" /><datalist id="edit-project-categories">{PROJECT_CATEGORIES.map((name) => <option key={name} value={name} />)}</datalist></div>
           <ProjectColourPicker value={editColour} onChange={setEditColour} />
-          <div>
-            <label className="label" htmlFor="edit-project-cover">Project cover image</label>
-            {editCoverAssetId && (
-              <div className="mb-3 overflow-hidden rounded-xl border border-line">
-                <AssetImage id={editCoverAssetId} alt="Project cover preview" className="max-h-56 w-full object-cover" />
-                <button type="button" className="btn-ghost m-2 text-xs" onClick={() => setEditCoverAssetId(undefined)}>Remove cover</button>
-              </div>
-            )}
-            <input
-              id="edit-project-cover"
-              className="input"
-              type="file"
-              accept={IMAGE_ACCEPT}
-              disabled={coverUploading}
-              onChange={async (event) => {
-                const file = event.target.files?.[0];
-                event.target.value = '';
-                if (!file) return;
-                setCoverUploading(true);
-                setCoverError('');
-                try {
-                  const { asset } = await saveImage(file);
-                  setEditCoverAssetId(asset.id);
-                } catch {
-                  setCoverError('That image could not be added. Please try another image file.');
-                } finally {
-                  setCoverUploading(false);
-                }
-              }}
-            />
-            <p className="mt-1 text-xs text-muted">Choose a cover image from your device. YOUrigin automatically reduces its file size and stores it in your private library.</p>
-            {coverUploading && <p className="mt-1 text-xs text-muted">Preparing image…</p>}
-            {coverError && <p className="mt-1 text-xs text-seed" role="alert">{coverError}</p>}
-          </div>
-          <div className="flex justify-end gap-2"><button type="button" className="btn" onClick={() => setEditing(false)}>Cancel</button><button type="submit" className="btn-primary">Save details</button></div>
+          <CoverPicker
+            label="Cover image"
+            value={editCoverAssetId}
+            onChange={(assetId) => {
+              setEditCoverAssetId(assetId);
+              if (assetId) setCoverUploads((u) => [...u, assetId]);
+            }}
+          />
+          <div className="flex justify-end gap-2"><button type="button" className="btn" onClick={() => void closeDetails()}>Cancel</button><button type="submit" className="btn-primary">Save details</button></div>
         </form>
       </Modal>
 
