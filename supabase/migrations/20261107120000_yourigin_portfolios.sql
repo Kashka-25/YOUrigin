@@ -35,8 +35,10 @@ create table if not exists public.yourigin_portfolios (
   status text not null default 'live' check (status in ('live', 'disabled')),
   visibility text not null check (visibility in ('unlisted', 'password', 'public')),
   password_hash text,
-  -- Changes whenever the password is set, changed or removed, so earlier access passes stop working.
-  password_version integer not null default 0,
+  -- Moves on whenever the password is set, changed or removed, and whenever the
+  -- portfolio is turned off, so every access pass issued before then stops
+  -- working for good (turning it back on doesn't revive them).
+  access_version integer not null default 0,
   expires_at timestamptz,
   snapshot jsonb not null check (jsonb_typeof(snapshot) = 'object'),
   view_count bigint not null default 0,
@@ -57,7 +59,7 @@ alter table public.yourigin_portfolio_attempts enable row level security;
 
 -- Owners can read their own rows (never the password hash). No direct writes.
 revoke all on public.yourigin_portfolios, public.yourigin_portfolio_attempts from anon, authenticated;
-grant select (id, local_id, share_token, status, visibility, password_version, expires_at, view_count, published_at, updated_at)
+grant select (id, local_id, share_token, status, visibility, access_version, expires_at, view_count, published_at, updated_at)
   on public.yourigin_portfolios to authenticated;
 drop policy if exists "yourigin portfolios: owner reads" on public.yourigin_portfolios;
 create policy "yourigin portfolios: owner reads" on public.yourigin_portfolios
@@ -162,7 +164,7 @@ begin
            visibility = p_visibility,
            expires_at = p_expires_at,
            password_hash = new_hash,
-           password_version = password_version + case when new_hash is distinct from r.password_hash then 1 else 0 end,
+           access_version = access_version + case when new_hash is distinct from r.password_hash then 1 else 0 end,
            published_at = now(),
            updated_at = now()
      where id = r.id
@@ -172,7 +174,7 @@ begin
 end
 $$;
 
--- live / disabled. Turning off works for any owner; turning back on needs the allowlist.
+-- live / disabled. Turning off works for any owner and ends every earlier pass; turning back on needs the allowlist.
 create or replace function public.yourigin_set_portfolio_status(p_id uuid, p_status text) returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
@@ -185,7 +187,12 @@ begin
   if p_status = 'live' and not yourigin_private.is_allowed() then
     raise exception 'This account is not allowed to publish portfolios yet' using errcode = '42501';
   end if;
-  update public.yourigin_portfolios set status = p_status, updated_at = now() where id = r.id returning * into r;
+  update public.yourigin_portfolios
+     set status = p_status,
+         access_version = access_version + case when p_status = 'disabled' and r.status = 'live' then 1 else 0 end,
+         updated_at = now()
+   where id = r.id
+  returning * into r;
   return yourigin_private.portfolio_result(r);
 end
 $$;

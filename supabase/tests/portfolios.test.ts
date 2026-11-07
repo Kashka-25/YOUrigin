@@ -59,7 +59,8 @@ beforeAll(async () => {
   await db.exec(SYNC);
   await db.exec(PORTFOLIOS);
   await db.exec(`grant all on all tables in schema public to service_role;`);
-});
+  // Starting Postgres in WebAssembly can take a while when the whole suite runs at once.
+}, 120_000);
 
 afterAll(async () => {
   await db.close();
@@ -106,8 +107,8 @@ function publish(who: Who, opts: { local?: string; visibility?: string; expires?
   return call(who, 'yourigin_publish_portfolio', [opts.local ?? 'local-1', JSON.stringify(SNAP), opts.visibility ?? 'unlisted', opts.expires ?? null, opts.password ?? null]);
 }
 
-async function hashOf(id: unknown): Promise<{ password_hash: string | null; password_version: number }> {
-  return (await db.query<{ password_hash: string | null; password_version: number }>('select password_hash, password_version from public.yourigin_portfolios where id = $1', [id])).rows[0];
+async function hashOf(id: unknown): Promise<{ password_hash: string | null; access_version: number }> {
+  return (await db.query<{ password_hash: string | null; access_version: number }>('select password_hash, access_version from public.yourigin_portfolios where id = $1', [id])).rows[0];
 }
 
 describe('publishing', () => {
@@ -189,6 +190,16 @@ describe('revoking access', () => {
     expect(await rows('service', 'select id from public.yourigin_portfolios')).toEqual([]);
   });
 
+  it('turning off moves the access version on, so earlier passes never come back', async () => {
+    const r = await publish(ana, { visibility: 'password', password: 'correct horse' });
+    expect((await hashOf(r.id)).access_version).toBe(0);
+    await call(ana, 'yourigin_set_portfolio_status', [r.id, 'disabled']);
+    expect((await hashOf(r.id)).access_version).toBe(1);
+    await call(ana, 'yourigin_set_portfolio_status', [r.id, 'disabled']); // already off: no change
+    await call(ana, 'yourigin_set_portfolio_status', [r.id, 'live']);
+    expect((await hashOf(r.id)).access_version).toBe(1);
+  });
+
   it('re-publishing keeps a turned-off portfolio off', async () => {
     const r = await publish(ana);
     await call(ana, 'yourigin_set_portfolio_status', [r.id, 'disabled']);
@@ -204,15 +215,15 @@ describe('passwords', () => {
     let h = await hashOf(r.id);
     expect(h.password_hash).toMatch(/^\$2[aby]\$10\$/);
     expect(h.password_hash).not.toContain('correct horse');
-    expect(h.password_version).toBe(0);
+    expect(h.access_version).toBe(0);
 
     await publish(ana, { visibility: 'password' }); // keeps the password
-    expect((await hashOf(r.id)).password_version).toBe(0);
+    expect((await hashOf(r.id)).access_version).toBe(0);
     await publish(ana, { visibility: 'password', password: 'battery staple' });
-    expect((await hashOf(r.id)).password_version).toBe(1);
+    expect((await hashOf(r.id)).access_version).toBe(1);
     await publish(ana, { visibility: 'unlisted' });
     h = await hashOf(r.id);
-    expect(h).toEqual({ password_hash: null, password_version: 2 });
+    expect(h).toEqual({ password_hash: null, access_version: 2 });
   });
 
   it('are checked inside the database, only by the service role, and lock after repeated wrong tries', async () => {
