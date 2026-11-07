@@ -10,7 +10,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { ArrowLeft, Eye, GripVertical, ImagePlus, LayoutGrid, Monitor, Smartphone, Type } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { BuiltPortfolio } from '../../portfolio/usePortfolioSnapshot';
-import { moveItem, type Portfolio, type PortfolioItem, type SnapshotItem } from '../../portfolio/model';
+import { headingItem, moveItem, type Portfolio, type PortfolioItem, type SnapshotItem } from '../../portfolio/model';
 import { PortfolioView } from '../../portfolio/PortfolioView';
 import './portfolio-designer.css';
 
@@ -47,7 +47,7 @@ function SortableBlock({
       </button>
       <button type="button" className="pfd-block-content" onClick={onSelect} aria-pressed={selected}>
         {item.kind === 'heading' ? (
-          <div className="pfd-heading-preview"><span>SECTION</span><strong>{title}</strong></div>
+          <div className="pfd-heading-preview"><span>TEXT SECTION</span><strong>{title}</strong>{item.description && <p>{item.description}</p>}</div>
         ) : (
           <>
             {image && <img className={`pfd-image pfd-image--${item.imageShape ?? 'natural'}`} src={image} alt={snapshot?.image?.alt ?? ''} />}
@@ -129,6 +129,8 @@ export function PortfolioDesigner({ portfolio, built, saveState, onChange, onCha
               <>
                 <label className="pfd-label" htmlFor="pfd-heading">Section heading</label>
                 <input id="pfd-heading" className="input" value={selected.heading} onChange={(e) => onChangeItem(selected.id, { heading: e.target.value })} />
+                <label className="pfd-label" htmlFor="pfd-section-copy">Text box · Paragraph</label>
+                <textarea id="pfd-section-copy" className="input min-h-28 resize-y" value={selected.description} onChange={(e) => onChangeItem(selected.id, { description: e.target.value })} placeholder="Write a little more here…" />
               </>
             ) : (
               <>
@@ -158,6 +160,7 @@ export function PortfolioDesigner({ portfolio, built, saveState, onChange, onCha
 
           <div className="pfd-panel-section">
             <p className="pfd-panel-eyebrow">QUICK TOOLS</p>
+            <button type="button" className="btn w-full justify-center" onClick={() => { const next = headingItem('A little about this work'); onChange({ items: [...portfolio.items, next] }); setSelectedId(next.id); }}>+ Add a text section</button>
             <div className="pfd-tool-row"><LayoutGrid size={17} /><span>Drag to rearrange sections and content</span></div>
             <div className="pfd-tool-row"><ImagePlus size={17} /><span>Choose image crops and card widths</span></div>
             <div className="pfd-tool-row"><Type size={17} /><span>Edit text directly in the selected element</span></div>
