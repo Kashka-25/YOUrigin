@@ -53,7 +53,7 @@ function Item({ item, image }: { item: SnapshotItem; image?: string }) {
   const readId = useId();
   const hasFull = item.textMode === 'full' && item.text.length > 0;
   return (
-    <article className={`pf-item${image ? ' pf-item--pictured' : ''} pf-item--${item.kind}`}>
+    <article className={`pf-item${image ? ' pf-item--pictured' : ''} pf-item--${item.kind}${item.layoutSpan === 2 ? ' pf-item--wide' : ''} pf-image--${item.imageShape ?? 'natural'}`}>
       {image && (
         <figure className="pf-figure">
           <img src={image} alt={item.image?.alt ?? ''} loading="lazy" decoding="async" />
