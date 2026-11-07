@@ -512,7 +512,7 @@ export function buildSnapshot(p: Portfolio, src: PortfolioSources): { snapshot: 
       intro: p.intro.trim().slice(0, LIMITS.intro),
       contact,
       // Headings with nothing under them aren't shown.
-      sections: sections.filter((s) => s.items.length),
+      sections: sections.filter((s) => s.items.length || s.description.trim()),
     },
     problems,
   };
