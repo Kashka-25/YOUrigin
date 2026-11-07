@@ -119,6 +119,18 @@ describe('snapshot', () => {
     expect(item).toMatchObject({ kind: 'project', title: 'Tidewater', description: 'Written for recruiters', image: null });
   });
 
+  it('publishes a secure destination URL for a Project and rejects unsafe schemes', () => {
+    const src = sources();
+    const p = withItems(
+      newPortfolio('creative', 'Ana'),
+      { ...itemFromProject(project()), destinationUrl: 'https://example.com/creation' },
+      { ...itemFromProject(project({ id: 'p1', title: 'Unsafe' })), destinationUrl: 'javascript:alert(1)' },
+    );
+    const items = buildSnapshot(p, src).snapshot.sections[0].items;
+    expect(items[0].destinationUrl).toBe('https://example.com/creation');
+    expect(items[1].destinationUrl).toBeNull();
+  });
+
   it('a Work’s full text follows its reading order and leaves the tray out', () => {
     const p = withItems(newPortfolio('creative', 'Ana'), { ...itemFromWork(work()), textMode: 'full' });
     const item = buildSnapshot(p, sources()).snapshot.sections[0].items[0];
