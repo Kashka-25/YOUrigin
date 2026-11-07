@@ -139,6 +139,20 @@ function ItemEditor({
           <Field label="Description for this portfolio" htmlFor={`${id}-d`} count={[item.description.length, LIMITS.description]}>
             <GrowingText id={`${id}-d`} min={72} value={item.description} onChange={(v) => onChange({ description: v })} />
           </Field>
+          {item.kind === 'project' && (
+            <Field label="Link to the live project" htmlFor={`${id}-url`}>
+              <input
+                id={`${id}-url`}
+                className="input"
+                type="url"
+                inputMode="url"
+                value={item.destinationUrl ?? ''}
+                placeholder="https://your-project.com"
+                onChange={(e) => onChange({ destinationUrl: e.target.value })}
+              />
+              <p className="mt-1 text-xs text-muted">Visitors will get an Explore project link. Only secure HTTPS addresses are accepted.</p>
+            </Field>
+          )}
           {(textModes.length > 0 && s.hasText) || s.hasImage ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {textModes.length > 0 && s.hasText && (

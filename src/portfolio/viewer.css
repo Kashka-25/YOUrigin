@@ -102,6 +102,18 @@
 .pf-meta { font-size: 13.5px; color: var(--pf-muted); }
 .pf-description { margin-top: 6px; font-size: 15.5px; color: var(--pf-ink-2); }
 .pf-description p + p { margin-top: 0.75em; }
+.pf-project-link {
+  display: inline-flex; align-items: center; gap: 9px; align-self: flex-start;
+  margin-top: 14px; padding: 10px 16px; border-radius: 999px;
+  background: var(--pf-accent); color: #fff !important; text-decoration: none;
+  font-size: 13px; font-weight: 650; letter-spacing: 0.01em;
+}
+.pf-project-link:hover { filter: brightness(1.08); }
+.pf-project-link:focus-visible { outline: 2px solid var(--pf-accent); outline-offset: 3px; }
+.pf--gallery .pf-item--project { padding: 0; border: 1px solid var(--pf-line); border-radius: 16px; background: color-mix(in srgb, var(--pf-surface) 76%, transparent); }
+.pf--gallery .pf-item--project .pf-item-body { padding: 22px; }
+.pf--gallery .pf-item--project .pf-project-link { background: #72513c; }
+.pf--gallery .pf-item--project .pf-item-title { font-size: 26px; }
 .pf-text { font-family: var(--pf-text); font-size: 17px; line-height: 1.65; white-space: pre-wrap; color: var(--pf-ink); }
 .pf-excerpt { margin-top: 10px; padding-left: 14px; border-left: 2px solid var(--pf-line); color: var(--pf-ink-2); }
 .pf-read {
@@ -137,6 +149,9 @@
   .pf-name { font-size: 68px; }
   .pf--studio .pf-grid, .pf--venture .pf-grid { gap: 28px; }
   .pf--gallery .pf-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 32px; }
+  .pf--gallery .pf-item--project:first-child { grid-column: span 2; }
+  .pf--gallery .pf-item--project:first-child .pf-item-body { padding: 30px; }
+  .pf--gallery .pf-item--project:first-child .pf-item-title { font-size: 34px; }
   .pf-main { padding-block: 64px 96px; }
 }
 

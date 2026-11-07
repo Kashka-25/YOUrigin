@@ -41,6 +41,8 @@ export interface PortfolioItem {
   image: ImageChoice;
   /** Describes the picture for people who can't see it. */
   alt: string;
+  /** Optional live destination for a Project card; only HTTPS links are published. */
+  destinationUrl?: string;
 }
 
 export interface ContactLink {
@@ -276,6 +278,8 @@ export interface SnapshotItem {
   /** The full text was longer than the limit and was cut. */
   truncated: boolean;
   image: SnapshotImage | null;
+  /** Safe external destination for a Project card. */
+  destinationUrl?: string | null;
 }
 
 export interface SnapshotSection {
@@ -414,6 +418,7 @@ function snapshotItem(item: PortfolioItem, src: PortfolioSources): SnapshotItem 
       key: item.id, kind: 'project', label: 'Project',
       title: custom || r.project.title, subtitle: '', description, meta: [],
       text: [], textMode: 'none', truncated: false, image: null,
+      destinationUrl: normalizeHttps(item.destinationUrl ?? ''),
     };
   }
   if (r.work) {

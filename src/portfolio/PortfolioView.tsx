@@ -65,6 +65,11 @@ function Item({ item, image }: { item: SnapshotItem; image?: string }) {
         {item.subtitle && <p className="pf-subtitle">{item.subtitle}</p>}
         {item.meta.length > 0 && <p className="pf-meta">{item.meta.join(' · ')}</p>}
         <Paragraphs text={item.description} className="pf-description" />
+        {item.kind === 'project' && item.destinationUrl && (
+          <a className="pf-project-link" href={item.destinationUrl} target="_blank" rel="noopener noreferrer">
+            Explore project <span aria-hidden="true">↗</span>
+          </a>
+        )}
         {item.textMode === 'excerpt' && item.text.length > 0 && <div className="pf-text pf-excerpt">{item.text[0].text}</div>}
         {hasFull && (
           <>
