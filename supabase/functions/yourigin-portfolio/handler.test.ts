@@ -190,6 +190,11 @@ describe('what a visitor receives', () => {
     expect(d).not.toHaveProperty('destinationUrl');
   });
 
+  it('keeps a plain colour background and drops anything else', () => {
+    expect(cleanSnapshot({ background: '#1D1A22', sections: [] }, PREFIX).background).toBe('#1d1a22');
+    for (const bad of ['red', '#fff', 'url(x)', '#1d1a22;color:red', 7]) expect(cleanSnapshot({ background: bad, sections: [] }, PREFIX)).not.toHaveProperty('background');
+  });
+
   it('pictures outside the portfolio’s own folder are never signed', () => {
     const s = cleanSnapshot({ sections: [{ items: [
       { image: { path: `${PREFIX}../other/x.webp` } },

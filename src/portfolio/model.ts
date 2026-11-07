@@ -88,6 +88,8 @@ export interface Portfolio extends Syncable {
   /** null: a private draft that has never been published. */
   publication: PortfolioPublication | null;
   archived: boolean;
+  /** The page's background colour (#rrggbb). Missing: the look's own. */
+  background?: string | null;
   /** Set when the draft was built from a starter file, so importing it again extends this one. */
   starterKey?: string;
 }
@@ -190,6 +192,70 @@ export const TEXT_MODES: Record<TextMode, string> = {
   excerpt: 'An excerpt',
   full: 'The full text',
 };
+
+// ---- background -------------------------------------------------------------
+
+/** Quiet, warm backgrounds to choose from; any other colour can be picked too. */
+export const BACKGROUNDS: { value: string; label: string }[] = [
+  { value: '#fbf8f2', label: 'Ivory' },
+  { value: '#f4ede1', label: 'Linen' },
+  { value: '#efe2d6', label: 'Clay' },
+  { value: '#f3e4e1', label: 'Blush' },
+  { value: '#e6eadf', label: 'Sage' },
+  { value: '#e5eaee', label: 'Mist' },
+  { value: '#1f2a24', label: 'Forest' },
+  { value: '#1d1a22', label: 'Night' },
+];
+
+export function cleanBackground(v: unknown): string | null {
+  return typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : null;
+}
+
+/** 0 (black) to 1 (white), as the eye sees it. */
+function luminance(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map((i) => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+export function isDarkBackground(hex: string): boolean {
+  return luminance(hex) < 0.18;
+}
+
+/**
+ * The page colours for a chosen background. Cards, lines and text follow it,
+ * so a dark background gets light text and every choice stays readable.
+ */
+export function backgroundStyle(background: string | null | undefined): Record<string, string> | undefined {
+  const bg = cleanBackground(background);
+  if (!bg) return undefined;
+  const base = {
+    '--pf-bg': bg,
+    '--pf-hero-bg': bg,
+  };
+  if (isDarkBackground(bg)) {
+    return {
+      ...base,
+      '--pf-surface': `color-mix(in srgb, ${bg} 88%, #ffffff)`,
+      '--pf-ink': '#f4efe7',
+      '--pf-ink-2': '#d9d1c5',
+      '--pf-muted': '#aaa197',
+      '--pf-line': `color-mix(in srgb, ${bg} 78%, #ffffff)`,
+      '--pf-accent': '#e2b97f',
+      '--pf-hero-ink': '#f4efe7',
+      '--pf-hero-muted': '#c4bbb0',
+    };
+  }
+  return {
+    ...base,
+    '--pf-surface': `color-mix(in srgb, ${bg} 55%, #ffffff)`,
+    '--pf-line': `color-mix(in srgb, ${bg} 82%, #000000)`,
+    '--pf-hero-ink': 'var(--pf-ink)',
+    '--pf-hero-muted': 'var(--pf-muted)',
+  };
+}
 
 // ---- creating ---------------------------------------------------------------
 
@@ -316,6 +382,8 @@ export interface PortfolioSnapshot {
   intro: string;
   contact: ContactSnapshot[];
   sections: SnapshotSection[];
+  /** #rrggbb, or missing for the look's own background. */
+  background?: string | null;
 }
 
 export interface ItemProblem {
@@ -516,6 +584,8 @@ export function buildSnapshot(p: Portfolio, src: PortfolioSources): { snapshot: 
       ownerLine: p.ownerLine.trim().slice(0, LIMITS.ownerLine),
       intro: p.intro.trim().slice(0, LIMITS.intro),
       contact,
+      // Only when chosen, so pages that never had one keep the same fingerprint.
+      ...(cleanBackground(p.background) ? { background: cleanBackground(p.background) } : {}),
       // Headings with nothing under them aren't shown.
       sections: sections.filter((s) => s.items.length || s.description.trim()),
     },

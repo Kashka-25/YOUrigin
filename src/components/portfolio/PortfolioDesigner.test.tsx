@@ -137,6 +137,17 @@ describe('the designer', () => {
     spy.mockRestore();
   });
 
+  it('changes the page background, and back to the look’s own', async () => {
+    open();
+    fireEvent.click(await screen.findByRole('button', { name: 'Back to the page details' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Night' }));
+    await waitFor(async () => expect((await stored()).background).toBe('#1d1a22'), { timeout: 3000 });
+    const canvas = document.querySelector('.pfd-canvas') as HTMLElement;
+    expect(canvas.style.getPropertyValue('--pf-bg')).toBe('#1d1a22');
+    fireEvent.click(screen.getByRole('radio', { name: 'The look’s own' }));
+    await waitFor(async () => expect((await stored()).background).toBeNull(), { timeout: 3000 });
+  });
+
   it('previews the real visitor page, with the draft still private', async () => {
     open();
     fireEvent.click(await screen.findByRole('button', { name: 'Preview' }));

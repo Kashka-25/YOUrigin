@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  backgroundStyle,
+  BACKGROUNDS,
+  isDarkBackground,
   buildSnapshot,
   canAddPiece,
   contactHref,
@@ -102,6 +105,29 @@ describe('new portfolios', () => {
   it('each purpose has its own look and first heading', () => {
     expect(newPortfolio('creative').theme).toBe('gallery');
     expect(newPortfolio('business').items[0]).toMatchObject({ kind: 'heading', heading: 'Ventures' });
+  });
+});
+
+describe('background', () => {
+  it('is only in the snapshot when chosen, so existing pages keep their fingerprint', () => {
+    const p = newPortfolio('creative', 'Ana');
+    const plain = buildSnapshot(p, sources()).snapshot;
+    expect(plain).not.toHaveProperty('background');
+    expect(snapshotHash(buildSnapshot({ ...p, background: null }, sources()).snapshot)).toBe(snapshotHash(plain));
+    const linen = buildSnapshot({ ...p, background: '#F4EDE1' }, sources()).snapshot;
+    expect(linen.background).toBe('#f4ede1');
+    expect(snapshotHash(linen)).not.toBe(snapshotHash(plain));
+    expect(buildSnapshot({ ...p, background: 'red; x: url(evil)' }, sources()).snapshot).not.toHaveProperty('background');
+  });
+
+  it('gives dark backgrounds light text, and light ones dark text', () => {
+    expect(BACKGROUNDS.filter((b) => isDarkBackground(b.value)).map((b) => b.label)).toEqual(['Forest', 'Night']);
+    expect(backgroundStyle(null)).toBeUndefined();
+    expect(backgroundStyle('#1d1a22')).toMatchObject({ '--pf-bg': '#1d1a22', '--pf-ink': '#f4efe7', '--pf-hero-ink': '#f4efe7' });
+    const light = backgroundStyle('#f4ede1')!;
+    expect(light['--pf-bg']).toBe('#f4ede1');
+    expect(light).not.toHaveProperty('--pf-ink');
+    expect(light['--pf-hero-ink']).toBe('var(--pf-ink)');
   });
 });
 

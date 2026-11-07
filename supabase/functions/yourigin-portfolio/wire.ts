@@ -56,6 +56,8 @@ export interface WireSnapshot<I> {
   intro: string;
   contact: { kind: (typeof CONTACT_KINDS)[number]; label: string; href: string }[];
   sections: { key: string; heading: string; description: string; items: WireItem<I>[] }[];
+  /** #rrggbb, or null for the look's own background. */
+  background?: string | null;
 }
 
 export type StoredSnapshot = WireSnapshot<StoredImage>;
@@ -175,6 +177,7 @@ export function cleanSnapshot(raw: unknown, prefix: string): StoredSnapshot {
     title: str(s.title, 120),
     purpose: pick(s.purpose, PURPOSES, 'professional'),
     theme: pick(s.theme, THEMES, 'studio'),
+    ...(typeof s.background === 'string' && /^#[0-9a-f]{6}$/i.test(s.background) ? { background: s.background.toLowerCase() } : {}),
     ownerName: str(s.ownerName, 80),
     ownerLine: str(s.ownerLine, 160),
     intro: str(s.intro, 4000),

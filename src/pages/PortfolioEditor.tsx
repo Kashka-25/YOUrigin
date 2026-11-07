@@ -6,6 +6,7 @@ import { useAutoGrow } from '../hooks/useAutoGrow';
 import { AddItemsDialog } from '../components/portfolio/AddItemsDialog';
 import { PortfolioDesigner } from '../components/portfolio/PortfolioDesigner';
 import { PublishPanel } from '../components/portfolio/PublishPanel';
+import { BackgroundPicker } from '../components/portfolio/BackgroundPicker';
 import { useAutosave } from '../hooks/useAutosave';
 import { updatePortfolio, usePortfolio, type PortfolioPatch } from '../db/portfolios';
 import { PortfolioView } from '../portfolio/PortfolioView';
@@ -37,8 +38,8 @@ import { displayTitle } from '../domain/text';
 
 /** The draft fields this editor writes. Publication is never written from here. */
 function toPatch(p: Portfolio): PortfolioPatch {
-  const { title, purpose, theme, intro, ownerName, ownerLine, contactLinks, items, visibility, expiresAt, archived } = p;
-  return { title, purpose, theme, intro, ownerName, ownerLine, contactLinks, items, visibility, expiresAt, archived };
+  const { title, purpose, theme, background, intro, ownerName, ownerLine, contactLinks, items, visibility, expiresAt, archived } = p;
+  return { title, purpose, theme, background: background ?? null, intro, ownerName, ownerLine, contactLinks, items, visibility, expiresAt, archived };
 }
 
 /** A text box that grows with its text, from a modest starting height. */
@@ -343,6 +344,7 @@ export function PortfolioEditor() {
                 ))}
               </div>
             </fieldset>
+            <BackgroundPicker value={view.background} onChange={(background) => change({ background })} />
           </Section>
 
           <Section title="Contact" hint="Only the links you add here are shown. Nothing is taken from your account or other profiles.">
