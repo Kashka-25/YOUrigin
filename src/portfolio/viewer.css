@@ -82,6 +82,7 @@
 /* Sections and items */
 .pf-main { padding-block: 40px 64px; }
 .pf-section + .pf-section { margin-top: 56px; }
+.pf-section-description { max-width: 46rem; margin: -8px 0 22px; color: var(--pf-ink-2); font-size: 15px; line-height: 1.7; white-space: pre-wrap; }
 .pf-section-title {
   font-family: var(--pf-head); font-size: 24px; font-weight: 600; letter-spacing: -0.01em;
   padding-bottom: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--pf-line);
