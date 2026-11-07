@@ -43,6 +43,10 @@ export interface PortfolioItem {
   alt: string;
   /** Optional live destination for a Project card; only HTTPS links are published. */
   destinationUrl?: string;
+  /** Optional visual width in the portfolio canvas. */
+  layoutSpan?: 1 | 2;
+  /** Crop used when this item includes an image. */
+  imageShape?: 'natural' | 'square' | 'portrait' | 'landscape';
 }
 
 export interface ContactLink {
@@ -209,7 +213,7 @@ export function newPortfolio(purpose: PortfolioPurpose, ownerName = '', now = Da
 }
 
 function baseItem(kind: PortfolioItemKind, sourceId: string): PortfolioItem {
-  return { id: newId(), kind, sourceId, heading: '', description: '', textMode: 'none', image: 'default', alt: '' };
+  return { id: newId(), kind, sourceId, heading: '', description: '', textMode: 'none', image: 'default', alt: '', layoutSpan: 1, imageShape: 'natural' };
 }
 
 export function headingItem(text: string): PortfolioItem {
@@ -280,11 +284,14 @@ export interface SnapshotItem {
   image: SnapshotImage | null;
   /** Safe external destination for a Project card. */
   destinationUrl?: string | null;
+  layoutSpan?: 1 | 2;
+  imageShape?: 'natural' | 'square' | 'portrait' | 'landscape';
 }
 
 export interface SnapshotSection {
   key: string;
   heading: string;
+  description: string;
   items: SnapshotItem[];
 }
 
@@ -419,6 +426,7 @@ function snapshotItem(item: PortfolioItem, src: PortfolioSources): SnapshotItem 
       title: custom || r.project.title, subtitle: '', description, meta: [],
       text: [], textMode: 'none', truncated: false, image: null,
       destinationUrl: normalizeHttps(item.destinationUrl ?? ''),
+      layoutSpan: item.layoutSpan ?? 1, imageShape: item.imageShape ?? 'natural',
     };
   }
   if (r.work) {
@@ -427,6 +435,7 @@ function snapshotItem(item: PortfolioItem, src: PortfolioSources): SnapshotItem 
       key: item.id, kind: 'work', label: PROJECT_KIND_META[projectKind(r.work)].label,
       title: custom || r.work.title || 'Untitled', subtitle: r.work.subtitle.trim(), description, meta: [],
       text: t.text, textMode: item.textMode, truncated: t.truncated, image,
+      layoutSpan: item.layoutSpan ?? 1, imageShape: item.imageShape ?? 'natural',
     };
   }
   const piece = r.piece!;
@@ -435,6 +444,7 @@ function snapshotItem(item: PortfolioItem, src: PortfolioSources): SnapshotItem 
     key: item.id, kind: 'piece', label: piece.type === 'image' ? 'Artwork' : TYPE_LABEL[piece.type],
     title: custom || (piece.type === 'image' && !piece.title.trim() ? 'Untitled' : displayTitle(piece)), subtitle: '', description,
     meta: artMeta(piece), text: t.text, textMode: item.textMode, truncated: t.truncated, image,
+    layoutSpan: item.layoutSpan ?? 1, imageShape: item.imageShape ?? 'natural',
   };
 }
 
@@ -471,7 +481,7 @@ export function buildSnapshot(p: Portfolio, src: PortfolioSources): { snapshot: 
   let current: SnapshotSection | null = null;
   for (const item of p.items) {
     if (item.kind === 'heading') {
-      current = { key: item.id, heading: item.heading.trim().slice(0, LIMITS.heading), items: [] };
+      current = { key: item.id, heading: item.heading.trim().slice(0, LIMITS.heading), description: item.description.trim().slice(0, LIMITS.description), items: [] };
       sections.push(current);
       continue;
     }
@@ -483,7 +493,7 @@ export function buildSnapshot(p: Portfolio, src: PortfolioSources): { snapshot: 
     const s = snapshotItem(item, src);
     if (!s) continue;
     if (!current) {
-      current = { key: 'start', heading: '', items: [] };
+      current = { key: 'start', heading: '', description: '', items: [] };
       sections.push(current);
     }
     current.items.push(s);
@@ -502,7 +512,7 @@ export function buildSnapshot(p: Portfolio, src: PortfolioSources): { snapshot: 
       intro: p.intro.trim().slice(0, LIMITS.intro),
       contact,
       // Headings with nothing under them aren't shown.
-      sections: sections.filter((s) => s.items.length),
+      sections: sections.filter((s) => s.items.length || s.description.trim()),
     },
     problems,
   };

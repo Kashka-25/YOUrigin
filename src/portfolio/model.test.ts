@@ -191,6 +191,19 @@ describe('snapshot', () => {
     expect(sections.map((s) => [s.heading, s.items.length])).toEqual([['', 1], ['Art', 1]]);
   });
 
+  it('keeps standalone text sections and their copy in the visitor snapshot', () => {
+    const textSection = { ...headingItem('A little about me'), description: 'I make things with care.' };
+    const snapshot = buildSnapshot(withItems(newPortfolio('creative', 'Ana'), textSection), sources()).snapshot;
+    expect(snapshot.sections).toMatchObject([{ heading: 'A little about me', description: 'I make things with care.', items: [] }]);
+  });
+
+  it('carries canvas width and image crop choices into the visitor snapshot', () => {
+    const src = sources();
+    const art = itemFromPiece(src.content.get('art')!);
+    const snapshot = buildSnapshot(withItems(newPortfolio('creative', 'Ana'), { ...art, layoutSpan: 2, imageShape: 'portrait' }), src).snapshot;
+    expect(snapshot.sections[0].items[0]).toMatchObject({ layoutSpan: 2, imageShape: 'portrait' });
+  });
+
   it('only working contact links are shown', () => {
     const p = { ...newPortfolio('professional', 'Ana'), contactLinks: [
       { kind: 'email' as const, label: '', value: 'ana@example.com' },

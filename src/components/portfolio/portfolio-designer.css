@@ -1,0 +1,68 @@
+.pfd-shell { min-height: calc(100dvh - 2rem); margin: -1rem; background: #eeece7; color: #292720; }
+.pfd-toolbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; background: rgba(251,250,247,.94); border-bottom: 1px solid #dedbd3; backdrop-filter: blur(14px); }
+.pfd-toolbar-center { display: flex; align-items: center; gap: 8px; color: #6e6a61; font-size: 13px; }
+.pfd-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #72947b; }
+.pfd-device-switch { display: flex; gap: 3px; padding: 3px; border: 1px solid #e0ddd5; border-radius: 10px; background: #f5f3ee; }
+.pfd-device-switch button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: 7px; color: #716d65; font-size: 12px; }
+.pfd-device-switch button[aria-pressed='true'] { background: #fff; color: #292720; box-shadow: 0 1px 3px #00000012; }
+.pfd-workspace { display: grid; grid-template-columns: 320px minmax(0,1fr); min-height: calc(100dvh - 64px); }
+.pfd-toolbox { position: sticky; top: 57px; align-self: start; height: calc(100dvh - 57px); overflow: auto; padding: 25px 22px 40px; background: #faf9f6; border-right: 1px solid #dedbd3; }
+.pfd-panel-eyebrow { margin: 0; color: #958a7b; font-size: 10px; font-weight: 700; letter-spacing: .14em; }
+.pfd-toolbox h1 { margin: 7px 0 8px; font: 500 25px/1.1 'Newsreader Variable', Georgia, serif; letter-spacing: -.02em; }
+.pfd-help { margin: 0 0 16px; color: #777168; font-size: 12px; line-height: 1.6; }
+.pfd-panel-section { display: grid; gap: 8px; padding: 18px 0; border-top: 1px solid #e7e3dc; }
+.pfd-label { margin-top: 5px; color: #625d54; font-size: 11px; font-weight: 650; }
+.pfd-tool-row { display: flex; align-items: center; gap: 9px; color: #716c63; font-size: 12px; }
+.pfd-tool-row svg { flex: none; color: #94775f; }
+.pfd-stage-wrap { min-width: 0; overflow: auto; padding: 30px clamp(16px,4vw,56px) 48px; }
+.pfd-stage { width: min(100%, 1100px); margin: 0 auto; transition: width .2s ease; }
+.pfd-stage--phone { width: min(100%, 410px); }
+.pfd-stage-topline { display: flex; justify-content: space-between; margin: 0 0 10px; color: #8a857c; font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+.pfd-page { overflow: hidden; min-height: 75vh; background: #f6f3ee; box-shadow: 0 18px 60px #3933271a; font-family: 'Inter Variable', system-ui, sans-serif; }
+.pfd-hero { padding: clamp(32px,6vw,76px); background: #f6f3ee; border-bottom: 1px solid #e3ddd3; }
+.pfd-kicker { color: #8a5a3c; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.pfd-hero h2 { margin: 13px 0 0; color: #1d1a17; font: 400 clamp(36px,5vw,66px)/1.04 'Newsreader Variable', Georgia, serif; letter-spacing: -.04em; }
+.pfd-owner-line { margin: 10px 0 0; color: #655e55; font-size: 17px; }
+.pfd-intro { max-width: 620px; margin: 22px 0 0; color: #45403a; font: 19px/1.6 'Newsreader Variable', Georgia, serif; white-space: pre-wrap; }
+.pfd-grid { display: grid; grid-template-columns: 1fr; gap: 16px; padding: clamp(18px,3vw,36px); }
+.pfd-block { position: relative; min-width: 0; overflow: visible; border: 1px solid #e3ddd3; border-radius: 13px; background: #fffdf9; box-shadow: 0 2px 8px #30291d08; }
+.pfd-block.is-selected { outline: 2px solid #a87958; outline-offset: 3px; }
+.pfd-drag { position: absolute; z-index: 3; top: 9px; left: 9px; display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid #e4dfd6; border-radius: 8px; background: #fffdf9eF; color: #766d61; cursor: grab; touch-action: none; }
+.pfd-drag:active { cursor: grabbing; }
+.pfd-block-content { display: flex; width: 100%; height: 100%; flex-direction: column; overflow: hidden; border-radius: inherit; text-align: left; }
+.pfd-image { display: block; width: 100%; max-height: 290px; object-fit: cover; background: #e8e2d8; }
+.pfd-image--square { aspect-ratio: 1; }
+.pfd-image--portrait { aspect-ratio: 4/5; }
+.pfd-image--landscape { aspect-ratio: 16/9; }
+.pfd-block-copy { display: flex; flex-direction: column; gap: 7px; padding: 20px; }
+.pfd-kind { color: #8a5a3c; font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+.pfd-block-copy strong { color: #25211d; font: 450 24px/1.2 'Newsreader Variable', Georgia, serif; }
+.pfd-block-copy p { color: #5e574f; font-size: 13px; line-height: 1.6; }
+.pfd-block-copy small { color: #82796f; font-size: 12px; }
+.pfd-heading-preview { display: flex; flex-direction: column; gap: 5px; padding: 24px; }
+.pfd-heading-preview span { color: #9a8c7c; font-size: 9px; font-weight: 700; letter-spacing: .13em; }
+.pfd-heading-preview strong { color: #29231d; font: 400 27px 'Newsreader Variable', Georgia, serif; }
+.pfd-heading-preview p { margin: 2px 0 0; color: #655e55; font-size: 13px; line-height: 1.65; white-space: pre-wrap; }
+.pfd-block-index { position: absolute; right: 10px; bottom: 8px; color: #aaa196; font-size: 9px; pointer-events: none; }
+.pfd-footer { display: flex; justify-content: space-between; gap: 12px; padding: 20px 28px; border-top: 1px solid #e3ddd3; color: #82796f; font-size: 11px; }
+.pfd-empty { padding: 20px; color: #82796f; font: italic 17px 'Newsreader Variable', Georgia, serif; }
+.pfd-stage-note { margin: 15px 0 0; color: #8b857b; text-align: center; font-size: 11px; }
+@media (min-width: 760px) {
+  .pfd-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .pfd-block--wide { grid-column: span 2 !important; }
+}
+@media (max-width: 900px) {
+  .pfd-workspace { grid-template-columns: 280px minmax(0,1fr); }
+}
+@media (max-width: 680px) {
+  .pfd-shell { margin: -1rem; }
+  .pfd-toolbar { flex-wrap: wrap; padding: 9px 12px; }
+  .pfd-toolbar-center { display: none; }
+  .pfd-workspace { display: flex; flex-direction: column; }
+  .pfd-toolbox { position: static; height: auto; padding: 18px; border-right: 0; border-bottom: 1px solid #dedbd3; }
+  .pfd-toolbox .pfd-panel-section:first-of-type { grid-template-columns: 1fr 1fr; }
+  .pfd-stage-wrap { padding: 18px 10px 32px; }
+  .pfd-stage--phone { width: min(100%, 410px); }
+  .pfd-grid { grid-template-columns: 1fr; }
+  .pfd-device-switch button span { display: none; }
+}
