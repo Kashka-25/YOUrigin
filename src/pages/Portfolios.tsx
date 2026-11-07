@@ -117,7 +117,16 @@ export function Portfolios() {
     try {
       const r = await importStarterPortfolio(parseStarterPack(await file.text()));
       const made = r.createdProjects ? ` ${r.createdProjects} new Project${r.createdProjects === 1 ? '' : 's'}.` : '';
-      toast(r.created ? `Starter portfolio ready, as a private draft.${made}` : r.addedItems ? `Added ${r.addedItems} to your starter portfolio.${made}` : 'Your starter portfolio already has everything.');
+      const extras = [r.coversAdded && `${r.coversAdded} cover${r.coversAdded === 1 ? '' : 's'}`, r.linksAdded && `${r.linksAdded} link${r.linksAdded === 1 ? '' : 's'}`].filter(Boolean).join(' and ');
+      toast(
+        r.created
+          ? `Starter portfolio ready, as a private draft.${made}`
+          : r.addedItems
+            ? `Added ${r.addedItems} to your starter portfolio.${made}`
+            : extras
+              ? `Added ${extras} to your starter portfolio.`
+              : 'Your starter portfolio already has everything.',
+      );
       navigate(`/portfolios/${r.portfolioId}`);
     } catch (e) {
       toast(e instanceof Error ? e.message : String(e));

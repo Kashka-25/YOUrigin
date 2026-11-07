@@ -18,6 +18,10 @@ export interface StarterProject {
   status: ProjectStatus;
   /** What the portfolio card says. Written for this portfolio; the Project keeps its own. */
   portfolioDescription: string;
+  /** The venture's own site (https). Put on the card only when it has no link yet. */
+  link?: string;
+  /** A cover picture as a data: URL. Used only when the Project has no cover yet. */
+  cover?: string;
 }
 
 export interface StarterSection {
@@ -68,6 +72,8 @@ export function parseStarterPack(raw: unknown): StarterPack {
         colour: colours.has(p.colour as ProjectColour) ? (p.colour as ProjectColour) : undefined,
         status: STATUSES.includes(p.status as ProjectStatus) ? (p.status as ProjectStatus) : 'building',
         portfolioDescription: text(p.portfolioDescription, LIMITS.description),
+        link: httpsLink(p.link),
+        cover: pictureData(p.cover),
       };
     }).filter((p) => p.title);
     return { heading: text(sec.heading, LIMITS.heading), projects };
@@ -83,6 +89,34 @@ export function parseStarterPack(raw: unknown): StarterPack {
     intro: text(s.intro, LIMITS.intro),
     sections,
   };
+}
+
+/** Only full https addresses. */
+function httpsLink(v: unknown): string | undefined {
+  if (typeof v !== 'string' || v.length > 2000) return undefined;
+  try {
+    const u = new URL(v.trim());
+    return u.protocol === 'https:' && u.hostname.includes('.') ? u.href : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const MAX_PICTURE = 8_000_000;
+
+/** Only a PNG, JPEG or WebP picture carried in the file itself; never a link to fetch. */
+function pictureData(v: unknown): string | undefined {
+  return typeof v === 'string' && v.length < MAX_PICTURE && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$/.test(v) ? v : undefined;
+}
+
+/** A data: URL as a file, for the usual picture shrinking and storage. */
+export function pictureFile(dataUrl: string, name: string): File {
+  const [head, body] = dataUrl.split(',');
+  const mime = head.slice(5, head.indexOf(';'));
+  const bin = atob(body);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new File([bytes], name, { type: mime });
 }
 
 function safeJson(raw: string): unknown {

@@ -3,7 +3,8 @@ import { db } from './db';
 import { newId } from '../domain/text';
 import { newPortfolio, headingItem, itemFromProject, type Portfolio, type PortfolioItem, type PortfolioPurpose } from '../portfolio/model';
 import type { Project } from '../domain/types';
-import { sameTitle, type StarterPack, type StarterProject } from '../portfolio/starter';
+import { pictureFile, sameTitle, type StarterPack, type StarterProject } from '../portfolio/starter';
+import { removeAssetIfUnused, saveImage } from './assets';
 
 // Portfolios are private drafts on this device until published (phase 2).
 // These are the only functions that write them.
@@ -37,10 +38,12 @@ export async function addPortfolioItems(id: string, items: PortfolioItem[]): Pro
  *   else in it, are left exactly as they are; missing cards go under their
  *   heading, which is added if it isn't there.
  * - Works, pieces and the rest of the library are never touched.
+ * - A venture's link goes on its card only when the card has none, and its
+ *   cover on the Project only when the Project has none.
  * - It never publishes. Running it again changes nothing that's already there.
  */
-export async function importStarterPortfolio(pack: StarterPack): Promise<{ portfolioId: string; createdProjects: number; addedItems: number; created: boolean }> {
-  return db.transaction('rw', db.projects, db.portfolios, async () => {
+export async function importStarterPortfolio(pack: StarterPack): Promise<{ portfolioId: string; createdProjects: number; addedItems: number; created: boolean; linksAdded: number; coversAdded: number }> {
+  const result = await db.transaction('rw', db.projects, db.portfolios, async () => {
     const [projects, portfolios] = await Promise.all([db.projects.toArray(), db.portfolios.toArray()]);
     const now = Date.now();
     let createdProjects = 0;
@@ -75,11 +78,28 @@ export async function importStarterPortfolio(pack: StarterPack): Promise<{ portf
     const items = [...portfolio.items];
     const shown = new Set(items.filter((i) => i.kind === 'project').map((i) => i.sourceId));
     let addedItems = 0;
+    let linksAdded = 0;
     for (const section of pack.sections) {
       for (const seed of section.projects) {
         const project = await projectFor(seed);
-        if (shown.has(project.id)) continue;
-        const card = { ...itemFromProject(project), description: seed.portfolioDescription || project.description.slice(0, 2000), imageShape: 'landscape' as const };
+        if (shown.has(project.id)) {
+          // A card you already have only gets a link if it has none.
+          if (!seed.link) continue;
+          for (let i = 0; i < items.length; i++) {
+            if (items[i].kind === 'project' && items[i].sourceId === project.id && !items[i].destinationUrl?.trim()) {
+              items[i] = { ...items[i], destinationUrl: seed.link };
+              linksAdded += 1;
+            }
+          }
+          continue;
+        }
+        const card = {
+          ...itemFromProject(project),
+          description: seed.portfolioDescription || project.description.slice(0, 2000),
+          imageShape: 'landscape' as const,
+          ...(seed.link ? { destinationUrl: seed.link } : {}),
+        };
+        if (seed.link) linksAdded += 1;
         let at = section.heading ? items.findIndex((i) => i.kind === 'heading' && sameTitle(i.heading, section.heading)) : -1;
         if (at === -1 && section.heading) {
           items.push(headingItem(section.heading));
@@ -96,12 +116,35 @@ export async function importStarterPortfolio(pack: StarterPack): Promise<{ portf
 
     if (created) {
       await db.portfolios.add({ ...portfolio, items, starterKey: pack.key });
-    } else if (addedItems > 0 || portfolio.starterKey !== pack.key) {
+    } else if (addedItems > 0 || linksAdded > 0 || portfolio.starterKey !== pack.key) {
       // Only the new cards (and the starter's tag). Title, intro and everything else stay yours.
       await db.portfolios.update(portfolio.id, { items, starterKey: pack.key, updatedAt: now });
     }
-    return { portfolioId: portfolio.id, createdProjects, addedItems, created };
+    return { portfolioId: portfolio.id, createdProjects, addedItems, created, linksAdded };
   });
+
+  // Covers last, outside the transaction: shrinking a picture takes a while.
+  let coversAdded = 0;
+  for (const seed of pack.sections.flatMap((s) => s.projects)) {
+    if (!seed.cover) continue;
+    const project = (await db.projects.toArray()).find((p) => sameTitle(p.title, seed.title));
+    if (!project || project.coverAssetId) continue;
+    let assetId: string;
+    try {
+      ({ asset: { id: assetId } } = await saveImage(pictureFile(seed.cover, `${seed.title}.webp`)));
+    } catch {
+      continue; // a picture that can't be read is skipped; everything else is already in
+    }
+    const used = await db.transaction('rw', db.projects, async () => {
+      const now = await db.projects.get(project.id);
+      if (!now || now.coverAssetId) return false;
+      await db.projects.update(project.id, { coverAssetId: assetId, updatedAt: Date.now() });
+      return true;
+    });
+    if (used) coversAdded += 1;
+    else await removeAssetIfUnused(assetId);
+  }
+  return { ...result, coversAdded };
 }
 
 /** A copy is always a new private draft, even when the original is published. */

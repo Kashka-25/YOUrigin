@@ -1,4 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+// Pictures are shrunk with a canvas, which the test browser doesn't have.
+vi.mock('../io/images', async (orig) => ({
+  ...(await orig<typeof import('../io/images')>()),
+  shrinkImage: async () => ({ dataUrl: 'data:image/webp;base64,AAAA', mime: 'image/webp', width: 1600, height: 900, bytes: 10, originalBytes: 100 }),
+}));
+
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { db, ensureBuiltIns } from './db';
@@ -139,6 +146,63 @@ describe('starter portfolio', () => {
     const odd = parseStarterPack({ ...file(), theme: 'neon', purpose: 'x', sections: [{ heading: 'A', projects: [{ title: 'T', colour: 'nope', status: 'weird' }] }] });
     expect(odd).toMatchObject({ theme: 'venture', purpose: 'business' });
     expect(odd.sections[0].projects[0]).toMatchObject({ title: 'T', colour: undefined, status: 'building' });
+  });
+});
+
+describe('starter covers and links', () => {
+  const PNG = 'data:image/png;base64,iVBORw0KGgo=';
+  const withExtras = () => {
+    const f = file();
+    f.sections[0].projects = [
+      venture('Alpha', { cover: PNG, link: 'https://alpha.example/' }),
+      venture('Beta', { cover: PNG, link: 'https://beta.example/' }),
+    ];
+    return parseStarterPack(f);
+  };
+
+  it('gives new Projects their cover and new cards their link', async () => {
+    const r = await importStarterPortfolio(withExtras());
+    expect(r).toMatchObject({ coversAdded: 2, linksAdded: 2 });
+    const projects = await db.projects.toArray();
+    const alpha = projects.find((p) => p.title === 'Alpha')!;
+    expect(alpha.coverAssetId).toBeTruthy();
+    expect(await db.assets.get(alpha.coverAssetId!)).toBeDefined();
+    const card = (await db.portfolios.get(r.portfolioId))!.items.find((i) => i.sourceId === alpha.id)!;
+    expect(card).toMatchObject({ destinationUrl: 'https://alpha.example/', image: 'default' });
+  });
+
+  it('never replaces a cover or a link you already have, and adds nothing the second time', async () => {
+    const id = await createProject({ title: 'Alpha', description: 'Mine.', category: '' });
+    await db.assets.add({ id: 'my-cover', name: 'x', mime: 'image/png', dataUrl: 'data:,', width: 1, height: 1, bytes: 1, createdAt: 1, updatedAt: 1 });
+    await db.projects.update(id, { coverAssetId: 'my-cover' });
+    const first = await importStarterPortfolio(withExtras());
+    expect(first.coversAdded).toBe(1); // Beta only
+    expect((await db.projects.get(id))!.coverAssetId).toBe('my-cover');
+
+    // Your own link on Alpha's card, none on Beta's.
+    const p = (await db.portfolios.get(first.portfolioId))!;
+    await updatePortfolio(p.id, { items: p.items.map((i) => (i.sourceId === id ? { ...i, destinationUrl: 'https://mine.example/' } : i.kind === 'project' ? { ...i, destinationUrl: '' } : i)) });
+    const assets = await db.assets.count();
+
+    const again = await importStarterPortfolio(withExtras());
+    expect(again).toMatchObject({ coversAdded: 0, linksAdded: 1, addedItems: 0, createdProjects: 0 });
+    const items = (await db.portfolios.get(p.id))!.items;
+    expect(items.find((i) => i.sourceId === id)?.destinationUrl).toBe('https://mine.example/');
+    expect(items.filter((i) => i.kind === 'project' && i.sourceId !== id).every((i) => i.destinationUrl === 'https://beta.example/' || !i.destinationUrl)).toBe(true);
+    expect(await db.assets.count()).toBe(assets);
+
+    const third = await importStarterPortfolio(withExtras());
+    expect(third).toMatchObject({ coversAdded: 0, linksAdded: 0 });
+  });
+
+  it('only takes https links and pictures carried in the file', () => {
+    const f = file();
+    f.sections[0].projects = [
+      venture('A', { link: 'http://plain.example/', cover: 'https://evil.example/x.png' }),
+      venture('B', { link: 'javascript:alert(1)', cover: 'data:image/svg+xml;base64,PHN2Zz4=' }),
+    ];
+    const [a, b] = parseStarterPack(f).sections[0].projects;
+    expect([a.link, a.cover, b.link, b.cover]).toEqual([undefined, undefined, undefined, undefined]);
   });
 });
 
