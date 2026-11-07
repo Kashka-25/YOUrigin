@@ -41,6 +41,7 @@ export function Viewer({ deps = browserDeps() }: { deps?: ClientDeps }) {
   const lastRefresh = useRef(0);
   const refreshes = useRef(0);
   const depsRef = useRef(deps);
+  const tokenRef = useRef(token);
 
   const load = useCallback(async (t: string, pw: string | null) => {
     const r = await loadPortfolio(t, pw, depsRef.current);
@@ -59,6 +60,9 @@ export function Viewer({ deps = browserDeps() }: { deps?: ClientDeps }) {
   useEffect(() => {
     const onHash = () => {
       const t = tokenFromHash(window.location.hash);
+      // Only a different portfolio is a new page; the same token (re-announced) changes nothing.
+      if (t === tokenRef.current) return;
+      tokenRef.current = t;
       setToken(t);
       setView(t ? { kind: 'loading' } : { kind: 'no-link' });
     };
