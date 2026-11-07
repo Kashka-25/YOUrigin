@@ -277,7 +277,7 @@ describe('independent Projects', () => {
   });
 
   it('uses the new local database schema and includes Projects in encrypted sync', () => {
-    expect(SCHEMA_VERSION).toBe(4);
+    expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(4);
     expect(SYNC_TABLES).toContain('projects');
   });
 });

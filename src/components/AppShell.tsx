@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Feather, FolderKanban, FolderOpen, Hash, Images, Library, Menu,
+  BriefcaseBusiness, Feather, FolderKanban, FolderOpen, Hash, Images, Library, Menu,
   Network, Search, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit,
 } from 'lucide-react';
 import { Logo } from './Logo';
@@ -26,6 +26,7 @@ const SECONDARY: NavDef[] = [
   { to: '/tags', label: 'Tags', icon: Hash },
   { to: '/orphans', label: 'Unsorted', icon: Sprout },
   { to: '/spelling', label: 'Spelling', icon: SpellCheck },
+  { to: '/portfolios', label: 'Portfolios', icon: BriefcaseBusiness },
   { to: '/shared', label: 'Shared to YOU', icon: Share2 },
   { to: '/settings', label: 'Settings & backup', icon: Settings },
   { to: '/trash', label: 'Trash', icon: Trash2 },

@@ -53,6 +53,8 @@ export interface SyncState {
   cursor?: number;
   seeded?: boolean;
   lastSyncedAt?: number;
+  /** The synced tables this device's cursor has seen. A new one means pulling everything once. */
+  syncedTables?: string[];
 }
 
 export async function getState<K extends keyof SyncState>(key: K): Promise<SyncState[K] | undefined> {

@@ -1,7 +1,8 @@
 import { useSyncExternalStore } from 'react';
 import { db } from '../db/db';
 import { createKeyInfo, unlockWithPassphrase } from './crypto';
-import { SyncEngine } from './engine';
+import { needsFullPull, SyncEngine } from './engine';
+import { SYNC_TABLES } from './tracking';
 import { appOutbox, clearState, getState, isSyncEnabled, setState, setSyncEnabled } from './runtime';
 import { deleteRemoteSync, fetchKeyInfo, getClient, saveKeyInfo, SupabaseTransport } from './supabase';
 
@@ -50,7 +51,13 @@ let started = false;
 async function buildEngine(key: CryptoKey): Promise<SyncEngine> {
   const client = await getClient();
   return new SyncEngine(db, appOutbox, new SupabaseTransport(client), key, {
-    get: async () => (await getState('cursor')) ?? 0,
+    get: async () => {
+      if (needsFullPull(await getState('syncedTables'))) {
+        await setState('cursor', 0);
+        await setState('syncedTables', [...SYNC_TABLES]);
+      }
+      return (await getState('cursor')) ?? 0;
+    },
     set: (rev) => setState('cursor', rev),
   });
 }

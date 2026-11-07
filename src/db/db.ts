@@ -15,11 +15,12 @@ import type {
   Asset,
   Project,
 } from '../domain/types';
+import type { Portfolio } from '../portfolio/model';
 import { BUILT_IN_FAMILIES, BUILT_IN_TEMPLATES } from '../domain/constants';
 import { installChangeTracking } from '../sync/tracking';
 import { appOutbox, isSyncEnabled } from '../sync/runtime';
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /**
  * One-time, non-destructive migration: each existing standalone Work gets a
@@ -92,6 +93,7 @@ export class YOUriginDB extends Dexie {
   settings!: Table<Setting, string>;
   assets!: Table<Asset, string>;
   projects!: Table<Project, string>;
+  portfolios!: Table<Portfolio, string>;
 
   constructor(name = 'yourigin') {
     super(name);
@@ -124,6 +126,8 @@ export class YOUriginDB extends Dexie {
         tx.table('projects') as Table<Project, string>,
       );
     });
+    // v5: Portfolios, curated pages made from chosen Projects, Works and pieces.
+    this.version(5).stores({ portfolios: 'id, updatedAt' });
   }
 }
 

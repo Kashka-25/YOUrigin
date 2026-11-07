@@ -1,0 +1,153 @@
+/* The visitor-facing portfolio page. Everything is scoped to .pf and set
+   explicitly (colours, fonts, sizes), so it looks the same in the app's
+   preview, in light or dark app themes, and on the published page.
+   Layout follows the container's width (container queries), not the
+   window's, so a phone-width preview frame is a true phone layout. */
+
+.pf {
+  --pf-bg: #fbfaf8;
+  --pf-surface: #ffffff;
+  --pf-ink: #17181c;
+  --pf-ink-2: #3c3f48;
+  --pf-muted: #6b6f7b;
+  --pf-line: #e4e2dd;
+  --pf-accent: #3a49c9;
+  --pf-hero-bg: var(--pf-bg);
+  --pf-hero-ink: var(--pf-ink);
+  --pf-hero-muted: var(--pf-muted);
+  --pf-head: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --pf-body: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --pf-text: 'Newsreader Variable', 'Iowan Old Style', Georgia, serif;
+  --pf-radius: 14px;
+  --pf-name-weight: 650;
+  --pf-name-track: -0.03em;
+
+  container-type: inline-size;
+  container-name: pf;
+  min-height: 100%;
+  background: var(--pf-bg);
+  color: var(--pf-ink);
+  font-family: var(--pf-body);
+  font-size: 16px;
+  line-height: 1.6;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+  overflow-wrap: anywhere;
+}
+.pf *, .pf *::before, .pf *::after { box-sizing: border-box; }
+.pf p, .pf h1, .pf h2, .pf h3, .pf h4, .pf h5, .pf figure { margin: 0; }
+.pf a { color: inherit; }
+
+/* Themes */
+.pf--gallery {
+  --pf-bg: #f6f3ee; --pf-surface: #fffdf9; --pf-ink: #1d1a17; --pf-ink-2: #45403a; --pf-muted: #7a7168;
+  --pf-line: #e3ddd3; --pf-accent: #8a5a3c;
+  --pf-head: 'Newsreader Variable', 'Iowan Old Style', Georgia, serif; --pf-name-weight: 400; --pf-name-track: -0.035em;
+}
+.pf--venture {
+  --pf-bg: #ffffff; --pf-surface: #f7f9fa; --pf-ink: #0f1720; --pf-ink-2: #2f3b47; --pf-muted: #5f6b77;
+  --pf-line: #dfe5ea; --pf-accent: #0f766e;
+  --pf-hero-bg: #0f1720; --pf-hero-ink: #f5f8fa; --pf-hero-muted: #a8b4bf; --pf-name-weight: 750;
+}
+.pf--journal {
+  --pf-bg: #f4ede1; --pf-surface: #fbf6ee; --pf-ink: #2b2118; --pf-ink-2: #4a3c2f; --pf-muted: #7d6a58;
+  --pf-line: #e2d5c2; --pf-accent: #a4632a;
+  --pf-head: 'Newsreader Variable', 'Iowan Old Style', Georgia, serif; --pf-body: 'Newsreader Variable', Georgia, serif;
+  --pf-name-weight: 500; --pf-name-track: -0.02em;
+}
+
+.pf-wrap { width: 100%; max-width: 1080px; margin-inline: auto; padding-inline: 20px; }
+
+/* Hero */
+.pf-hero { background: var(--pf-hero-bg); color: var(--pf-hero-ink); padding-block: 56px 40px; border-bottom: 1px solid var(--pf-line); }
+.pf--venture .pf-hero { border-bottom: 0; }
+.pf-kicker { font-family: var(--pf-body); font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--pf-accent); }
+.pf--venture .pf-kicker { color: #5eead4; }
+.pf-name { margin-top: 14px; font-family: var(--pf-head); font-size: 40px; line-height: 1.04; font-weight: var(--pf-name-weight); letter-spacing: var(--pf-name-track); }
+.pf-line { margin-top: 10px; font-size: 18px; color: var(--pf-hero-muted); }
+.pf-intro { margin-top: 24px; max-width: 40rem; font-size: 17px; line-height: 1.7; color: var(--pf-hero-ink); }
+.pf-intro p + p { margin-top: 0.9em; }
+.pf--gallery .pf-intro, .pf--journal .pf-intro { font-family: var(--pf-text); font-size: 19px; }
+.pf-contact { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 10px; }
+.pf-contact a {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 14px;
+  border: 1px solid color-mix(in srgb, var(--pf-hero-ink) 18%, transparent); border-radius: 999px;
+  font-size: 14px; font-weight: 550; text-decoration: none; color: var(--pf-hero-ink);
+}
+.pf-contact a:hover, .pf-contact a:focus-visible { border-color: var(--pf-accent); }
+.pf-contact a:focus-visible, .pf-read:focus-visible { outline: 2px solid var(--pf-accent); outline-offset: 2px; }
+.pf-contact-icon { font-size: 12px; font-weight: 700; color: var(--pf-accent); }
+.pf--venture .pf-contact-icon { color: #5eead4; }
+
+/* Sections and items */
+.pf-main { padding-block: 40px 64px; }
+.pf-section + .pf-section { margin-top: 56px; }
+.pf-section-title {
+  font-family: var(--pf-head); font-size: 24px; font-weight: 600; letter-spacing: -0.01em;
+  padding-bottom: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--pf-line);
+}
+.pf--gallery .pf-section-title, .pf--journal .pf-section-title { font-weight: 400; font-size: 28px; }
+.pf-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+.pf-item { display: flex; flex-direction: column; background: var(--pf-surface); border: 1px solid var(--pf-line); border-radius: var(--pf-radius); overflow: hidden; }
+.pf--gallery .pf-item { border: 0; background: transparent; border-radius: 0; }
+.pf-figure { background: color-mix(in srgb, var(--pf-ink) 5%, var(--pf-bg)); }
+.pf-figure img { display: block; width: 100%; height: auto; max-height: 720px; object-fit: contain; }
+.pf--gallery .pf-figure { background: transparent; }
+.pf-item-body { padding: 20px; display: flex; flex-direction: column; gap: 6px; }
+.pf--gallery .pf-item-body { padding: 14px 0 0; }
+.pf-label { font-size: 11.5px; font-weight: 650; letter-spacing: 0.12em; text-transform: uppercase; color: var(--pf-accent); }
+.pf-item-title { font-family: var(--pf-head); font-size: 22px; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; }
+.pf--gallery .pf-item-title, .pf--journal .pf-item-title { font-weight: 450; font-size: 24px; }
+.pf-subtitle { font-size: 15px; color: var(--pf-ink-2); font-style: italic; }
+.pf-meta { font-size: 13.5px; color: var(--pf-muted); }
+.pf-description { margin-top: 6px; font-size: 15.5px; color: var(--pf-ink-2); }
+.pf-description p + p { margin-top: 0.75em; }
+.pf-text { font-family: var(--pf-text); font-size: 17px; line-height: 1.65; white-space: pre-wrap; color: var(--pf-ink); }
+.pf-excerpt { margin-top: 10px; padding-left: 14px; border-left: 2px solid var(--pf-line); color: var(--pf-ink-2); }
+.pf-read {
+  align-self: flex-start; margin-top: 12px; min-height: 40px; padding: 8px 18px; cursor: pointer;
+  border: 1px solid var(--pf-accent); border-radius: 999px; background: transparent; color: var(--pf-accent);
+  font: 600 14px/1 var(--pf-body);
+}
+.pf-read[aria-expanded='true'] { background: var(--pf-accent); color: #fff; }
+.pf-reading { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--pf-line); max-width: 40rem; }
+.pf-reading-section { margin: 28px 0 8px; font-family: var(--pf-head); font-size: 13px; font-weight: 650; letter-spacing: 0.12em; text-transform: uppercase; color: var(--pf-muted); }
+.pf-reading-section:first-child, .pf-reading-title:first-child { margin-top: 0; }
+.pf-reading-title { margin: 26px 0 10px; font-family: var(--pf-text); font-size: 21px; font-weight: 500; }
+.pf-note { margin-top: 16px; font-size: 13.5px; color: var(--pf-muted); font-style: italic; }
+.pf-empty { color: var(--pf-muted); font-style: italic; }
+
+.pf-footer { border-top: 1px solid var(--pf-line); padding-block: 22px 32px; font-size: 13px; color: var(--pf-muted); }
+.pf-footer .pf-wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.pf-made { opacity: 0.8; }
+
+/* Wider screens */
+@container pf (min-width: 640px) {
+  .pf-wrap { padding-inline: 40px; }
+  .pf-hero { padding-block: 88px 64px; }
+  .pf-name { font-size: 56px; }
+  .pf-line { font-size: 20px; }
+  .pf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+  /* Writing that opens to be read takes the whole row. */
+  .pf-item:has(.pf-read[aria-expanded='true']) { grid-column: 1 / -1; }
+  .pf-item-body { padding: 24px; }
+}
+@container pf (min-width: 960px) {
+  .pf-hero { padding-block: 112px 80px; }
+  .pf-name { font-size: 68px; }
+  .pf--studio .pf-grid, .pf--venture .pf-grid { gap: 28px; }
+  .pf--gallery .pf-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 32px; }
+  .pf-main { padding-block: 64px 96px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pf-contact a, .pf-read { transition: border-color 0.15s, background-color 0.15s, color 0.15s; }
+}
+
+@media print {
+  .pf { background: #fff; }
+  .pf-hero { background: #fff; color: #000; padding-block: 0 24px; }
+  .pf-read { display: none; }
+  .pf [hidden] { display: block !important; }
+  .pf-item { break-inside: avoid; border-color: #ccc; }
+}
