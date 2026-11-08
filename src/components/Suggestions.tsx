@@ -8,6 +8,7 @@ import type { ContentType } from '../domain/types';
 import { providerFor } from '../ai';
 import { recordSuggestions } from '../db/suggestions';
 import type { ContentItem } from '../domain/types';
+import { suggestProjects } from '../domain/projectSuggest';
 import type { AIContext } from '../ai';
 import type { Settings } from '../db/settings';
 
@@ -22,7 +23,11 @@ export function PendingSuggestions({ contentId, label = true }: { contentId: str
         .toArray(),
     [contentId],
   );
-  if (!pending?.length) return null;
+  const projects = useLiveQuery(() => db.projects.toArray(), []);
+  const projectTitle = new Map((projects ?? []).map((p) => [p.id, p.title]));
+  // A Project suggestion whose Project has since been deleted has nothing to offer.
+  const shown = (pending ?? []).filter((s) => s.kind !== 'project' || projectTitle.has(s.value));
+  if (!shown.length) return null;
   return (
     <div className="mt-2 flex flex-wrap items-center gap-1.5">
       {label && (
@@ -30,10 +35,16 @@ export function PendingSuggestions({ contentId, label = true }: { contentId: str
           <Sparkles size={12} aria-hidden /> Suggested:
         </span>
       )}
-      {pending.map((s) => (
+      {shown.map((s) => (
         <SuggestedChip
           key={s.id}
-          label={s.kind === 'tags' ? `#${s.value}` : `Type: ${TYPE_LABEL[s.value as ContentType] ?? s.value}`}
+          label={
+            s.kind === 'tags'
+              ? `#${s.value}`
+              : s.kind === 'project'
+                ? `Project: ${projectTitle.get(s.value)}`
+                : `Type: ${TYPE_LABEL[s.value as ContentType] ?? s.value}`
+          }
           onAccept={() => void acceptSuggestion(s.id)}
           onDismiss={() => void dismissSuggestion(s.id)}
         />
@@ -51,5 +62,19 @@ export async function suggestFor(item: ContentItem, ctx: AIContext, settings: Se
     if (type !== item.type) await recordSuggestions(item.id, 'type', [type], provider.id);
   } catch (e) {
     console.warn('Suggestions unavailable', e);
+  }
+}
+
+/**
+ * Notes shared in from the phone: which Projects might they belong to?
+ * Worked out on the device; stored as pending suggestions only.
+ */
+export async function suggestProjectsFor(item: ContentItem): Promise<void> {
+  try {
+    const [library, projects] = await Promise.all([db.content.toArray(), db.projects.toArray()]);
+    const found = suggestProjects(item, library, projects);
+    await recordSuggestions(item.id, 'project', found.map((f) => f.projectId), 'local');
+  } catch (e) {
+    console.warn('Project suggestions unavailable', e);
   }
 }
