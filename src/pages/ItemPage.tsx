@@ -26,6 +26,7 @@ import { AssignDialog } from '../components/AssignDialog';
 import { ProjectAssignDialog } from '../components/ProjectAssignDialog';
 import { useToast } from '../components/Toast';
 import { PendingSuggestions } from '../components/Suggestions';
+import { LyricLens } from '../components/lyrics/LyricLens';
 import { AssistantPanel } from '../components/AssistantPanel';
 import { RelationsPanel } from '../components/RelationsPanel';
 import { HistoryPanel } from '../components/HistoryPanel';
@@ -251,6 +252,7 @@ function Editor({ item }: { item: ContentItem }) {
               Check spelling
             </Link>
           </p>
+          {item.type === 'song' && <LyricLens body={body} />}
         </div>
 
         <aside className="chrome space-y-6 lg:border-l lg:border-line lg:pl-6">

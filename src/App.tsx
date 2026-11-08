@@ -16,6 +16,7 @@ import { ItemPage } from './pages/ItemPage';
 import { Projects, ProjectHome } from './pages/Projects';
 import { BookBuilder } from './pages/BookBuilder';
 import { Manuscript } from './pages/Manuscript';
+import { Stage } from './pages/Stage';
 import { BookContents } from './pages/BookContents';
 import { BookMap } from './pages/BookMap';
 import { Tags } from './pages/Tags';
@@ -127,6 +128,8 @@ export default function App() {
               />
               <Route path="/projects/:id/cover" element={<CoverRoute />} />
               <Route path="/projects/:id/write" element={<WorkspaceRoute />} />
+              {/* Stage view: songs in large type for performing, outside the app chrome. */}
+              <Route path="/projects/:id/stage" element={<Stage />} />
               {/* The visitor preview is outside the app chrome too: it should look like its own website. */}
               <Route path="/portfolios/:id/preview" element={<PortfolioPreview />} />
               <Route path="/books/*" element={<BooksRedirect />} />

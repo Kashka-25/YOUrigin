@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { BookImage, BookOpenText, Download, Settings2, Sparkles, ArrowLeft, LayoutTemplate, PenLine } from 'lucide-react';
+import { BookImage, BookOpenText, Download, Settings2, Sparkles, ArrowLeft, LayoutTemplate, Mic2, PenLine } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { computeBookProgress } from '../domain/progress';
 import { BOOK_TYPE_LABEL, COVER_COLOURS, PROJECT_KIND_META, projectKind } from '../domain/constants';
@@ -97,6 +97,9 @@ export function BookBuilder() {
         <div className="flex items-center gap-2">
           {!isSetList && <Link to={`/projects/${book.id}/write`} className="btn-primary" title="Open your writing workspace">
             <PenLine size={16} /> Write
+          </Link>}
+          {(isSetList || kind === 'album') && <Link to={`/projects/${book.id}/stage`} className={isSetList ? 'btn-primary' : 'btn'} title="Songs one at a time in large type, for performing">
+            <Mic2 size={16} /> Stage view
           </Link>}
           <details className="group relative">
             <summary className="btn list-none cursor-pointer [&::-webkit-details-marker]:hidden">
