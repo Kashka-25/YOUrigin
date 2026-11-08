@@ -110,6 +110,18 @@ export function keywords(text: string): string[] {
   return out;
 }
 
+/** Like keywords(), but keeps each word as written beside its stem, so themes can be shown in real words. */
+export function keywordForms(text: string): { stem: string; word: string }[] {
+  const words = text.toLowerCase().match(/[\p{L}']+/gu) ?? [];
+  const out: { stem: string; word: string }[] = [];
+  for (let w of words) {
+    w = w.replace(/'s$/, '').replace(/'/g, '');
+    if (w.length < 3 || STOPWORDS.has(w)) continue;
+    out.push({ stem: stem(w), word: w });
+  }
+  return out;
+}
+
 export function stem(w: string): string {
   if (w.length > 5 && w.endsWith('ing')) return w.slice(0, -3);
   if (w.length > 4 && w.endsWith('ies')) return w.slice(0, -3) + 'y';
