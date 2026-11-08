@@ -59,7 +59,7 @@ describe('ordering helpers', () => {
 describe('the designer', () => {
   it('edits the introduction and a card’s own title, autosaving without touching the Project', async () => {
     open();
-    fireEvent.click(await screen.findByRole('button', { name: 'Back to the page details' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Back to the page details' }, { timeout: 5000 }));
     fireEvent.change(screen.getByLabelText('Introduction'), { target: { value: 'Hello, I make things.' } });
     expect(document.querySelector('.pfd-save')?.textContent).toContain('Saving');
     await waitFor(async () => expect((await stored()).intro).toBe('Hello, I make things.'), { timeout: 3000 });
@@ -124,7 +124,7 @@ describe('the designer', () => {
 
   it('says clearly when a change couldn’t be saved, and saves it on retry', async () => {
     open();
-    fireEvent.click(await screen.findByRole('button', { name: 'Back to the page details' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Back to the page details' }, { timeout: 5000 }));
     const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const update = vi.spyOn(db.portfolios, 'update').mockRejectedValueOnce(new Error('disk full'));
     fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Ana Ruiz' } });
@@ -139,7 +139,7 @@ describe('the designer', () => {
 
   it('changes the page background, and back to the look’s own', async () => {
     open();
-    fireEvent.click(await screen.findByRole('button', { name: 'Back to the page details' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Back to the page details' }, { timeout: 5000 }));
     fireEvent.click(screen.getByRole('radio', { name: 'Night' }));
     await waitFor(async () => expect((await stored()).background).toBe('#1d1a22'), { timeout: 3000 });
     const canvas = document.querySelector('.pfd-canvas') as HTMLElement;

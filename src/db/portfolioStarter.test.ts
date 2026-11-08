@@ -208,7 +208,7 @@ describe('starter covers and links', () => {
 
 describe('privacy', () => {
   it('no one’s ventures are built into the portfolio code', () => {
-    const names = ['Atlantean Gardens', 'Sweet Vital Nectar', 'Rhythm Relics', 'Empatherapy', 'Hopeium'];
+    const names = ['Atlantean Gardens', 'Sweet Vital Nectar', 'Rhythm Relics', 'Empatherapy', 'IntoTheLighthouse', 'Hopeium'];
     const files: string[] = [];
     const walk = (dir: string) => {
       for (const f of readdirSync(dir)) {

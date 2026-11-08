@@ -47,6 +47,8 @@ function portfolioPage(mode: string): Plugin {
 export default defineConfig(({ mode }) => ({
   // Relative base so the built app works from any static host or sub-path.
   base: './',
+  // 5199 is YOUrigin's dev port; 5173 belongs to the YOU app.
+  server: { port: 5199 },
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   plugins: [
     react(),
