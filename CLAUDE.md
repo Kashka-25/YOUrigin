@@ -40,7 +40,7 @@ Vite + React 19 + TypeScript + Dexie (IndexedDB) + Tailwind 4, vite-plugin-pwa, 
 
 - **Local-first and offline.** Everything works with no connection; the network is optional.
 - **Content exists once.** Link, place or reference pieces; never duplicate them across Projects, Works or portfolios.
-- **AI only suggests.** The assistant proposes; Cassidy decides. No silent changes to her work.
+- **AI only suggests.** The assistant proposes; Cassidy decides. No silent changes to Cassidy's work.
 - **Never weaken E2E encryption.** Plaintext content never reaches Supabase; no key escrow, no logging of passphrases or decrypted data.
 - **Port 5199** for dev; don't take 5173.
 - **Changes go through a branch + PR** to `main` (every merge deploys). Run `npm test` (and `npm run typecheck`, `npm run lint`) before opening a PR.
