@@ -34,7 +34,7 @@ See `CLAUDE.md` for context and ground rules.
 
 ## Next
 
-- [ ] **Creation Atlas** design pass (inside YOUrigin; distinct from YOU's Living Atlas and the Wandering Atlas)
+- [ ] **Creation Atlas** design pass: draft in `docs/CREATION_ATLAS.md`, awaiting Cassidy's decisions (Q1–Q6)
 - [ ] **Creation Atlas** build, after the design is agreed
 - [ ] **Lyric space** on the existing `song` type plus `album` / `setlist` Works
 - [ ] **Phone-note sorting**: Project suggestions for notes shared in from the phone
