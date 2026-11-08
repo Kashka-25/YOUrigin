@@ -274,13 +274,14 @@ export interface Template extends Syncable {
   acknowledgementsPage?: boolean;
 }
 
-export type SuggestionKind = 'tags' | 'type';
+/** 'project': value is a Project id the piece might belong to. */
+export type SuggestionKind = 'tags' | 'type' | 'project';
 export type SuggestionState = 'pending' | 'accepted' | 'dismissed';
 
 export interface AISuggestion extends Syncable {
   contentId: string;
   kind: SuggestionKind;
-  /** tags: tag name; type: content type */
+  /** tags: tag name; type: content type; project: Project id */
   value: string;
   state: SuggestionState;
   provider: string;

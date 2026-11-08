@@ -15,7 +15,7 @@ import { BulkBar } from '../components/BulkBar';
 import { useAutoGrow } from '../hooks/useAutoGrow';
 import { db, requestPersistentStorage } from '../db/db';
 import { useToast } from '../components/Toast';
-import { PendingSuggestions, suggestFor } from '../components/Suggestions';
+import { PendingSuggestions, suggestFor, suggestProjectsFor } from '../components/Suggestions';
 import { ImportDialog } from '../components/ImportDialog';
 import { takeSharedInbox } from '../io/shareInbox';
 import { dictationSupported, useDictation } from '../hooks/useDictation';
@@ -108,6 +108,8 @@ export function Gathering() {
   // Wait for settings, so the share joins an unsent draft instead of replacing it.
   const shared = settings ? params.get('shared') : null;
   const sharing = useRef(false);
+  // The next capture holds a note shared in from another app: it also gets Project suggestions.
+  const fromShare = useRef(false);
   useEffect(() => {
     if (!shared || sharing.current) return;
     sharing.current = true;
@@ -126,6 +128,7 @@ export function Gathering() {
         const next = v ? `${v}\n\n${inbox.text}` : inbox.text;
         valueRef.current = next;
         change(next);
+        fromShare.current = true;
       }
       addArt(inbox.files);
       toast('Shared to Gathering — add tags if you like, then Capture');
@@ -179,10 +182,14 @@ export function Gathering() {
       },
     });
     // Suggestions arrive in the background; they never change anything by themselves.
+    const wasShared = fromShare.current;
+    fromShare.current = false;
     if (lib) {
       for (const id of ids) {
         const item = await db.content.get(id);
-        if (item) void suggestFor(item, lib.ai, settings);
+        if (!item) continue;
+        void suggestFor(item, lib.ai, settings);
+        if (wasShared) void suggestProjectsFor(item);
       }
     }
   };

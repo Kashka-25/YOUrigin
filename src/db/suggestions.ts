@@ -25,6 +25,8 @@ export async function recordSuggestions(
       skip = new Set(names.filter((n): n is string => !!n));
     } else if (kind === 'type') {
       skip = new Set([item.type]);
+    } else if (kind === 'project') {
+      skip = new Set(item.projectIds ?? []);
     }
     const now = Date.now();
     const fresh = [...new Set(values.map((v) => (kind === 'tags' ? normaliseTagName(v) : v)))]
@@ -44,7 +46,7 @@ export async function recordSuggestions(
 }
 
 export async function acceptSuggestion(id: string): Promise<void> {
-  await db.transaction('rw', db.suggestions, db.content, db.tags, async () => {
+  await db.transaction('rw', [db.suggestions, db.content, db.tags, db.projects], async () => {
     const s = await db.suggestions.get(id);
     if (!s) return;
     const item = await db.content.get(s.contentId);
@@ -56,6 +58,12 @@ export async function acceptSuggestion(id: string): Promise<void> {
       await db.content.update(item.id, { tagIds: [...new Set([...item.tagIds, tagId])], updatedAt: now });
     } else if (s.kind === 'type') {
       await db.content.update(item.id, { type: s.value as ContentType, updatedAt: now });
+    } else if (s.kind === 'project') {
+      // The Project may have been deleted since: then there is nothing to join.
+      if (!(await db.projects.get(s.value))) return dismissSuggestion(id);
+      const ids = item.projectIds ?? [];
+      if (!ids.includes(s.value)) await db.content.update(item.id, { projectIds: [...ids, s.value], updatedAt: now });
+      await db.projects.update(s.value, { updatedAt: now });
     }
     await db.suggestions.update(id, { state: 'accepted', updatedAt: now });
   });
