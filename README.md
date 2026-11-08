@@ -14,7 +14,7 @@ It's a local-first, installable web app (PWA). It runs offline on an Android pho
 
 ```bash
 npm install
-npm run dev          # http://localhost:5173 (or the next free port)
+npm run dev          # http://localhost:5199 (5173 belongs to the YOU app)
 ```
 
 | Command | What it does |
@@ -24,7 +24,7 @@ npm run dev          # http://localhost:5173 (or the next free port)
 | `npm run build` | Type-check + production build into `dist/` (includes the offline service worker) |
 | `npm run preview` | Serve the production build locally |
 | `npm run typecheck` / `npm run lint` / `npm test` | Quality checks |
-| `npm run icons` | Re-render PNG app icons from `public/icon.svg` |
+| `npm run brand` | Regenerate the logo cut-out and the PNG app icons from `scripts/logo-source.webp` |
 
 **No environment variables are required.** (Sync uses the public Supabase URL and publishable key in `src/sync/config.ts`; override them with `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY`.) The optional Claude API key is entered in *Settings → Creative assistant*. It's stored only on that device and never included in backups.
 
