@@ -39,6 +39,6 @@ See `CLAUDE.md` for context and ground rules.
 - [ ] **Lyric space** on the existing `song` type plus `album` / `setlist` Works
 - [ ] **Phone-note sorting**: Project suggestions for notes shared in from the phone
 - [ ] **Creative Universe link**: link a Project to its Creative Universe destination, keep change notes on it, publish a snapshot Creative Universe reads at build time (extends the Portfolios publish path)
-- [ ] **Entry key / demo mode**: demo built (`?demo`: example person or blank, separate local database, no network writes, Reset, back to Creative Universe). Entry key still open: a gate hook is ready in `src/demo/mode.ts` (`demoAccessAllowed`), awaiting Cassidy's decision
+- [ ] **Entry key / demo mode**: demo built (`?demo`: example person or blank, separate local database, no network writes, Reset, back to Creative Universe). Entry key: none. Cassidy decided on 9 Nov 2026 that the demo is open to anyone
 - [ ] **Issue #12**: integrated Showcase portfolio across YOUrigin and YOU
 - [ ] Optional: rename the `/initiatives` route so Projects live at a clearer path (the Work editor currently owns `/projects/:id`)

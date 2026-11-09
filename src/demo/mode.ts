@@ -27,9 +27,9 @@ export const DEMO = readDemo();
 export const DEMO_OFFLINE_MESSAGE = 'Not available in the demo: nothing here is sent anywhere.';
 
 /**
- * An "entry key" may guard the demo later (Creative Universe's plan for YOU and YOUrigin).
- * For now every visitor may enter. A gate would check the key here and show a form
- * on the demo welcome screen when this returns false.
+ * Who may enter the demo. Cassidy decided on 9 Nov 2026 that it is open to anyone:
+ * no entry key. If that ever changes, a gate would check the key here and show a
+ * form on the demo welcome screen when this returns false.
  */
 export function demoAccessAllowed(): boolean {
   return true;
