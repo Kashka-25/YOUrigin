@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   BriefcaseBusiness, Feather, FolderKanban, FolderOpen, Hash, Images, Library, Menu,
-  Network, Search, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit,
+  Network, Search, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit, Waypoints,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { SearchPalette } from './SearchPalette';
@@ -20,6 +20,7 @@ const PRIMARY: NavDef[] = [
   { to: '/universe', label: 'My Universe', icon: Orbit },
 ];
 const SECONDARY: NavDef[] = [
+  { to: '/atlas', label: 'Creation Atlas', icon: Waypoints },
   { to: '/map', label: 'Book Map', icon: Network },
   { to: '/library?view=gallery', label: 'Gallery', icon: Images },
   { to: '/collections', label: 'Collections', icon: FolderOpen },
@@ -71,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="app-shell min-h-dvh md:flex">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 btn">Skip to content</a>
-      <aside className="app-sidebar no-print chrome sticky top-0 hidden h-dvh w-[264px] shrink-0 flex-col border-r px-4 py-6 md:flex">
+      <aside className="app-sidebar no-print chrome sticky top-0 hidden h-dvh w-[264px] shrink-0 flex-col overflow-y-auto overscroll-contain border-r px-4 py-6 md:flex">
         <div className="px-2">
           <Logo size="md" />
           <p className="mt-2 text-center font-display text-[9px] tracking-[.26em] text-[#c5a574] uppercase">Your Own Universe</p>

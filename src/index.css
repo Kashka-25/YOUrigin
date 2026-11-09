@@ -118,6 +118,9 @@
 .app-sidebar {
   background: linear-gradient(180deg, rgba(24, 18, 33, .98), rgba(13, 10, 20, .98));
   border-color: rgba(180, 150, 194, .14);
+  /* The sidebar scrolls on its own when the window is shorter than its contents. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 150, 194, .28) transparent;
 }
 .app-sidebar .nav-link {
   min-height: 44px;

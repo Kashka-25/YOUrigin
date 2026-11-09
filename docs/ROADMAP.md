@@ -32,12 +32,17 @@ See `CLAUDE.md` for context and ground rules.
 - [x] #23 Choose the page background
 - [x] #24 Starter import: covers and links for each venture
 
+**Cleanup and next steps (8 Nov 2026)**
+- [x] #25 CLAUDE.md and roadmap
+- [x] #26 IntoTheLighthouse name, dev port 5199, README, steadier test
+- [x] #28 Creation Atlas design
+
 ## Next
 
-- [ ] **Creation Atlas** design pass: draft in `docs/CREATION_ATLAS.md`, awaiting Cassidy's decisions (Q1–Q6)
-- [ ] **Creation Atlas** build, after the design is agreed
-- [ ] **Lyric space** on the existing `song` type plus `album` / `setlist` Works
-- [ ] **Phone-note sorting**: Project suggestions for notes shared in from the phone
+- [x] **Creation Atlas** design pass: agreed 8 Nov 2026, see `docs/CREATION_ATLAS.md`
+- [ ] **Creation Atlas** build: Lineage → Motifs (replaces Book Map) → The Loom, each with print/save image
+- [x] **Lyric space**, first slice (#29): Lyric view on songs, Stage view for set lists and albums. Ideas for later: chords, key/tempo, rhyme helper, album track list
+- [x] **Phone-note sorting** (#27): Project suggestions for notes shared in from the phone
 - [ ] **Creative Universe link**: YOUrigin side done (realm, address and change notes on each Project; "Export for Creative Universe" saves a portfolio as the starter pack Creative Universe imports). Still to do: Creative Universe reading `realm`, `slug` and `changes`; optionally publishing the pack online so Creative Universe fetches it at build time
 - [ ] **Entry key / demo mode**: visitors try YOUrigin as a blank or example user, fully local, never touching real data
 - [ ] **Issue #12**: integrated Showcase portfolio across YOUrigin and YOU

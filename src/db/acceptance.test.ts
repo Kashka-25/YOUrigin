@@ -204,10 +204,10 @@ describe('moving between devices', () => {
   });
 
   it('starts new books with a copyright page unless the template or writer opts out', async () => {
-    const withPage = await createBook({ title: 'Tide', templateId: 'tpl-journal', author: 'Cassidy Dugan' });
+    const withPage = await createBook({ title: 'Tide', templateId: 'tpl-journal', author: 'Cassidy Rae' });
     const book = await db.books.get(withPage);
-    expect(book?.design?.author).toBe('Cassidy Dugan');
-    expect(book?.design?.copyright).toMatch(/Copyright © \d{4} Cassidy Dugan[\s\S]*ISBN: \[insert ISBN\]/);
+    expect(book?.design?.author).toBe('Cassidy Rae');
+    expect(book?.design?.copyright).toMatch(/Copyright © \d{4} Cassidy Rae[\s\S]*ISBN: \[insert ISBN\]/);
     const without = await createBook({ title: 'Plain', templateId: 'tpl-poetry', copyrightPage: false });
     expect((await db.books.get(without))?.design?.copyright).toBeUndefined();
     expect(book?.design?.dedication).toBeUndefined(); // dedication is opt-in
