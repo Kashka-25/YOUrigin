@@ -22,6 +22,26 @@ export interface Project extends Syncable {
   /** Optional free-form category used only for filtering. Empty means uncategorised. */
   category: string;
   status: ProjectStatus;
+  /** Where this Project lives in Creative Universe, Cassidy's portfolio hub. Missing: placed by its portfolio section. */
+  universe?: UniverseLink;
+  /** What changed, in Cassidy's words, newest first. Travels with the Project to Creative Universe. */
+  changeNotes?: ChangeNote[];
+}
+
+/** A Creative Universe realm id (content/realms.json in that repo). */
+export type UniverseRealm = 'digital' | 'ventures' | 'music' | 'books' | 'art';
+
+export interface UniverseLink {
+  realm: UniverseRealm;
+  /** The work's address there; empty uses the title (as Creative Universe does). */
+  slug?: string;
+}
+
+export interface ChangeNote {
+  id: string;
+  /** When the change happened (ms). */
+  at: number;
+  text: string;
 }
 
 export type ContentType =

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { UniversePanel } from '../components/UniversePanel';
 import { ArrowLeft, ArrowUpRight, BookOpen, Link2, Plus, Search, Trash2, Unlink, Upload } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { DEFAULT_PROJECT_COLOUR, PROJECT_CATEGORIES, PROJECT_KIND_META, PROJECT_STATUS_META, TYPE_LABEL, projectKind } from '../domain/constants';
@@ -409,6 +410,7 @@ export function ProjectHome() {
           <div className="panel p-5 text-sm text-ink-2">Create a writing and creative workspace for this Project. Your notes and project details remain in place.</div>
         )}
       </section>
+      <UniversePanel key={project.id} project={project} />
       <Modal open={editing} onClose={() => void closeDetails()} title="Project details">
         <form className="space-y-4" onSubmit={saveProject}>
           <div><label className="label" htmlFor="edit-project-title">Name</label><input id="edit-project-title" className="input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} data-autofocus /></div>

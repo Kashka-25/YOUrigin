@@ -6,6 +6,7 @@ import { useAutoGrow } from '../hooks/useAutoGrow';
 import { AddItemsDialog } from '../components/portfolio/AddItemsDialog';
 import { PortfolioDesigner } from '../components/portfolio/PortfolioDesigner';
 import { PublishPanel } from '../components/portfolio/PublishPanel';
+import { UniverseExportButton } from '../components/portfolio/UniverseExportButton';
 import { BackgroundPicker } from '../components/portfolio/BackgroundPicker';
 import { useAutosave } from '../hooks/useAutosave';
 import { updatePortfolio, usePortfolio, type PortfolioPatch } from '../db/portfolios';
@@ -294,6 +295,7 @@ export function PortfolioEditor() {
         <Link to="/portfolios" className="btn-ghost -ml-3"><ArrowLeft size={16} /> Portfolios</Link>
         <div className="flex flex-wrap items-center gap-3">
           <SaveIndicator state={saveState} />
+          <UniverseExportButton portfolio={view} flush={flush} />
           <button type="button" className="btn" onClick={() => setDesignMode(true)}><Palette size={16} /> Design page</button>
           <Link to={`/portfolios/${view.id}/preview`} className="btn-primary"><Eye size={16} /> Preview as a visitor</Link>
         </div>

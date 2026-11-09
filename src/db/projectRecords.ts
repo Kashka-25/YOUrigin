@@ -1,5 +1,6 @@
 import { db } from './db';
-import type { Project, ProjectColour, ProjectStatus } from '../domain/types';
+import type { ChangeNote, Project, ProjectColour, ProjectStatus, UniverseLink } from '../domain/types';
+import { slugify } from '../domain/universe';
 import { DEFAULT_PROJECT_COLOUR } from '../domain/constants';
 import { newId } from '../domain/text';
 
@@ -36,6 +37,38 @@ export async function updateProject(id: string, patch: ProjectPatch): Promise<vo
   if (clean.title !== undefined) clean.title = clean.title.trim() || 'Untitled project';
   if (clean.category !== undefined) clean.category = clean.category.trim();
   await db.projects.update(id, { ...clean, updatedAt: Date.now() });
+}
+
+// ---- Creative Universe ------------------------------------------------------------
+
+/** Link a Project to its Creative Universe realm (null: let its portfolio section decide). */
+export async function setUniverseLink(id: string, link: UniverseLink | null): Promise<void> {
+  const slug = link?.slug ? slugify(link.slug) : '';
+  await db.projects.update(id, { universe: link ? { realm: link.realm, ...(slug ? { slug } : {}) } : undefined, updatedAt: Date.now() });
+}
+
+export const CHANGE_NOTE_MAX = 600;
+
+/** Keep a change note on a Project. Returns its id ('' when there is nothing to keep). */
+export async function addChangeNote(id: string, text: string, at = Date.now()): Promise<string> {
+  const clean = text.trim().slice(0, CHANGE_NOTE_MAX);
+  if (!clean) return '';
+  const note: ChangeNote = { id: newId(), at, text: clean };
+  await db.transaction('rw', db.projects, async () => {
+    const project = await db.projects.get(id);
+    if (!project) throw new Error('Project not found');
+    const notes = [note, ...(project.changeNotes ?? [])].sort((a, b) => b.at - a.at);
+    await db.projects.update(id, { changeNotes: notes, updatedAt: Date.now() });
+  });
+  return note.id;
+}
+
+export async function removeChangeNote(id: string, noteId: string): Promise<void> {
+  await db.transaction('rw', db.projects, async () => {
+    const project = await db.projects.get(id);
+    if (!project) return;
+    await db.projects.update(id, { changeNotes: (project.changeNotes ?? []).filter((n) => n.id !== noteId), updatedAt: Date.now() });
+  });
 }
 
 export async function addItemsToProject(projectId: string, contentIds: string[]): Promise<void> {
