@@ -54,3 +54,7 @@ export function demoBackUrl(search = typeof window !== 'undefined' ? window.loca
   }
   return DEFAULT_BACK;
 }
+
+/** YOUrigin is in beta: visitors who want in, or want to hear when it's published, write here. */
+export const BETA_EMAIL = 'YourOwnUniverse.life@gmail.com';
+export const BETA_MAILTO = `mailto:${BETA_EMAIL}?subject=${encodeURIComponent('YOUrigin beta')}`;

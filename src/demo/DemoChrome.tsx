@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, Compass, FlaskConical, RotateCcw, Sparkles, SquarePen } from 'lucide-react';
+import { ArrowLeft, Compass, FlaskConical, Mail, RotateCcw, Sparkles, SquarePen } from 'lucide-react';
 import { Logo } from '../components/Logo';
-import { demoAccessAllowed, demoBackUrl, DEMO_OFFLINE_MESSAGE } from './mode';
+import { BETA_EMAIL, BETA_MAILTO, demoAccessAllowed, demoBackUrl, DEMO_OFFLINE_MESSAGE } from './mode';
 import { resetDemo, startDemo, type DemoChoice } from './state';
 import { EXAMPLE_CREATOR, demoJourney, type DemoJourney } from './seed';
 
@@ -20,6 +20,21 @@ function journeyStops(j: DemoJourney): { to: string; title: string; text: string
     { to: `/portfolios/${j.portfolio}/preview`, title: 'A portfolio draft', text: 'How the work would look to a visitor.' },
     { to: '/', title: 'Gather your own thought', text: 'Write something. It stays in this browser.' },
   ];
+}
+
+/** YOUrigin is in beta testing: an invitation to join it, or to hear when it's published. */
+export function BetaInvite({ compact = false }: { compact?: boolean }) {
+  return (
+    <p className={compact ? 'text-[12px] leading-snug text-[#c5b8c9]' : 'text-sm leading-relaxed text-[#c5b8c9]'}>
+      <span className={compact ? 'mb-1 block text-[10px] font-semibold tracking-[.18em] text-[#d6ad6d] uppercase' : 'mb-1 block font-display text-[10px] tracking-[.24em] text-[#d6ad6d] uppercase'}>
+        YOUrigin is in beta
+      </span>
+      Want to join the beta, or hear when YOUrigin is published?{' '}
+      <a href={BETA_MAILTO} className="inline-flex items-center gap-1 font-medium text-[#f0e8df] underline decoration-[#d6ad6d]/60 underline-offset-4 hover:decoration-[#d6ad6d]">
+        <Mail size={compact ? 12 : 14} aria-hidden /> Email {BETA_EMAIL}
+      </a>
+    </p>
+  );
 }
 
 function JourneyGuide() {
@@ -45,7 +60,7 @@ function JourneyGuide() {
         <span className="sr-only sm:hidden">Guide</span>
       </button>
       {open && (
-        <nav aria-label="Example journey" className="absolute bottom-full left-1/2 mb-3 w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl border border-[#d6ad6d]/40 bg-[#1b1426] p-2 text-left shadow-2xl md:top-full md:right-0 md:bottom-auto md:left-auto md:mt-3 md:mb-0 md:translate-x-0">
+        <nav aria-label="Example journey" className="absolute bottom-full left-1/2 mb-3 max-h-[calc(100dvh-10rem)] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto -translate-x-1/2 rounded-2xl border border-[#d6ad6d]/40 bg-[#1b1426] p-2 text-left shadow-2xl md:top-full md:right-0 md:bottom-auto md:left-auto md:mt-3 md:mb-0 md:translate-x-0">
           <p className="px-2 pt-1 pb-2 text-[11px] text-[#c5b8c9]">A short journey through {EXAMPLE_CREATOR}’s codex.</p>
           <ol className="space-y-0.5">
             {journeyStops(journey).map((s, i) => (
@@ -60,6 +75,10 @@ function JourneyGuide() {
               </li>
             ))}
           </ol>
+          {/* The end of the tour. */}
+          <div className="mt-2 border-t border-white/10 px-2 pt-2.5 pb-1">
+            <BetaInvite compact />
+          </div>
         </nav>
       )}
     </div>
@@ -155,6 +174,9 @@ export function DemoWelcome() {
         <p className="mx-auto mt-8 max-w-md text-sm leading-relaxed text-[#a99ab1]">
           Everything stays in this browser on this device. The example person and their work are invented. {DEMO_OFFLINE_MESSAGE.replace('Not available in the demo: n', 'N')}
         </p>
+        <div className="mx-auto mt-6 max-w-md rounded-2xl border border-[#d6ad6d]/30 bg-white/[.03] px-5 py-4">
+          <BetaInvite />
+        </div>
         <a href={demoBackUrl()} className="mt-6 inline-flex items-center gap-1.5 text-sm text-[#c5b8c9] underline-offset-4 hover:text-white hover:underline">
           <ArrowLeft size={14} aria-hidden /> Back to Creative Universe
         </a>

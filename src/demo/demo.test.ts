@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db, ensureBuiltIns } from '../db/db';
-import { DEMO, demoAccessAllowed, demoBackUrl } from './mode';
+import { BETA_MAILTO, DEMO, demoAccessAllowed, demoBackUrl } from './mode';
 import { EXAMPLE_CREATOR, demoJourney, seedExampleCreator } from './seed';
 import { ensureWorksHaveProjects } from '../db/projectRecords';
 import { resetDemo, startDemo } from './state';
@@ -34,6 +34,10 @@ describe('demo mode', () => {
 
   it('is open to every visitor for now (an entry key could gate it later)', () => {
     expect(demoAccessAllowed()).toBe(true);
+  });
+
+  it('invites visitors to the beta by email, with a subject', () => {
+    expect(BETA_MAILTO).toBe('mailto:YourOwnUniverse.life@gmail.com?subject=YOUrigin%20beta');
   });
 
   it('goes back only to known places', () => {
