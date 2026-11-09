@@ -38,7 +38,7 @@ See `CLAUDE.md` for context and ground rules.
 - [ ] **Creation Atlas** build, after the design is agreed
 - [ ] **Lyric space** on the existing `song` type plus `album` / `setlist` Works
 - [ ] **Phone-note sorting**: Project suggestions for notes shared in from the phone
-- [ ] **Creative Universe link**: link a Project to its Creative Universe destination, keep change notes on it, publish a snapshot Creative Universe reads at build time (extends the Portfolios publish path)
+- [ ] **Creative Universe link**: YOUrigin side done (realm, address and change notes on each Project; "Export for Creative Universe" saves a portfolio as the starter pack Creative Universe imports). Still to do: Creative Universe reading `realm`, `slug` and `changes`; optionally publishing the pack online so Creative Universe fetches it at build time
 - [ ] **Entry key / demo mode**: visitors try YOUrigin as a blank or example user, fully local, never touching real data
 - [ ] **Issue #12**: integrated Showcase portfolio across YOUrigin and YOU
 - [ ] Optional: rename the `/initiatives` route so Projects live at a clearer path (the Work editor currently owns `/projects/:id`)
