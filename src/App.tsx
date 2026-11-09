@@ -18,8 +18,7 @@ import { BookBuilder } from './pages/BookBuilder';
 import { Manuscript } from './pages/Manuscript';
 import { Stage } from './pages/Stage';
 import { BookContents } from './pages/BookContents';
-import { BookMap } from './pages/BookMap';
-import { Atlas, LineagePage } from './pages/Atlas';
+import { Atlas, LineagePage, LoomPage, MotifsPage } from './pages/Atlas';
 import { Tags } from './pages/Tags';
 import { Orphans } from './pages/Orphans';
 import { Collections, CollectionPage } from './pages/Collections';
@@ -149,9 +148,12 @@ export default function App() {
                       <Route path="/projects" element={<Navigate replace to="/initiatives" />} />
                       <Route path="/projects/:id" element={<BookBuilder />} />
                       <Route path="/projects/:id/contents" element={<BookContents />} />
-                      <Route path="/map" element={<BookMap />} />
+                      {/* Book Map became the Atlas Motifs plate. */}
+                      <Route path="/map" element={<Navigate replace to="/atlas/motifs" />} />
                       <Route path="/atlas" element={<Atlas />} />
                       <Route path="/atlas/lineage/:id" element={<LineagePage />} />
+                      <Route path="/atlas/motifs" element={<MotifsPage />} />
+                      <Route path="/atlas/loom" element={<LoomPage />} />
                       <Route path="/tags" element={<Tags />} />
                       <Route path="/orphans" element={<Orphans />} />
                       <Route path="/collections" element={<Collections />} />
