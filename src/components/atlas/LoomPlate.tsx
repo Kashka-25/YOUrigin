@@ -91,7 +91,7 @@ export const LoomPlate = forwardRef<SVGSVGElement, Props>(function LoomPlate({ l
                 fontStyle={loose ? 'italic' : undefined}
                 fontSize={14}
               >
-                {clip(thread.title, narrow ? 40 : 20)}
+                {clip(thread.title, narrow ? 40 : 17)}
               </text>
             </g>
 

@@ -70,6 +70,11 @@ describe('the example creator', () => {
     expect(await db.collections.count()).toBe(2);
     expect((await db.suggestions.toArray()).every((s) => s.state === 'pending')).toBe(true);
     expect(await db.portfolios.count()).toBe(1);
+    // Change notes on the Projects with news, newest first, and a few linked to Creative Universe realms.
+    const withNotes = projects.filter((p) => p.changeNotes?.length);
+    expect(withNotes.length).toBe(4);
+    for (const p of withNotes) expect(p.changeNotes!.map((n) => n.at)).toEqual([...p.changeNotes!.map((n) => n.at)].sort((a, b) => b - a));
+    expect(projects.filter((p) => p.universe).length).toBe(3);
     // Spread over months, never in the future.
     const ages = items.map((i) => i.createdAt);
     expect(Math.max(...ages) - Math.min(...ages)).toBeGreaterThan(250 * 86_400_000);
@@ -100,6 +105,8 @@ describe('the example creator', () => {
     expect((await db.content.get(j.song))?.type).toBe('song');
     expect((await db.books.get(j.setlist))?.kind).toBe('setlist');
     expect(await db.portfolios.get(j.portfolio)).toBeDefined();
+    expect((await db.content.get(j.poem))?.title).toBe('Saltglass');
+    expect((await db.relationships.where('toId').equals(j.poem).count()) + (await db.relationships.where('fromId').equals(j.poem).count())).toBeGreaterThanOrEqual(3);
   });
 
   it('is plainly fictional and never names Cassidy or anyone real', async () => {

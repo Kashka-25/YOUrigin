@@ -362,6 +362,8 @@ and nobody says the word home.`,
 
 export interface DemoJourney {
   project: string;
+  /** A poem with a family of drafts, for the Lineage plate. */
+  poem: string;
   book: string;
   song: string;
   setlist: string;
@@ -531,6 +533,27 @@ export async function seedExampleCreator(now = Date.now()): Promise<void> {
   });
   await db.portfolios.update(portfolio, { createdAt: at(26), updatedAt: at(8) });
 
+  // Change notes and Creative Universe places on the Projects that have news.
+  const notes: Record<string, [number, string][]> = {
+    saltglass: [
+      [22, 'Settled the order: two parts, leaving and the light, with Inventory of a Beach as the interlude.'],
+      [70, 'Keeper and Rosemary placed in Part II.'],
+      [140, 'First three poems placed in Part I.'],
+    ],
+    lamplighters: [
+      [12, 'Set list for the Harbour Hall gig is ready: two sets and an encore.'],
+      [88, 'Lighthouse Hymn finished; it closes the album.'],
+      [160, 'Started the album, Night Ferry.'],
+    ],
+    'lantern-walk': [[170, 'Printed and read on the autumn walk. Forty people came.']],
+    circle: [[30, 'Six weeks in. Next term: fewer prompts, longer silences.']],
+  };
+  for (const [key, list] of Object.entries(notes))
+    await db.projects.update(project.get(key)!, { changeNotes: list.map(([d, text]) => ({ id: newId(), at: at(d), text })) });
+  await db.projects.update(project.get('saltglass')!, { universe: { realm: 'books' } });
+  await db.projects.update(project.get('lamplighters')!, { universe: { realm: 'music' } });
+  await db.projects.update(project.get('lantern-walk')!, { universe: { realm: 'books', slug: 'lantern-walk' } });
+
   // Every record keeps the time it was really made and last worked on (linking above stamped some as "now").
   await db.transaction('rw', db.content, db.books, db.projects, db.collections, async () => {
     for (const t of pieceTimes) await db.content.update(t.id, { createdAt: t.createdAt, updatedAt: t.updatedAt });
@@ -542,6 +565,6 @@ export async function seedExampleCreator(now = Date.now()): Promise<void> {
 
   await setSetting('onboarded', true);
   await setSetting('craft', 'words');
-  const journey: DemoJourney = { project: project.get('saltglass')!, book, song: piece.get('harbour-song')!, setlist: gig, portfolio };
+  const journey: DemoJourney = { project: project.get('saltglass')!, poem: piece.get('saltglass')!, book, song: piece.get('harbour-song')!, setlist: gig, portfolio };
   await db.settings.put({ key: JOURNEY_KEY, value: journey });
 }
