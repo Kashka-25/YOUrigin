@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   BriefcaseBusiness, Feather, FolderKanban, FolderOpen, Hash, Images, Library, Menu,
-  Network, Search, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit,
+  Network, Search, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit, Waypoints,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { SearchPalette } from './SearchPalette';
@@ -20,6 +20,7 @@ const PRIMARY: NavDef[] = [
   { to: '/universe', label: 'My Universe', icon: Orbit },
 ];
 const SECONDARY: NavDef[] = [
+  { to: '/atlas', label: 'Creation Atlas', icon: Waypoints },
   { to: '/map', label: 'Book Map', icon: Network },
   { to: '/library?view=gallery', label: 'Gallery', icon: Images },
   { to: '/collections', label: 'Collections', icon: FolderOpen },

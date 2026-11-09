@@ -250,6 +250,10 @@ function Editor({ item }: { item: ContentItem }) {
             {item.source.kind === 'ai-variant' ? ' · AI-assisted variant' : ''} ·{' '}
             <Link to={`/spelling?in=piece:${item.id}`} className="underline-offset-2 hover:text-ink hover:underline" onClick={() => void flush()}>
               Check spelling
+            </Link>{' '}
+            ·{' '}
+            <Link to={`/atlas/lineage/${item.id}`} className="underline-offset-2 hover:text-ink hover:underline" onClick={() => void flush()}>
+              See its lineage
             </Link>
           </p>
           {item.type === 'song' && <LyricLens body={body} />}
