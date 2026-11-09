@@ -3,6 +3,7 @@
 // Read-only: the Atlas only describes what already exists.
 
 import type { Book, BookEntry, ContentItem, ProjectKind, Relationship, Section } from './types';
+import { keywordForms } from './text';
 
 /** How a piece descends from another. */
 export type LineageVia = 'variant' | 'continues' | 'idea' | 'ai';
@@ -263,4 +264,156 @@ export function layoutLineage(lineage: Lineage, orientation: 'wide' | 'narrow', 
     for (const k of lineage.kin) place(`k:${k.id}`, 'kin', k.id, 0);
   }
   return { width: narrowWidth, height: y, boxes, lines, headings };
+}
+
+// ---- Plate III, Motifs ---------------------------------------------------------
+
+export interface MotifColumn {
+  /** A Work id, or LOOSE for pieces not yet in any Work. */
+  id: string;
+  title: string;
+  kind?: ProjectKind;
+}
+
+export interface MotifRow {
+  key: string;
+  label: string;
+  /** 'tag': one of your tags. 'word': a repeated word, only a suggestion (shown dashed). */
+  source: 'tag' | 'word';
+  tagId?: string;
+  /** Column id → the pieces in it that carry this motif. */
+  cells: Map<string, string[]>;
+  total: number;
+}
+
+export interface MotifTable {
+  columns: MotifColumn[];
+  rows: MotifRow[];
+}
+
+export const LOOSE = 'loose';
+
+export interface MotifInput {
+  items: ContentItem[];
+  tagName: Map<string, string>;
+  books: Book[];
+  entries: BookEntry[];
+  maxTags?: number;
+  maxWords?: number;
+  maxWorks?: number;
+}
+
+/**
+ * Which motifs run through which Works. Your tags lead; words that keep coming back
+ * across different Works (and aren't tags yet) follow as suggestions.
+ */
+export function buildMotifTable(input: MotifInput): MotifTable {
+  const { maxTags = 12, maxWords = 6, maxWorks = 12 } = input;
+  const live = input.items.filter((i) => !i.deletedAt && !i.archived);
+  const liveById = new Map(live.map((i) => [i.id, i]));
+  const liveIds = new Set(liveById.keys());
+
+  // Works and the pieces placed in them.
+  const inWork = new Map<string, Set<string>>();
+  const placed = new Set<string>();
+  // Archived Works are put away: their pieces count as loose here.
+  const openWorks = new Set(input.books.filter((b) => !b.archived).map((b) => b.id));
+  for (const e of input.entries) {
+    if (!liveIds.has(e.contentId) || !openWorks.has(e.bookId)) continue;
+    if (!inWork.has(e.bookId)) inWork.set(e.bookId, new Set());
+    inWork.get(e.bookId)!.add(e.contentId);
+    placed.add(e.contentId);
+  }
+  const works = input.books
+    .filter((b) => !b.archived && (inWork.get(b.id)?.size ?? 0) > 0)
+    .sort((a, b) => inWork.get(b.id)!.size - inWork.get(a.id)!.size || b.updatedAt - a.updatedAt)
+    .slice(0, maxWorks);
+  const columns: MotifColumn[] = works.map((w) => ({ id: w.id, title: w.title || 'Untitled Work', kind: w.kind ?? 'book' }));
+  const loose = live.filter((i) => !placed.has(i.id)).map((i) => i.id);
+  if (loose.length) columns.push({ id: LOOSE, title: 'Not in a Work yet' });
+  const members = new Map<string, Set<string>>(columns.map((c) => [c.id, c.id === LOOSE ? new Set(loose) : inWork.get(c.id)!]));
+
+  const fill = (has: (item: ContentItem) => boolean) => {
+    const cells = new Map<string, string[]>();
+    let total = 0;
+    for (const c of columns) {
+      const ids = [...members.get(c.id)!].filter((id) => {
+        const item = liveById.get(id);
+        return !!item && has(item);
+      });
+      if (ids.length) cells.set(c.id, ids);
+      total += ids.length;
+    }
+    return { cells, total };
+  };
+
+  // Tags: most used first, among the pieces shown on the plate.
+  const tagUse = new Map<string, number>();
+  for (const i of live) for (const t of i.tagIds) tagUse.set(t, (tagUse.get(t) ?? 0) + 1);
+  const rows: MotifRow[] = [];
+  for (const [tagId] of [...tagUse.entries()].sort((a, b) => b[1] - a[1])) {
+    if (rows.length >= maxTags) break;
+    const name = input.tagName.get(tagId);
+    if (!name) continue;
+    const { cells, total } = fill((i) => i.tagIds.includes(tagId));
+    if (total) rows.push({ key: `t:${tagId}`, label: `#${name}`, source: 'tag', tagId, cells, total });
+  }
+
+  // Repeated words: in at least two columns and three pieces, and not already a tag.
+  const tagStems = new Set([...input.tagName.values()].map((n) => n.toLowerCase()));
+  const stemPieces = new Map<string, Set<string>>();
+  const surface = new Map<string, Map<string, number>>();
+  for (const i of live) {
+    const seen = new Set<string>();
+    for (const { stem: s, word } of keywordForms(`${i.title}\n${i.body}`)) {
+      const forms = surface.get(s) ?? new Map<string, number>();
+      forms.set(word, (forms.get(word) ?? 0) + 1);
+      surface.set(s, forms);
+      if (seen.has(s)) continue;
+      seen.add(s);
+      if (!stemPieces.has(s)) stemPieces.set(s, new Set());
+      stemPieces.get(s)!.add(i.id);
+    }
+  }
+  const candidates: { stem: string; word: string; spread: number; pieces: number }[] = [];
+  for (const [s, pieces] of stemPieces) {
+    if (pieces.size < 3) continue;
+    const word = [...surface.get(s)!.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    if (tagStems.has(word) || tagStems.has(s)) continue;
+    const spread = columns.filter((c) => [...members.get(c.id)!].some((id) => pieces.has(id))).length;
+    if (spread < 2) continue;
+    candidates.push({ stem: s, word, spread, pieces: pieces.size });
+  }
+  candidates.sort((a, b) => b.spread - a.spread || b.pieces - a.pieces || a.word.localeCompare(b.word));
+  for (const c of candidates.slice(0, maxWords)) {
+    const pieces = stemPieces.get(c.stem)!;
+    const { cells, total } = fill((i) => pieces.has(i.id));
+    rows.push({ key: `w:${c.stem}`, label: c.word, source: 'word', cells, total });
+  }
+  return { columns, rows };
+}
+
+export interface MotifLayout {
+  width: number;
+  height: number;
+  labelWidth: number;
+  colWidth: number;
+  headerHeight: number;
+  rowHeight: number;
+  /** Narrow plates number their columns and name them in a key beneath. */
+  numbered: boolean;
+  keyTop: number;
+}
+
+export function layoutMotifs(table: MotifTable, availableWidth: number): MotifLayout {
+  const numbered = availableWidth < 640;
+  const labelWidth = numbered ? 112 : 170;
+  const colWidth = numbered ? Math.max(26, Math.min(40, Math.floor((availableWidth - labelWidth - 8) / Math.max(1, table.columns.length)))) : 64;
+  const headerHeight = numbered ? 30 : 120;
+  const rowHeight = 34;
+  const width = labelWidth + table.columns.length * colWidth + (numbered ? 8 : 90);
+  const tableBottom = headerHeight + table.rows.length * rowHeight + 10;
+  const keyTop = tableBottom + 12;
+  const height = numbered ? keyTop + table.columns.length * 20 + 8 : tableBottom;
+  return { width, height, labelWidth, colWidth, headerHeight, rowHeight, numbered, keyTop };
 }

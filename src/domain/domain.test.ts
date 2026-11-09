@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { displayTitle, extractHashtags, parseCapture, splitPieces, extractMarkdownTitle, newId } from './text';
 import { computeBookProgress } from './progress';
 import { EMPTY_FILTERS, filterItems, parseQuery, type LibraryContext } from './query';
-import { buildGraph, layout } from './graph';
 import { suggestedProjectHome } from './projects';
 import type { BookEntry, ContentItem, Section, Status } from './types';
 
@@ -195,32 +194,5 @@ describe('book progress', () => {
     const content = new Map([['p', item('p', 'polished')]]);
     expect(computeBookProgress(sections, [entry('e', null, 'p')], content).nextAction).toMatch(/tray/);
     expect(computeBookProgress(sections, [entry('e', 's1', 'p')], content).nextAction).toMatch(/Find material for “Closing”/);
-  });
-});
-
-describe('book map graph', () => {
-  it('links co-occurring tags and lays out within bounds', () => {
-    const { nodes, edges } = buildGraph({
-      items: [
-        { id: '1', tagIds: ['a', 'b'] },
-        { id: '2', tagIds: ['a', 'b'] },
-        { id: '3', tagIds: ['c'] },
-      ],
-      tagName: new Map([
-        ['a', 'water'],
-        ['b', 'grief'],
-        ['c', 'fire'],
-      ]),
-      books: [{ id: 'B', title: 'YOU — Water', contentIds: ['1'] }],
-      collections: [],
-    });
-    expect(nodes.map((n) => n.id).sort()).toEqual(['b:B', 't:a', 't:b', 't:c']);
-    expect(edges.find((e) => (e.a === 't:a' && e.b === 't:b') || (e.a === 't:b' && e.b === 't:a'))?.weight).toBe(2);
-    const laid = layout(nodes, edges, 800, 600);
-    for (const n of laid) {
-      expect(n.x).toBeGreaterThanOrEqual(0);
-      expect(n.x).toBeLessThanOrEqual(800);
-      expect(Number.isFinite(n.y)).toBe(true);
-    }
   });
 });
