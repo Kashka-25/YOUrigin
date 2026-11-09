@@ -35,6 +35,8 @@ import {
   type TextMode,
 } from '../portfolio/model';
 import { PROJECT_KIND_META, TYPE_LABEL, projectKind } from '../domain/constants';
+import { DEMO } from '../demo/mode';
+import { DemoOffline } from '../demo/DemoChrome';
 import { displayTitle } from '../domain/text';
 
 /** The draft fields this editor writes. Publication is never written from here. */
@@ -397,7 +399,7 @@ export function PortfolioEditor() {
                 {view.expiresAt !== null && <button type="button" className="btn-ghost" onClick={() => change({ expiresAt: null })}>No end date</button>}
               </div>
             </Field>
-            <PublishPanel portfolio={view} built={built} blockers={blockers} flush={flush} />
+            {DEMO ? <DemoOffline what="Publishing a portfolio" /> : <PublishPanel portfolio={view} built={built} blockers={blockers} flush={flush} />}
           </Section>
         </div>
 

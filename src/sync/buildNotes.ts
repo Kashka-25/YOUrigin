@@ -8,6 +8,7 @@
 // same Notion page (its Status and Claude's note are left alone).
 import type { Collection, ContentItem, Tag } from '../domain/types';
 import { getClient } from './supabase';
+import { DEMO } from '../demo/mode';
 
 export const BUILD_NOTES_PROJECT = 'YOUrigin';
 
@@ -91,6 +92,7 @@ const localDate = (ms: number) => {
 };
 
 export async function isSignedIn(): Promise<boolean> {
+  if (DEMO) return false;
   const client = await getClient();
   const { data } = await client.auth.getSession();
   return !!data.session;

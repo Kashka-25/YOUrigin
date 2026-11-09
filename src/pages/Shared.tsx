@@ -9,6 +9,8 @@ import { useToast } from '../components/Toast';
 import { ShowcaseSignIn } from '../components/ShowcasePanels';
 import { listMyShares, loadProfile, saveCounts, setKronkPostUrl, unshare, useShowcaseSession, type SharedWork } from '../showcase/api';
 import showcaseSymbol from '../assets/brand/showcase-512.webp';
+import { DEMO } from '../demo/mode';
+import { DemoOffline } from '../demo/DemoChrome';
 import { PLACEMENT_LABELS, STATUS_LABELS, kronkPostText, kronkShareUrl, type ArtistProfile } from '../showcase/model';
 
 const STATUS_CLS: Record<SharedWork['status'], string> = {
@@ -19,7 +21,19 @@ const STATUS_CLS: Record<SharedWork['status'], string> = {
 };
 
 /** Everything you've shared to YOU: its status, who saved it, Kronk, and Unshare. */
+/** Everything shared to YOU. The demo never signs in, so it only says so. */
 export function Shared() {
+  if (DEMO)
+    return (
+      <div className="mx-auto max-w-3xl px-4 pt-8 pb-28 md:px-8 md:pt-12">
+        <h1 className="page-title mb-6">Shared to YOU</h1>
+        <DemoOffline what="Sharing to YOU" />
+      </div>
+    );
+  return <SharedLibrary />;
+}
+
+function SharedLibrary() {
   const { session, ready } = useShowcaseSession();
   const [works, setWorks] = useState<SharedWork[] | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
