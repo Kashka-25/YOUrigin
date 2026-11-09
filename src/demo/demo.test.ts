@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db, ensureBuiltIns } from '../db/db';
 import { DEMO, demoAccessAllowed, demoBackUrl } from './mode';
-import { EXAMPLE_CREATOR, seedExampleCreator } from './seed';
+import { EXAMPLE_CREATOR, demoJourney, seedExampleCreator } from './seed';
+import { ensureWorksHaveProjects } from '../db/projectRecords';
 import { resetDemo, startDemo } from './state';
 import { getClient } from '../sync/supabase';
 import { isSyncEnabled } from '../sync/runtime';
@@ -46,24 +47,64 @@ describe('demo mode', () => {
 });
 
 describe('the example creator', () => {
-  it('fills a library with invented projects, writing and Works', async () => {
-    await seedExampleCreator(Date.UTC(2026, 10, 9));
+  it('fills a library with months of invented, interlinked work', async () => {
+    const now = Date.UTC(2026, 10, 9);
+    await seedExampleCreator(now);
     const projects = await db.projects.toArray();
-    expect(projects.map((p) => p.title).sort()).toEqual(['Garden Almanac', 'Paper Kite Studio', 'Saltglass Poems', 'The Lamplighters']);
+    expect(projects.map((p) => p.title).sort()).toEqual([
+      'Friday at the Harbour Hall', 'Garden Almanac', 'Lantern Walk Zine', 'Paper Kite Studio', 'Saltglass Poems', 'The Lamplighters', 'Thursday Writing Circle',
+    ]);
+    // Projects at every stage.
+    expect(new Set(projects.map((p) => p.status))).toEqual(new Set(['idea', 'building', 'resting', 'complete']));
     const books = await db.books.toArray();
-    expect(books.map((b) => b.kind ?? 'book').sort()).toEqual(['album', 'book', 'setlist']);
-    expect(await db.relationships.count()).toBeGreaterThanOrEqual(5);
+    expect(books.map((b) => b.kind ?? 'book').sort()).toEqual(['album', 'book', 'book', 'book', 'setlist']);
+    // Every Work is a Project's workspace (same id), so the app makes no extra, empty Project homes.
+    const projectIds = new Set(projects.map((p) => p.id));
+    expect(books.every((b) => projectIds.has(b.id))).toBe(true);
+    expect(await ensureWorksHaveProjects()).toEqual([]);
     const items = await db.content.toArray();
-    expect(items.filter((i) => i.type === 'song').length).toBeGreaterThanOrEqual(3);
-    // Spread over months, for the timeline.
-    const ages = items.filter((i) => i.source.kind === 'sample').map((i) => i.createdAt);
-    expect(Math.max(...ages) - Math.min(...ages)).toBeGreaterThan(200 * 86_400_000);
+    expect(items.length).toBeGreaterThanOrEqual(40);
+    expect(items.filter((i) => i.type === 'song').length).toBeGreaterThanOrEqual(6);
+    expect(await db.relationships.count()).toBeGreaterThanOrEqual(12);
+    expect(await db.revisions.count()).toBeGreaterThanOrEqual(3);
+    expect(await db.collections.count()).toBe(2);
+    expect((await db.suggestions.toArray()).every((s) => s.state === 'pending')).toBe(true);
+    expect(await db.portfolios.count()).toBe(1);
+    // Spread over months, never in the future.
+    const ages = items.map((i) => i.createdAt);
+    expect(Math.max(...ages) - Math.min(...ages)).toBeGreaterThan(250 * 86_400_000);
+    expect(Math.max(...ages, ...items.map((i) => i.updatedAt))).toBeLessThanOrEqual(now);
     expect((await db.settings.get('onboarded'))?.value).toBe(true);
+  });
+
+  it('has no broken pictures, empty Projects, empty parts of a Work or placeholder text', async () => {
+    await seedExampleCreator();
+    const assets = new Set((await db.assets.toArray()).map((a) => a.id));
+    const items = await db.content.toArray();
+    for (const i of items.filter((i) => i.type === 'image')) expect(assets.has(i.assetId!)).toBe(true);
+    for (const p of await db.projects.toArray()) {
+      expect(assets.has(p.coverAssetId!)).toBe(true);
+      expect(items.filter((i) => i.projectIds?.includes(p.id)).length).toBeGreaterThanOrEqual(4);
+    }
+    const entries = await db.entries.toArray();
+    for (const s of await db.sections.toArray()) expect(entries.some((e) => e.sectionId === s.id)).toBe(true);
+    const text = JSON.stringify(items);
+    expect(text).not.toMatch(/lorem|ipsum|placeholder|\[insert|untitled|todo/i);
+  });
+
+  it('gives the guide a real place for every stop', async () => {
+    await seedExampleCreator();
+    const j = (await demoJourney())!;
+    expect(await db.projects.get(j.project)).toBeDefined();
+    expect((await db.books.get(j.book))?.title).toBe('Saltglass');
+    expect((await db.content.get(j.song))?.type).toBe('song');
+    expect((await db.books.get(j.setlist))?.kind).toBe('setlist');
+    expect(await db.portfolios.get(j.portfolio)).toBeDefined();
   });
 
   it('is plainly fictional and never names Cassidy or anyone real', async () => {
     await seedExampleCreator();
-    const text = JSON.stringify([await db.content.toArray(), await db.projects.toArray(), await db.books.toArray(), await db.collections.toArray()]);
+    const text = JSON.stringify([await db.content.toArray(), await db.projects.toArray(), await db.books.toArray(), await db.collections.toArray(), await db.portfolios.toArray()]);
     expect(text).not.toMatch(/cassidy|dugan|rae\b|kashka|tal\b/i);
     expect(EXAMPLE_CREATOR).toBe('Juno Tidewell');
   });

@@ -37,7 +37,7 @@ describe('with ?demo', () => {
     await ensureBuiltIns();
     const before = appOutbox.size;
     await startDemo('example');
-    expect(await db.projects.count()).toBe(4);
+    expect(await db.projects.count()).toBe(7);
     expect((await db.settings.get('demo'))?.value).toBe('example');
     expect(appOutbox.size).toBe(before); // demo writes are never queued for sync
     await resetDemo();
