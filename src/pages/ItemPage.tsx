@@ -45,6 +45,7 @@ import { WordPanel } from '../components/WordPanel';
 import { ShareToYouButton } from '../components/ShareToYou';
 import { fitWord, isWordPack, wordsDb } from '../words/store';
 import { wordAt, type Ending, type Range } from '../words/morph';
+import { DEMO } from '../demo/mode';
 import { selectAndReveal } from '../words/caret';
 
 export function ItemPage() {
@@ -408,7 +409,7 @@ function Editor({ item }: { item: ContentItem }) {
             />
           </section>
 
-          <ShareToYouButton item={{ ...item, title, body }} />
+          {!DEMO && <ShareToYouButton item={{ ...item, title, body }} />}
           <RelationsPanel item={item} />
           <AssistantPanel item={{ ...item, title, body }} />
           <HistoryPanel item={item} />

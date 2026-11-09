@@ -17,6 +17,8 @@ import { WordPacks } from '../components/WordPacks';
 import { ArtistProfilePanel } from '../components/ShowcasePanels';
 import showcaseSymbol from '../assets/brand/showcase-96.webp';
 import themeSymbol from '../assets/brand/theme-96.webp';
+import { DEMO } from '../demo/mode';
+import { DemoOffline } from '../demo/DemoChrome';
 import { isEditNote, needsSending, resolveEditCategory, sendEditNote } from '../sync/buildNotes';
 
 function Section({ title, children, id, icon }: { title: string; children: React.ReactNode; id?: string; icon?: string }) {
@@ -124,7 +126,7 @@ export function Settings() {
       <h1 className="page-title">Settings</h1>
 
       <Section title="Sync between devices" id="s-sync">
-        <SyncPanel />
+        {DEMO ? <DemoOffline what="Sync between devices" /> : <SyncPanel />}
       </Section>
 
       <Section title="Edit notes → Notion" id="s-notes">
@@ -311,7 +313,7 @@ export function Settings() {
           then choose <em>Share to YOU</em> on any piece. Each share is a separate public copy that waits for approval; the rest of your codex stays
           private.
         </p>
-        <ArtistProfilePanel />
+        {DEMO ? <DemoOffline what="Showcase on YOU" /> : <ArtistProfilePanel />}
       </Section>
 
       <Section title="Dictionary and thesaurus" id="s-words">
@@ -404,6 +406,7 @@ export function Settings() {
           By default the assistant runs entirely on this device: it notices words, tags and patterns, and asks questions. Connect Claude for richer suggestions and
           alternative drafts. Suggestions never change your writing unless you accept them.
         </p>
+        {DEMO && <DemoOffline what="Connecting Claude" />}
         <div className="flex gap-2" role="radiogroup" aria-label="Assistant">
           {(
             [

@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import { Outbox } from './outbox';
+import { DEMO } from '../demo/mode';
 
 // Device-local sync bookkeeping. Deliberately separate from the library
 // database so it is never included in backups or synced itself.
@@ -15,10 +16,11 @@ let enabled = (() => {
 })();
 
 export function isSyncEnabled(): boolean {
-  return enabled;
+  return !DEMO && enabled;
 }
 
 export function setSyncEnabled(on: boolean): void {
+  if (DEMO) return; // the demo never changes the real device's sync setting
   enabled = on;
   try {
     if (on) localStorage.setItem(ENABLED_KEY, '1');

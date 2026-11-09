@@ -29,6 +29,9 @@ import { Shared } from './pages/Shared';
 import { Portfolios } from './pages/Portfolios';
 import { PortfolioEditor } from './pages/PortfolioEditor';
 import { PortfolioPreview } from './pages/PortfolioPreview';
+import { DEMO } from './demo/mode';
+import { DemoBar, DemoWelcome } from './demo/DemoChrome';
+import { useDemoChoice } from './demo/state';
 import { EmptyState, Spinner } from './components/ui';
 
 // The print designer (and its page-layout engine) only loads when opened.
@@ -112,6 +115,11 @@ function UpdateBanner() {
 export default function App() {
   const settings = useSettings();
   useTheme(settings?.theme, settings?.colourScale);
+  const demoChoice = useDemoChoice();
+
+  // The demo opens on its own front door until the visitor chooses how to explore.
+  if (DEMO && demoChoice === undefined) return <Spinner />;
+  if (DEMO && demoChoice === null) return <DemoWelcome />;
 
   return (
     <HashRouter>
@@ -119,6 +127,7 @@ export default function App() {
         <ConfirmProvider>
           <LibraryProvider>
             <UpdateBanner />
+            {DEMO && <DemoBar />}
             <Routes>
               {/* Manuscript mode is deliberately outside the app chrome: it should feel like a book. */}
               <Route path="/projects/:id/read" element={<Manuscript />} />

@@ -18,6 +18,7 @@ import type {
 import type { Portfolio } from '../portfolio/model';
 import { BUILT_IN_FAMILIES, BUILT_IN_TEMPLATES } from '../domain/constants';
 import { installChangeTracking } from '../sync/tracking';
+import { DEMO, DEMO_DB_NAME } from '../demo/mode';
 import { appOutbox, isSyncEnabled } from '../sync/runtime';
 
 export const SCHEMA_VERSION = 5;
@@ -131,9 +132,11 @@ export class YOUriginDB extends Dexie {
   }
 }
 
-export const db = new YOUriginDB();
+// The demo (?demo) gets its own database, so real writing is never opened, read or changed.
+export const db = new YOUriginDB(DEMO ? DEMO_DB_NAME : 'yourigin');
 // Records local changes for sync (a no-op until sync is set up on this device).
-installChangeTracking(db, appOutbox, isSyncEnabled);
+// Never track demo changes: they must not reach the real device's sync outbox.
+if (!DEMO) installChangeTracking(db, appOutbox, isSyncEnabled);
 
 /** Built-ins have stable ids, so this is idempotent and merge-safe. */
 export async function ensureBuiltIns(target: YOUriginDB = db): Promise<void> {

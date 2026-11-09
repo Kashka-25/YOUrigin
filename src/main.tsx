@@ -6,6 +6,7 @@ import App from './App';
 import { ensureBuiltIns } from './db/db';
 import { startSync } from './sync/controller';
 import { finishSplash } from './splash';
+import { DEMO } from './demo/mode';
 
 const root = createRoot(document.getElementById('root')!);
 
@@ -18,5 +19,6 @@ ensureBuiltIns()
       </StrictMode>,
     );
     finishSplash();
-    void startSync();
+    // The demo never syncs.
+    if (!DEMO) void startSync();
   });

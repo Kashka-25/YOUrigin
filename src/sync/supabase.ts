@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from './config';
+import { DEMO, DEMO_OFFLINE_MESSAGE } from '../demo/mode';
 import type { PushRow, RemoteRow, SyncTransport } from './engine';
 import type { KeyInfo } from './crypto';
 
@@ -7,6 +8,8 @@ let clientPromise: Promise<SupabaseClient> | null = null;
 
 /** Loaded on demand so people who never turn on sync don't download it. */
 export function getClient(): Promise<SupabaseClient> {
+  // The demo never talks to a server: sync, Showcase, publishing and edit notes all come through here.
+  if (DEMO) return Promise.reject(new Error(DEMO_OFFLINE_MESSAGE));
   clientPromise ??= import('@supabase/supabase-js').then(({ createClient }) =>
     createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       auth: { persistSession: true, autoRefreshToken: true, storageKey: 'yourigin.auth', detectSessionInUrl: false },

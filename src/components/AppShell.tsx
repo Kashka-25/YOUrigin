@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { DEMO } from '../demo/mode';
 import {
   BriefcaseBusiness, Feather, FolderKanban, FolderOpen, Hash, Images, Library, Menu,
   Network, Search, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit,
@@ -96,7 +97,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="app-main min-h-dvh flex-1">
         <header className="no-print chrome sticky top-0 z-30 hidden h-14 items-center justify-between border-b border-line/70 bg-paper/75 px-8 backdrop-blur-xl md:flex">
           <div className="flex items-center gap-2 text-xs text-muted"><span className="h-1.5 w-1.5 rounded-full bg-gold/80"/>{loc.pathname === '/' ? 'A place to begin' : loc.pathname.startsWith('/library') ? 'Your collected thoughts' : loc.pathname.startsWith('/initiatives') || loc.pathname.startsWith('/initiative/') ? 'The things you are building' : loc.pathname.startsWith('/projects') ? 'Your creative workspace' : 'Your creative codex'}</div>
-          <div className="flex items-center gap-3"><span className="text-xs text-muted">A little space to think, make and become.</span><SyncBadge compact /></div>
+          <div className="flex items-center gap-3">{/* In the demo, the demo badge sits here instead. */}{!DEMO && <span className="text-xs text-muted">A little space to think, make and become.</span>}<SyncBadge compact /></div>
         </header>
         <header className="no-print chrome sticky top-0 z-30 flex items-center justify-between border-b border-line/70 bg-paper/90 px-4 py-3 backdrop-blur-xl md:hidden">
           <Logo size="sm" />
