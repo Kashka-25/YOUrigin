@@ -32,13 +32,18 @@ See `CLAUDE.md` for context and ground rules.
 - [x] #23 Choose the page background
 - [x] #24 Starter import: covers and links for each venture
 
+**Cleanup and next steps (8 Nov 2026)**
+- [x] #25 CLAUDE.md and roadmap
+- [x] #26 IntoTheLighthouse name, dev port 5199, README, steadier test
+- [x] #28 Creation Atlas design
+
 ## Next
 
-- [ ] **Creation Atlas** design pass: draft in `docs/CREATION_ATLAS.md`, awaiting Cassidy's decisions (Q1–Q6)
-- [ ] **Creation Atlas** build, after the design is agreed
-- [ ] **Lyric space** on the existing `song` type plus `album` / `setlist` Works
-- [ ] **Phone-note sorting**: Project suggestions for notes shared in from the phone
-- [ ] **Creative Universe link**: link a Project to its Creative Universe destination, keep change notes on it, publish a snapshot Creative Universe reads at build time (extends the Portfolios publish path)
-- [ ] **Entry key / demo mode**: demo built (`?demo`: example person or blank, separate local database, no network writes, Reset, back to Creative Universe). Entry key: none. Cassidy decided on 9 Nov 2026 that the demo is open to anyone
+- [x] **Creation Atlas** design pass: agreed 8 Nov 2026, see `docs/CREATION_ATLAS.md`
+- [x] **Creation Atlas** build (#31, #32, #35): Lineage, Motifs (replaced Book Map) and The Loom, each with print and save image
+- [x] **Lyric space**, first slice (#29): Lyric view on songs, Stage view for set lists and albums. Ideas for later: chords, key/tempo, rhyme helper, album track list
+- [x] **Phone-note sorting** (#27): Project suggestions for notes shared in from the phone
+- [ ] **Creative Universe link**: YOUrigin side done (#36: realm, address and change notes on each Project; "Export for Creative Universe" saves a portfolio as the starter pack Creative Universe imports). Still to do: Creative Universe reading `realm`, `slug` and `changes`; optionally publishing the pack online so Creative Universe fetches it at build time
+- [x] **Demo mode** (#38): `?demo`, with an example person (a lived-in example codex with a guided journey) or a blank start, a separate local database, no network writes, Reset, and a way back to Creative Universe. Entry key: none. Cassidy decided on 9 Nov 2026 that the demo is open to anyone
 - [ ] **Issue #12**: integrated Showcase portfolio across YOUrigin and YOU
 - [ ] Optional: rename the `/initiatives` route so Projects live at a clearer path (the Work editor currently owns `/projects/:id`)

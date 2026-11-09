@@ -44,7 +44,7 @@ describe('KDP print-ready check', () => {
   });
 
   it('passes a well set-up book', () => {
-    const d = { ...defaultDesign('journal'), author: 'Cassidy Dugan', copyright: '© 2026 Cassidy Dugan\nISBN 978-0-00-000000-0' };
+    const d = { ...defaultDesign('journal'), author: 'Cassidy Rae', copyright: '© 2026 Cassidy Rae\nISBN 978-0-00-000000-0' };
     const cs = run([item('a')], [entry('a')], d, 120);
     for (const id of ['trim', 'pages', 'gutter', 'status', 'titlepage', 'author', 'copyright']) expect(find(cs, id)?.level).toBe('pass');
   });
@@ -78,10 +78,10 @@ describe('KDP print-ready check', () => {
   });
 
   it('offers a copyright template and flags its ISBN placeholder until filled', () => {
-    const text = copyrightTemplate(book, 'Cassidy Dugan', 2026);
-    expect(text).toContain('Copyright © 2026 Cassidy Dugan');
+    const text = copyrightTemplate(book, 'Cassidy Rae', 2026);
+    expect(text).toContain('Copyright © 2026 Cassidy Rae');
     expect(text).toMatch(/not a substitute/); // journals get a wellbeing note
-    const d = { ...defaultDesign('journal'), author: 'Cassidy Dugan', copyright: text };
+    const d = { ...defaultDesign('journal'), author: 'Cassidy Rae', copyright: text };
     expect(find(run([item('a')], [entry('a')], d), 'isbn')?.level).toBe('warn');
     const filled = { ...d, copyright: text.replace('[insert ISBN]', '979-8-0000-0000-0') };
     expect(find(run([item('a')], [entry('a')], filled), 'copyright')?.level).toBe('pass');

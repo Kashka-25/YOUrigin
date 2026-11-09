@@ -1,6 +1,6 @@
-# Creation Atlas: design pass (draft for Cassidy)
+# Creation Atlas: design
 
-Status: **proposal, nothing built.** Decisions needed are marked **Q1–Q6** at the end.
+Status: **design agreed 8 Nov 2026** (decisions at the end). Not built yet.
 
 ## What it is
 
@@ -47,17 +47,19 @@ Instead it borrows from **the atlas as a printed book**: a set of numbered *plat
 - Pure logic in `src/domain/atlas.ts` (lineage walk, loom rows, motif table) with unit tests. Drawn as inline SVG with no new dependency, so it stays light and works offline.
 - No schema change for Plates I–III: everything comes from existing tables.
 
-## Build order once agreed
+## Build order
+
+Every plate gets **Print** and **Save image** from its first version (Q6).
 
 1. Plate I, Lineage (smallest, most useful on the phone).
-2. Plate III, Motifs (replaces Book Map).
+2. Plate III, Motifs (replaces Book Map; `/map` redirects to `/atlas`).
 3. Plate II, The Loom (the largest, and the most "atlas").
 
-## Decisions for Cassidy
+## Decisions (Cassidy, 8 Nov 2026)
 
-- **Q1.** Is the "printed plates" metaphor right, or would you rather the Atlas had a single big picture?
-- **Q2.** Should the Atlas replace **Book Map** (recommended), or should the two sit side by side?
-- **Q3.** Are the names *Lineage*, *The Loom* and *Motifs* right, or do you want your own words?
-- **Q4.** Should the Loom show only Projects, or Works as their own threads too?
-- **Q5.** Should motifs come only from your tags, or also from suggested repeated words (shown dashed)?
-- **Q6.** Should a plate be printable or exportable (PDF or image) for the portfolio or Creative Universe later?
+- **Q1. Picture:** numbered **plates**, not one big picture.
+- **Q2. Book Map:** the **Atlas replaces it**. Its tag graph becomes the Motifs plate, and `/map` redirects to `/atlas`.
+- **Q3. Names:** **Lineage**, **The Loom**, **Motifs**.
+- **Q4. The Loom:** **Projects only** get threads; Works show as bands that pieces drop into.
+- **Q5. Motifs:** **your tags plus suggested repeated words**, shown dashed. A suggestion can be turned into a tag, but nothing changes by itself.
+- **Q6. Export:** **from the start**. Each plate can be printed or saved as an image (PDF via the print dialog, PNG from the SVG), for the portfolio or Creative Universe.
