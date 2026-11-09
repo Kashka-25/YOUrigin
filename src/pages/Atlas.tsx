@@ -9,13 +9,15 @@ import { EmptyState, Spinner } from '../components/ui';
 import { buildLineage, buildMotifTable, descentEdges, layoutLineage, layoutMotifs, LOOSE, type PlateBox } from '../domain/atlas';
 import { addTagsToItems } from '../db/content';
 import { MotifsPlate, type MotifCell } from '../components/atlas/MotifsPlate';
+import { LoomPlate } from '../components/atlas/LoomPlate';
+import { buildLoom, layoutLoom, LOOM_RANGES, type LoomRange } from '../domain/loom';
 import { TYPE_LABEL } from '../domain/constants';
 import { displayTitle } from '../domain/text';
 import { LineagePlate, PRINT_PALETTE, readPalette, savePlateImage } from '../components/atlas/LineagePlate';
 
 const PLATES = [
   { n: 'I', name: 'Lineage', text: 'Where a piece came from, what came from it, and where it lives in your Works.', to: '#lineage' },
-  { n: 'II', name: 'The Loom', text: 'Your Projects as threads through time, with pieces dropping into Works.', to: null },
+  { n: 'II', name: 'The Loom', text: 'Your Projects as threads through time, with pieces dropping into Works.', to: '/atlas/loom' },
   { n: 'III', name: 'Motifs', text: 'What keeps coming back, across your Works.', to: '/atlas/motifs' },
 ];
 
@@ -343,6 +345,118 @@ export function MotifsPage() {
               </button>
             </div>
           )}
+        </section>
+      )}
+    </div>
+  );
+}
+
+/** Plate II, The Loom: your Projects as threads through time. */
+export function LoomPage() {
+  const lib = useLibrary();
+  const toast = useToast();
+  const navigate = useNavigate();
+  const svg = useRef<SVGSVGElement>(null);
+  const [frame, width] = useWidth<HTMLDivElement>([lib]);
+  const printing = usePrinting();
+  const [range, setRange] = useState<LoomRange>('year');
+  const [selected, setSelected] = useState<string | null>(null);
+  // Read the clock once per visit, so the plate holds still while you look at it.
+  const [now] = useState(() => Date.now());
+
+  const loom = useMemo(() => {
+    if (!lib) return null;
+    return buildLoom({ items: lib.items, projects: lib.projects, books: lib.books, entries: lib.entries, range, now });
+  }, [lib, range, now]);
+  const layout = useMemo(() => (loom ? layoutLoom(loom, range, width) : null), [loom, range, width]);
+
+  // The Loom is read from today backwards: open it at the right-hand end.
+  useEffect(() => {
+    const el = frame.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [layout, frame]);
+
+  if (!lib || !loom || !layout) return <Spinner />;
+  const item = selected ? lib.contentById.get(selected) : undefined;
+  const itemProjects = item ? lib.projects.filter((p) => (item.projectIds ?? []).includes(p.id)) : [];
+  const itemWorks = item ? [...new Set(lib.entries.filter((e) => e.contentId === item.id).map((e) => e.bookId))].map((id) => lib.books.find((b) => b.id === id)).filter((b) => b && !b.archived) : [];
+
+  const save = async () => {
+    if (!svg.current) return;
+    try {
+      await savePlateImage(svg.current, `The Loom - ${LOOM_RANGES.find((r) => r.value === range)!.label}.png`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not save the plate');
+    }
+  };
+
+  return (
+    <div className="page-frame">
+      <PlateTools onSave={() => void save()} />
+      <header className="mb-5">
+        <p className="font-display text-[10px] tracking-[.24em] text-gold uppercase">Plate II · The Loom</p>
+        <h1 className="mt-1 font-serif text-3xl leading-tight text-ink md:text-4xl">How the making moved</h1>
+        <p className="no-print mt-2 max-w-2xl text-sm text-ink-2">
+          Each Project is a thread through time. Each piece is a knot where it was gathered: hollow while it’s a seed, half-filled while developing, full when
+          polished. A fine line drops a piece into a Work when it was placed there. Tap a knot to see the piece.
+        </p>
+      </header>
+
+      <div className="no-print mb-4 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Time range">
+        {LOOM_RANGES.map((r) => (
+          <button
+            key={r.value}
+            type="button"
+            role="radio"
+            aria-checked={range === r.value}
+            onClick={() => {
+              setRange(r.value);
+              setSelected(null);
+            }}
+            className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${range === r.value ? 'border-gold/60 bg-gold/15 text-ink' : 'border-line text-ink-2 hover:bg-paper-2'}`}
+          >
+            {r.label}
+          </button>
+        ))}
+      </div>
+
+      {loom.threads.length ? (
+        <div ref={frame} className="overflow-x-auto rounded-2xl border border-line">
+          <LoomPlate
+            ref={svg}
+            loom={loom}
+            layout={layout}
+            items={lib.contentById}
+            palette={printing ? PRINT_PALETTE : readPalette()}
+            selected={selected}
+            onSelectKnot={setSelected}
+            onOpenThread={(id) => navigate(`/initiative/${id}`)}
+          />
+        </div>
+      ) : (
+        <div ref={frame} className="panel p-5 text-sm text-ink-2">
+          Nothing was gathered in this time. Try a longer range.
+        </div>
+      )}
+
+      {item && (
+        <section className="no-print mt-6 rounded-2xl border border-line bg-card/60 p-4" aria-live="polite">
+          <p className="eyebrow">
+            {TYPE_LABEL[item.type]} · gathered {new Date(item.createdAt).toLocaleDateString()}
+          </p>
+          <h2 className="mt-1 font-serif text-2xl text-ink">{displayTitle(item)}</h2>
+          <p className="mt-1 text-sm text-ink-2">
+            {itemProjects.length ? itemProjects.map((p) => p.title).join(' · ') : 'Not in a Project'}
+            {itemWorks.length ? ` → ${itemWorks.map((b) => b!.title).join(', ')}` : ''}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link to={`/item/${item.id}`} className="btn">
+              Open the piece
+            </Link>
+            <Link to={`/atlas/lineage/${item.id}`} className="btn-ghost">
+              See its lineage
+            </Link>
+          </div>
         </section>
       )}
     </div>

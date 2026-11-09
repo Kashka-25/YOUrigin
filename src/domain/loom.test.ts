@@ -11,7 +11,7 @@ function piece(id: string, daysAgo: number, projectIds: string[] = [], extra: Pa
   return { id, title: id, body: '', type: 'poem', status: 'seed', tagIds: [], notes: '', source: { kind: 'capture' }, keepUnassigned: false, archived: false, deletedAt: null, createdAt: t, updatedAt: t, projectIds, ...extra };
 }
 const project = (id: string, title: string) => ({ id, title, description: '', category: '', status: 'building', createdAt: 0, updatedAt: 0 }) as Project;
-const work = (id: string, title: string, projectIds: string[], extra: Partial<Book> = {}) => ({ id, title, projectIds, kind: 'book', archived: false, updatedAt: 0 }) as Book & typeof extra;
+const work = (id: string, title: string, projectIds: string[]) => ({ id, title, projectIds, kind: 'book', archived: false, updatedAt: 0 }) as Book;
 const entry = (bookId: string, contentId: string, placedDaysAgo: number) => ({ id: `${bookId}-${contentId}`, bookId, contentId, sectionId: 's', order: 0, createdAt: ago(placedDaysAgo), updatedAt: 0 }) as BookEntry;
 
 function world() {
