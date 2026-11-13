@@ -376,8 +376,9 @@ export function Library() {
               Everything you capture or import appears here — no folders needed.
             </EmptyState>
           ) : (
-            <>
-              <div className="mt-2 flex items-center justify-between text-sm text-ink-2">
+            // The list sits on its own card so it reads apart from the search and filters above.
+            <section className="panel mt-5 overflow-hidden shadow-sm" aria-label="Pieces">
+              <div className="flex items-center justify-between border-b border-line bg-paper-2/50 px-4 py-2.5 text-sm text-ink-2 md:px-5">
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -393,12 +394,12 @@ export function Library() {
               {results.length === 0 ? (
                 <EmptyState title="Nothing matches">Try fewer filters, or search for a different word.</EmptyState>
               ) : (
-                <div>
+                <div className="px-3 md:px-4 [&>article:last-of-type]:border-b-0">
                   {results.slice(0, limit).map((item) => (
                     <ItemCard key={item.id} item={item} selected={selected.has(item.id)} onToggle={(shift) => onToggle(item.id, shift)} />
                   ))}
                   {results.length > limit && (
-                    <div className="py-6 text-center">
+                    <div className="border-t border-line py-6 text-center">
                       <button type="button" className="btn" onClick={() => setLimit(limit + PAGE)}>
                         Show more ({results.length - limit} remaining)
                       </button>
@@ -406,7 +407,7 @@ export function Library() {
                   )}
                 </div>
               )}
-            </>
+            </section>
       )}
 
       <BulkBar ids={[...selected]} onClear={() => setSelected(new Set())} archivedView={filters.showArchived} />
