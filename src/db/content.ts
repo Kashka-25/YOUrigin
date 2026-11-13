@@ -49,7 +49,7 @@ export async function createMany(inputs: NewContent[]): Promise<string[]> {
 export type ContentPatch = Partial<
   Pick<
     ContentItem,
-    'title' | 'body' | 'type' | 'status' | 'notes' | 'tagIds' | 'keepUnassigned' | 'archived' | 'imageLayout' | 'art' | 'inspiration' | 'processAssetIds'
+    'title' | 'body' | 'type' | 'status' | 'notes' | 'tagIds' | 'keepUnassigned' | 'archived' | 'imageLayout' | 'art' | 'inspiration' | 'processAssetIds' | 'highlights'
   >
 >;
 

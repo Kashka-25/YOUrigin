@@ -104,6 +104,18 @@ export interface ContentItem extends Syncable {
   processAssetIds?: string[];
   /** Projects this note belongs to. A note can be shared by several projects. */
   projectIds?: string[];
+  /** Highlighter marks over the writing (ranges in the body; the body itself is never changed). */
+  highlights?: Highlight[];
+}
+
+export type HighlightColour = 'yellow' | 'green' | 'blue' | 'pink' | 'orange';
+
+export interface Highlight {
+  id: string;
+  /** Character offsets into the body, end exclusive. */
+  start: number;
+  end: number;
+  colour: HighlightColour;
 }
 
 export interface ArtDetails {

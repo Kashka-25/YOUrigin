@@ -1,25 +1,33 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Camera, FolderPlus, ImagePlus, Mic, Square, Upload, X } from 'lucide-react';
+import { Camera, ImagePlus, Mic, Square, Upload, X } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { setSetting, useSettings } from '../db/settings';
 import { parseCapture, splitPieces, type SplitMode } from '../domain/text';
 import type { ContentType, Status } from '../domain/types';
 import { StatusPicker, TypeSelect, TagChip } from '../components/ui';
 import { addTagsToItems, createMany, purgeContent } from '../db/content';
-import { addToCollection, linkContent } from '../db/collections';
+import { linkContent } from '../db/collections';
+import { sendToDestinations, type Destination } from '../db/destinations';
+import { DestinationPicker } from '../components/DestinationPicker';
+import { FoldersMenu, RecentNoteBoxes } from '../components/gather/GatherHome';
 import { addImagePieces, IMAGE_ACCEPT } from '../db/assets';
 import { TagInput } from '../components/TagInput';
-import { ItemCard } from '../components/ItemCard';
 import { BulkBar } from '../components/BulkBar';
 import { useAutoGrow } from '../hooks/useAutoGrow';
 import { db, requestPersistentStorage } from '../db/db';
 import { useToast } from '../components/Toast';
-import { PendingSuggestions, suggestFor, suggestProjectsFor } from '../components/Suggestions';
+import { suggestFor, suggestProjectsFor } from '../components/Suggestions';
 import { ImportDialog } from '../components/ImportDialog';
 import { takeSharedInbox } from '../io/shareInbox';
 import { dictationSupported, useDictation } from '../hooks/useDictation';
 import { useOnline } from '../hooks/useOnline';
+
+/** " · new Project and collection made", when capturing made any. */
+function madeNote({ createdProjects, createdCollections }: { createdProjects: number; createdCollections: number }): string {
+  const made = [createdProjects ? `${createdProjects > 1 ? `${createdProjects} new Projects` : 'new Project'}` : '', createdCollections ? `${createdCollections > 1 ? `${createdCollections} new collections` : 'new collection'}` : ''].filter(Boolean);
+  return made.length ? ` · ${made.join(' and ')} made` : '';
+}
 
 export function Gathering() {
   const lib = useLibrary();
@@ -31,7 +39,7 @@ export function Gathering() {
   const [text, setText] = useState<string | null>(null);
   const [heading, setHeading] = useState('');
   const [extraTags, setExtraTags] = useState<string[]>([]);
-  const [collectionIds, setCollectionIds] = useState<string[]>([]);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // Art waiting to be captured, with previews.
   const [art, setArt] = useState<{ file: File; url: string }[]>([]);
@@ -166,15 +174,15 @@ export function Gathering() {
           source: { kind: 'capture' as const },
         })),
     );
-    for (const c of collectionIds) await addToCollection(c, ids);
+    const placed = await sendToDestinations(ids, destinations);
     setText('');
     setHeading('');
     setExtraTags([]);
-    setCollectionIds([]);
+    setDestinations([]);
     void setSetting('captureDraft', '');
     void requestPersistentStorage();
     ref.current?.focus();
-    toast(ids.length > 1 ? `Captured ${ids.length} pieces` : 'Captured', {
+    toast(`${ids.length > 1 ? `Captured ${ids.length} pieces` : 'Captured'}${madeNote(placed)}`, {
       undo: async () => {
         await purgeContent(ids);
         setText(draft);
@@ -221,17 +229,17 @@ export function Gathering() {
         );
         for (const a of ids) for (const n of noteIds) await linkContent(a, n, 'idea');
       }
-      for (const c of collectionIds) await addToCollection(c, [...ids, ...noteIds]);
+      const placed = await sendToDestinations([...ids, ...noteIds], destinations);
       art.forEach((a) => URL.revokeObjectURL(a.url));
       setArt([]);
       setText('');
       setHeading('');
       setExtraTags([]);
-      setCollectionIds([]);
+      setDestinations([]);
       void setSetting('captureDraft', '');
       void requestPersistentStorage();
       const all = [...ids, ...noteIds];
-      toast(ids.length > 1 ? `Added ${ids.length} artworks` : 'Artwork added', { undo: () => purgeContent(all) });
+      toast(`${ids.length > 1 ? `Added ${ids.length} artworks` : 'Artwork added'}${madeNote(placed)}`, { undo: () => purgeContent(all) });
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not add that image');
     } finally {
@@ -245,7 +253,7 @@ export function Gathering() {
         ? lib.items
             .filter((i) => !i.deletedAt && !i.archived)
             .sort((a, b) => b.createdAt - a.createdAt)
-            .slice(0, 8)
+            .slice(0, 10)
         : [],
     [lib],
   );
@@ -361,6 +369,9 @@ export function Gathering() {
                 <Camera size={16} /> Photo
               </button>
             )}
+            <button type="button" className="btn-ghost text-sm" onClick={() => setImportOpen(true)}>
+              <Upload size={16} /> Import files
+            </button>
             <input
               ref={pickRef}
               type="file"
@@ -397,33 +408,7 @@ export function Gathering() {
               />
             </div>
           </div>
-          {lib && lib.collections.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              {collectionIds.map((id) => (
-                <span key={id} className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-0.5 text-xs text-ink-2">
-                  <FolderPlus size={12} aria-hidden /> {lib.ctx.collectionName.get(id)}
-                  <button type="button" aria-label="Remove collection" onClick={() => setCollectionIds((x) => x.filter((c) => c !== id))}>
-                    <X size={12} />
-                  </button>
-                </span>
-              ))}
-              <select
-                aria-label="Add to a collection"
-                className="rounded-full border border-line bg-card px-2.5 py-1 text-xs text-ink-2"
-                value=""
-                onChange={(e) => e.target.value && setCollectionIds((x) => [...new Set([...x, e.target.value])])}
-              >
-                <option value="">+ Collection</option>
-                {lib.collections
-                  .filter((c) => !collectionIds.includes(c.id))
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-          )}
+          <DestinationPicker value={destinations} onChange={setDestinations} />
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-line/70 bg-card/65 px-4 py-3">
@@ -448,40 +433,30 @@ export function Gathering() {
         </div>
       </form>
 
-      <div className="mt-6 flex justify-end">
-        <button type="button" className="btn-ghost" onClick={() => setImportOpen(true)}>
-          <Upload size={15} /> Import files
-        </button>
-      </div>
+      <FoldersMenu />
 
       {recent.length > 0 && (
         <section className="mt-8" aria-labelledby="recent-h">
           <div className="flex items-baseline justify-between">
             <h2 id="recent-h" className="eyebrow">
-              Just gathered
+              Recent notes
             </h2>
             <Link to="/library" className="text-sm text-ink-2 hover:text-ink">
               Library →
             </Link>
           </div>
-          <div className="mt-1">
-            {recent.map((item) => (
-              <ItemCard
-                key={item.id}
-                item={item}
-                selected={selected.has(item.id)}
-                onToggle={() =>
-                  setSelected((x) => {
-                    const next = new Set(x);
-                    if (next.has(item.id)) next.delete(item.id);
-                    else next.add(item.id);
-                    return next;
-                  })
-                }
-                extra={<PendingSuggestions contentId={item.id} />}
-              />
-            ))}
-          </div>
+          <RecentNoteBoxes
+            items={recent}
+            selected={selected}
+            onToggle={(id) =>
+              setSelected((x) => {
+                const next = new Set(x);
+                if (next.has(id)) next.delete(id);
+                else next.add(id);
+                return next;
+              })
+            }
+          />
           <BulkBar ids={[...selected].filter((id) => recent.some((r) => r.id === id))} onClear={() => setSelected(new Set())} />
         </section>
       )}

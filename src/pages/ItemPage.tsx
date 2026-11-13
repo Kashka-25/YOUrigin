@@ -27,6 +27,8 @@ import { ProjectAssignDialog } from '../components/ProjectAssignDialog';
 import { useToast } from '../components/Toast';
 import { PendingSuggestions } from '../components/Suggestions';
 import { LyricLens } from '../components/lyrics/LyricLens';
+import { HighlighterPen } from '../components/HighlighterPen';
+import { addHighlight, eraseHighlight, HIGHLIGHT_COLOURS, highlightRuns, shiftHighlights } from '../domain/highlights';
 import { AssistantPanel } from '../components/AssistantPanel';
 import { RelationsPanel } from '../components/RelationsPanel';
 import { HistoryPanel } from '../components/HistoryPanel';
@@ -40,7 +42,7 @@ import { EditNotePanel } from '../components/EditNotePanel';
 import { useSettings } from '../db/settings';
 import { isEditNote, resolveEditCategory } from '../sync/buildNotes';
 import type { ImageLayout } from '../domain/types';
-import type { ContentItem } from '../domain/types';
+import type { ContentItem, Highlight, HighlightColour } from '../domain/types';
 import { WordPanel } from '../components/WordPanel';
 import { ShareToYouButton } from '../components/ShareToYou';
 import { fitWord, isWordPack, wordsDb } from '../words/store';
@@ -92,6 +94,9 @@ function Editor({ item }: { item: ContentItem }) {
   const [bodyEl, setBodyEl] = useState<HTMLTextAreaElement | null>(null);
   const [lookup, setLookup] = useState<Range | null>(null);
   const hasWords = useLiveQuery(async () => (await wordsDb.packs.toArray()).some((p) => isWordPack(p.id)), []);
+  // Highlighter marks travel with the writing: each change of the body moves them with their words.
+  const [marks, setMarks] = useState<Highlight[]>(item.highlights ?? []);
+  const marksRef = useRef(marks);
   const latest = useRef({ title, body, notes });
   useEffect(() => {
     latest.current = { title, body, notes };
@@ -100,15 +105,31 @@ function Editor({ item }: { item: ContentItem }) {
   const save = useCallback(
     async (v: { title: string; body: string; notes: string }) => {
       await snapshotRevision(item.id);
-      await updateContent(item.id, v);
+      await updateContent(item.id, { ...v, highlights: marksRef.current });
     },
     [item.id],
   );
   const { state, schedule, flush } = useAutosave(save);
+  const setMarksNow = (next: Highlight[]) => {
+    marksRef.current = next;
+    setMarks(next);
+  };
+  const changeBody = (nextBody: string) => {
+    setMarksNow(shiftHighlights(latest.current.body, nextBody, marksRef.current));
+    setBody(nextBody);
+  };
+  /** Highlight (or erase) what is selected in the writing. */
+  const mark = (colour: HighlightColour | 'erase') => {
+    if (!bodyEl) return;
+    const { selectionStart: a, selectionEnd: b } = bodyEl;
+    setMarksNow(colour === 'erase' ? eraseHighlight(marksRef.current, a, b) : addHighlight(marksRef.current, a, b, colour));
+    schedule({ ...latest.current });
+    if (colour !== 'erase' && a !== b) requestAnimationFrame(() => bodyEl.setSelectionRange(b, b));
+  };
   const edit = (patch: Partial<{ title: string; body: string; notes: string }>) => {
     const next = { title, body, notes, ...patch };
     if (patch.title !== undefined) setTitle(patch.title);
-    if (patch.body !== undefined) setBody(patch.body);
+    if (patch.body !== undefined) changeBody(patch.body);
     if (patch.notes !== undefined) setNotes(patch.notes);
     schedule(next);
   };
@@ -146,7 +167,7 @@ function Editor({ item }: { item: ContentItem }) {
       const cur = latest.current;
       if (cur.body.slice(r.start, r.start + from.length) !== from) return;
       const nextBody = cur.body.slice(0, r.start) + to + cur.body.slice(r.start + from.length);
-      setBody(nextBody);
+      changeBody(nextBody);
       schedule({ ...cur, body: nextBody });
       requestAnimationFrame(() => {
         bodyEl?.focus({ preventScroll: true });
@@ -162,6 +183,7 @@ function Editor({ item }: { item: ContentItem }) {
   useEffect(() => {
     if (state === 'saved') {
       setTitle(item.title);
+      if (item.body !== latest.current.body) setMarksNow(shiftHighlights(latest.current.body, item.body, marksRef.current));
       setBody(item.body);
       setNotes(item.notes);
     }
@@ -247,14 +269,30 @@ function Editor({ item }: { item: ContentItem }) {
           <label htmlFor="item-body" className={item.type === 'image' ? 'label mt-5' : 'sr-only'}>
             {item.type === 'image' ? 'Caption (optional)' : 'Writing'}
           </label>
-          <AutoTextarea
-            id="item-body"
-            value={body}
-            onChange={(v) => edit({ body: v })}
-            onBlur={() => void flush()}
-            inputRef={setBodyEl}
-            className="writing mt-5 w-full resize-none bg-transparent text-[1.15rem] leading-[1.8] text-ink focus:outline-none focus-visible:outline-none"
-          />
+          {item.type !== 'image' && <HighlighterPen onMark={mark} />}
+          <div className="relative mt-3">
+            {/* The highlighter's marks, drawn behind the writing in exactly the same type. */}
+            <div aria-hidden className="writing pointer-events-none absolute inset-0 w-full text-[1.15rem] leading-[1.8] text-transparent">
+              {highlightRuns(body, marks).map((r, i) =>
+                r.colour ? (
+                  <mark key={i} className="rounded-[3px] text-transparent" style={{ background: HIGHLIGHT_COLOURS.find((c) => c.value === r.colour)!.fill }}>
+                    {r.text}
+                  </mark>
+                ) : (
+                  <span key={i}>{r.text}</span>
+                ),
+              )}
+              {'​'}
+            </div>
+            <AutoTextarea
+              id="item-body"
+              value={body}
+              onChange={(v) => edit({ body: v })}
+              onBlur={() => void flush()}
+              inputRef={setBodyEl}
+              className="writing relative block w-full resize-none bg-transparent text-[1.15rem] leading-[1.8] text-ink focus:outline-none focus-visible:outline-none"
+            />
+          </div>
           <p className="mt-4 text-xs text-muted">
             {wordCount(body)} words · gathered {new Date(item.createdAt).toLocaleDateString()}
             {item.source.kind === 'import' && item.source.fileName ? ` · imported from ${item.source.fileName}` : ''}
