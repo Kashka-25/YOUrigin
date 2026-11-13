@@ -42,7 +42,6 @@ export function Orphans() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 pt-8 md:px-8 md:pt-12">
-      <p className="eyebrow">Unclaimed material</p>
       <h1 className="page-title">Orphans</h1>
       <p className="mt-2 max-w-2xl text-[15px] text-ink-2">
         Pieces that don’t belong to a book or collection yet. Not unfinished, not failures — just waiting to be found. Nothing here moves unless you move it.

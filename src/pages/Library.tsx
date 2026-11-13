@@ -111,7 +111,7 @@ export function Library() {
   return (
     <div className="page-frame">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div><p className="eyebrow mb-2">The things you have gathered</p><h1 className="page-title">Your Library</h1><p className="mt-2 max-w-xl font-serif text-lg text-ink-2">A living archive of thoughts, fragments, images and discoveries.</p></div>
+        <div><h1 className="page-title">Library</h1></div>
         <div className="flex gap-2">
           <button type="button" className="btn" onClick={() => setImportOpen(true)}>
             <Upload size={15} /> Import

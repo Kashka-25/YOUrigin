@@ -252,7 +252,7 @@ export function Gathering() {
 
   return (
     <div className="page-gather mx-auto">
-      <div className="mb-8 text-center"><p className="eyebrow mb-3">The beginning of everything</p><h1 className="gather-heading">Make room for a thought.</h1><p className="gather-subtitle mt-3">A quiet place to collect what is moving through you.</p><div className="mx-auto mt-6 h-px w-20 bg-gradient-to-r from-transparent via-gold/70 to-transparent" /></div>
+      <h1 className="sr-only">Gather</h1>
 
       <form
         onSubmit={(e) => {

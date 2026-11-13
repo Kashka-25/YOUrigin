@@ -1,9 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { DEMO } from '../demo/mode';
 import {
   BriefcaseBusiness, Feather, FolderKanban, FolderOpen, Hash, Images, Library, Menu,
-  Search, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit, Waypoints,
+  Search, MoreHorizontal, ChevronDown, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit, Waypoints,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { SearchPalette } from './SearchPalette';
@@ -32,6 +31,9 @@ const SECONDARY: NavDef[] = [
   { to: '/settings', label: 'Settings & backup', icon: Settings },
   { to: '/trash', label: 'Trash', icon: Trash2 },
 ];
+/** Studio tools always shown in the desktop sidebar; the rest sit behind More. */
+const SIDEBAR_KEEP = ['/atlas', '/collections'];
+
 const MOBILE_PRIMARY: NavDef[] = PRIMARY.filter((item) => item.to !== '/universe');
 const MOBILE_MORE: NavDef[] = [{ to: '/universe', label: 'My Universe', icon: Orbit }, ...SECONDARY];
 function isTyping(el: EventTarget | null) {
@@ -85,19 +87,26 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav aria-label="Main" className="space-y-1">{PRIMARY.map((i) => navItem(i))}</nav>
         {recent.length > 0 && <div className="mt-8">
           <p className="eyebrow px-3">Recently opened</p>
-          <ul className="mt-2 space-y-1">{recent.map((b) => <li key={b.id}><NavLink to={`/initiative/${b.id}`} className={({isActive}) => `block truncate rounded-lg px-3 py-2 font-serif text-[15px] transition-colors ${isActive ? 'bg-white/10 text-[#f2e3c8]' : 'text-[#a99ab1] hover:bg-white/[.05] hover:text-white'}`}>{b.title}</NavLink></li>)}</ul>
+          <ul className="mt-2 space-y-1">{recent.slice(0, 3).map((b) => <li key={b.id}><NavLink to={`/initiative/${b.id}`} className={({isActive}) => `block truncate rounded-lg px-3 py-2 font-serif text-[15px] transition-colors ${isActive ? 'bg-white/10 text-[#f2e3c8]' : 'text-[#a99ab1] hover:bg-white/[.05] hover:text-white'}`}>{b.title}</NavLink></li>)}</ul>
         </div>}
         <div className="mt-auto border-t border-white/10 pt-4">
-          <p className="eyebrow mb-2 px-3">Studio tools</p>
-          <nav aria-label="More" className="space-y-0.5">{SECONDARY.map((i) => navItem(i, i.to === '/orphans' ? orphanCount : undefined))}</nav>
+          {/* The essentials stay in view; everything else waits behind More. */}
+          <nav aria-label="Studio" className="space-y-0.5">{SECONDARY.filter((i) => SIDEBAR_KEEP.includes(i.to)).map((i) => navItem(i))}</nav>
+          <details className="group mt-1">
+            <summary className="nav-link flex cursor-pointer list-none items-center gap-3 rounded-xl px-3 py-2 text-sm [&::-webkit-details-marker]:hidden">
+              <MoreHorizontal size={18} strokeWidth={1.7} aria-hidden /> <span className="flex-1">More</span>
+              <ChevronDown size={15} className="transition-transform group-open:rotate-180" aria-hidden />
+            </summary>
+            <nav aria-label="More" className="mt-0.5 space-y-0.5">{SECONDARY.filter((i) => !SIDEBAR_KEEP.includes(i.to)).map((i) => navItem(i, i.to === '/orphans' ? orphanCount : undefined))}</nav>
+          </details>
           <div className="mt-4 flex items-center justify-between px-3"><SyncBadge /><span className="sidebar-muted text-[11px]">{online ? 'Local-first · Online' : 'Offline · Ready'}</span></div>
           {!online && <p className="sidebar-muted mt-2 flex items-center gap-2 px-3 text-xs"><WifiOff size={13}/> Everything still works offline</p>}
         </div>
       </aside>
       <div className="app-main min-h-dvh flex-1">
         <header className="no-print chrome sticky top-0 z-30 hidden h-14 items-center justify-between border-b border-line/70 bg-paper/75 px-8 backdrop-blur-xl md:flex">
-          <div className="flex items-center gap-2 text-xs text-muted"><span className="h-1.5 w-1.5 rounded-full bg-gold/80"/>{loc.pathname === '/' ? 'A place to begin' : loc.pathname.startsWith('/library') ? 'Your collected thoughts' : loc.pathname.startsWith('/initiatives') || loc.pathname.startsWith('/initiative/') ? 'The things you are building' : loc.pathname.startsWith('/projects') ? 'Your creative workspace' : 'Your creative codex'}</div>
-          <div className="flex items-center gap-3">{/* In the demo, the demo badge sits here instead. */}{!DEMO && <span className="text-xs text-muted">A little space to think, make and become.</span>}<SyncBadge compact /></div>
+          <div />
+          <div className="flex items-center gap-3"><SyncBadge compact /></div>
         </header>
         <header className="no-print chrome sticky top-0 z-30 flex items-center justify-between border-b border-line/70 bg-paper/90 px-4 py-3 backdrop-blur-xl md:hidden">
           <Logo size="sm" />
