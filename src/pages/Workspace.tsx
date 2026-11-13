@@ -18,7 +18,7 @@ import { AutoTextarea } from '../components/AutoTextarea';
 import { AssetImage } from '../components/AssetImage';
 import { EmptyState, SaveIndicator, Spinner, StatusPicker } from '../components/ui';
 
-const DOT: Record<Status, string> = { seed: 'bg-seed', developing: 'bg-developing', polished: 'bg-polished' };
+const DOT: Record<Status, string> = { none: 'border border-line bg-transparent', seed: 'bg-seed', developing: 'bg-developing', polished: 'bg-polished' };
 const TRAY_ID = 'tray';
 
 type Group = { section: Section | null; entries: { entry: BookEntry; item: ContentItem }[] };

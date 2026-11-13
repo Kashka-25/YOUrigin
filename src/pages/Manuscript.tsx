@@ -8,7 +8,7 @@ import { AssetImage } from '../components/AssetImage';
 import { displayTitle } from '../domain/text';
 import type { Status } from '../domain/types';
 
-const STATUS_DOT: Record<Status, string> = { seed: 'bg-seed', developing: 'bg-developing', polished: 'bg-polished' };
+const STATUS_DOT: Record<Status, string> = { none: 'border border-line bg-transparent', seed: 'bg-seed', developing: 'bg-developing', polished: 'bg-polished' };
 
 /** Scroll to an element by id (plain #anchors would clash with the app's hash routing). */
 function jump(id: string) {

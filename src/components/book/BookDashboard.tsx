@@ -24,8 +24,8 @@ export function BookDashboard({ progress }: { progress: BookProgress }) {
         </div>
         <div className="space-y-3">
           <ProgressBar value={progress.structure} label="Structure — sections with material" />
-          <ProgressBar value={progress.content} label="Writing — pieces grown past seed" />
-          <ProgressBar value={progress.editing} label="Editing — pieces polished" tone="polished" />
+          <ProgressBar value={progress.content} label="Writing — pieces past red" />
+          <ProgressBar value={progress.editing} label="Editing — pieces on green" tone="polished" />
           <div className="flex items-start gap-2 rounded-xl bg-paper-2 px-4 py-3">
             <Compass size={18} className="mt-0.5 shrink-0 text-accent" aria-hidden />
             <p className="text-[15px]">

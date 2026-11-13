@@ -6,9 +6,9 @@ import { BOOK_TYPE_LABEL, PROJECT_KIND_META, projectKind } from '../domain/const
 import { groupByShelf, shelfNames } from '../domain/projects';
 import type { Book, BookType, ProjectKind, Template } from '../domain/types';
 import { createBook, deleteTemplate, renameShelf, saveTemplate } from '../db/books';
+import { CoverPicture } from '../components/CoverPicture';
 import { Modal, useConfirm } from '../components/Modal';
 import { EmptyState, Spinner } from '../components/ui';
-import { coverColour } from '../components/BookCover';
 import { ProjectKindPicker } from '../components/ProjectKindPicker';
 
 const TITLE_HINT: Record<ProjectKind, string> = {
@@ -60,9 +60,7 @@ export function Books() {
     <div className="page-frame">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="eyebrow mb-2">Your creative world, taking shape</p>
           <h1 className="page-title">Works</h1>
-          <p className="mt-3 max-w-xl font-serif text-lg text-ink-2">The individual creative outputs that live within your Projects — books, albums, set lists, collections and other pieces.</p>
         </div>
         <button type="button" className="btn-primary" onClick={() => startNew()}>
           <Plus size={16} /> New work
@@ -310,8 +308,8 @@ function ProjectCard({ book: b, lib }: { book: Book; lib: LibraryData }) {
   const pieceCount = lib.entries.filter((entry) => entry.bookId === b.id).length;
   return (
     <Link to={`/projects/${b.id}`} className="archive-card group block overflow-hidden">
-      <div className="h-1.5" style={{ background: coverColour(b.cover) }} />
-      <div className="p-6">
+      <CoverPicture assetId={b.coverAssetId} colour={lib.projects.find((p) => (b.projectIds ?? []).includes(p.id) || p.id === b.id)?.colour} seed={b.id} className="aspect-[16/7] w-full" />
+      <div className="p-5">
         <p className="eyebrow">{kind === 'book' ? BOOK_TYPE_LABEL[b.type] : PROJECT_KIND_META[kind].label}</p>
         <h3 className="mt-1 font-serif text-2xl leading-tight group-hover:underline">{b.title}</h3>
         {b.subtitle && <p className="mt-1 font-serif text-ink-2 italic">{b.subtitle}</p>}

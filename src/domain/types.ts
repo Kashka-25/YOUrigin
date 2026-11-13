@@ -1,7 +1,8 @@
 // Core data model. Content is independent from structure: books, collections
 // and relationships only ever *reference* content by id.
 
-export type Status = 'seed' | 'developing' | 'polished';
+/** Traffic-light status for a piece: none, red (seed), amber (developing), green (polished). */
+export type Status = 'none' | 'seed' | 'developing' | 'polished';
 
 export type ProjectStatus = 'idea' | 'building' | 'resting' | 'complete';
 

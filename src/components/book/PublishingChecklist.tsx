@@ -114,9 +114,9 @@ export function PublishingChecklist({ book }: { book: Book }) {
 
 function StatusDots({ status }: { status: { seed: number; developing: number; polished: number } }) {
   const parts = [
-    { k: 'polished', n: status.polished, dot: 'bg-polished', label: 'polished' },
-    { k: 'developing', n: status.developing, dot: 'bg-developing', label: 'developing' },
-    { k: 'seed', n: status.seed, dot: 'bg-seed', label: 'seed' },
+    { k: 'polished', n: status.polished, dot: 'bg-polished', label: 'green' },
+    { k: 'developing', n: status.developing, dot: 'bg-developing', label: 'amber' },
+    { k: 'seed', n: status.seed, dot: 'bg-seed', label: 'red' },
   ].filter((p) => p.n);
   if (!parts.length) return <span className="text-muted">–</span>;
   return (

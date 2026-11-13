@@ -63,6 +63,16 @@ export function ItemPage() {
   return <Editor key={item.id} item={item} />;
 }
 
+/** "2 Works · 1 Project", leaving out what doesn't apply. */
+function livesIn(works: number, projects: number, collections: number): string {
+  const parts = [
+    works ? `${works} ${works === 1 ? 'Work' : 'Works'}` : '',
+    projects ? `${projects} ${projects === 1 ? 'Project' : 'Projects'}` : '',
+    collections ? `${collections} ${collections === 1 ? 'collection' : 'collections'}` : '',
+  ].filter(Boolean);
+  return parts.length ? parts.join(' · ') : 'not placed yet';
+}
+
 function Editor({ item }: { item: ContentItem }) {
   const lib = useLibrary();
   const settings = useSettings();
@@ -360,6 +370,14 @@ function Editor({ item }: { item: ContentItem }) {
             <PendingSuggestions contentId={item.id} />
           </section>
 
+          {/* Where the piece lives, folded into one quiet row (with counts) until opened. */}
+          <details className="group rounded-xl border border-line">
+            <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-ink hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
+              <span className="shrink-0">Where it lives</span>
+              <span className="min-w-0 truncate font-normal text-muted">{livesIn(lib.ctx.booksOf.get(item.id)?.size ?? 0, projects.length, lib.ctx.collectionsOf.get(item.id)?.size ?? 0)}</span>
+              <ChevronDown size={16} className="ml-auto shrink-0 text-muted transition-transform group-open:rotate-180" aria-hidden />
+            </summary>
+            <div className="space-y-6 px-3 pt-2 pb-4">
           <section>
             <div className="flex items-center justify-between">
               <h2 className="label">Works</h2>
@@ -437,6 +455,16 @@ function Editor({ item }: { item: ContentItem }) {
             )}
           </section>
 
+            </div>
+          </details>
+
+          {/* Notes to self, links, the assistant and history: there when wanted, out of the way when writing. */}
+          <details className="group rounded-xl border border-line">
+            <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-ink hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
+              Notes, links & helpers
+              <ChevronDown size={16} className="ml-auto shrink-0 text-muted transition-transform group-open:rotate-180" aria-hidden />
+            </summary>
+            <div className="space-y-6 px-3 pt-2 pb-4">
           <section>
             <label className="label" htmlFor="item-notes">
               Notes to self
@@ -455,6 +483,8 @@ function Editor({ item }: { item: ContentItem }) {
           <RelationsPanel item={item} />
           <AssistantPanel item={{ ...item, title, body }} />
           <HistoryPanel item={item} />
+            </div>
+          </details>
 
           <section className="flex flex-wrap gap-2 border-t border-line pt-4">
             <button

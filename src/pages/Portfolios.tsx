@@ -144,7 +144,6 @@ export function Portfolios() {
     <div className="page-frame">
       <header className="page-intro flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="eyebrow mb-2">Your work, presented</p>
           <h1 className="page-title">Portfolios</h1>
           <p className="mt-3 max-w-xl font-serif text-lg text-ink-2">
             Curated pages made from the Projects, Works and pieces you choose, to send to an employer, collaborator, investor or client.

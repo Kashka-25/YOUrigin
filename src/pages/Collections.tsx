@@ -16,7 +16,6 @@ export function Collections() {
   const cols = [...lib.collections].sort((a, b) => b.updatedAt - a.updatedAt);
   return (
     <div className="mx-auto max-w-4xl px-4 pt-8 md:px-8 md:pt-12">
-      <p className="eyebrow">Loose groupings, lighter than books</p>
       <h1 className="page-title">Collections</h1>
       <form
         className="mt-6 flex max-w-md gap-2"

@@ -23,7 +23,9 @@ const VIEWS: { id: View; label: string }[] = [
 ];
 
 // Static class names so Tailwind can see them.
+const STATUS_DOT: Record<Status, string> = { none: 'border border-muted', seed: 'bg-seed', developing: 'bg-developing', polished: 'bg-polished' };
 const STATUS_ON: Record<Status, string> = {
+  none: 'border-ink-2 bg-paper-2 text-ink',
   seed: 'border-seed bg-seed-bg text-seed',
   developing: 'border-developing bg-developing-bg text-developing',
   polished: 'border-polished bg-polished-bg text-polished',
@@ -111,7 +113,7 @@ export function Library() {
   return (
     <div className="page-frame">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div><p className="eyebrow mb-2">The things you have gathered</p><h1 className="page-title">Your Library</h1><p className="mt-2 max-w-xl font-serif text-lg text-ink-2">A living archive of thoughts, fragments, images and discoveries.</p></div>
+        <div><h1 className="page-title">Library</h1></div>
         <div className="flex gap-2">
           <button type="button" className="btn" onClick={() => setImportOpen(true)}>
             <Upload size={15} /> Import
@@ -226,12 +228,14 @@ export function Library() {
                   key={s}
                   type="button"
                   aria-pressed={filters.statuses.includes(s)}
+                  title={STATUS_META[s].meaning}
                   onClick={() => set({ statuses: toggle(filters.statuses, s) })}
                   className={`rounded-full border px-3 py-1 text-xs font-semibold ${
                     filters.statuses.includes(s) ? STATUS_ON[s] : 'border-line text-ink-2'
                   }`}
                 >
-                  {STATUS_META[s].symbol} {STATUS_META[s].label}
+                  <span aria-hidden className={`inline-block h-2.5 w-2.5 rounded-full align-[-1px] ${STATUS_DOT[s]}`} />
+                  <span className="sr-only">{STATUS_META[s].label}</span>
                 </button>
               ))}
               <button
@@ -311,7 +315,7 @@ export function Library() {
                     <option value="updated">Recently touched</option>
                     <option value="created">Recently gathered</option>
                     <option value="title">Title</option>
-                    <option value="status">Status (seeds first)</option>
+                    <option value="status">Traffic light (red first)</option>
                   </select>
                 </div>
                 <div>
@@ -376,8 +380,9 @@ export function Library() {
               Everything you capture or import appears here — no folders needed.
             </EmptyState>
           ) : (
-            <>
-              <div className="mt-2 flex items-center justify-between text-sm text-ink-2">
+            // The list sits on its own card so it reads apart from the search and filters above.
+            <section className="panel mt-5 overflow-hidden shadow-sm" aria-label="Pieces">
+              <div className="flex items-center justify-between border-b border-line bg-paper-2/50 px-4 py-2.5 text-sm text-ink-2 md:px-5">
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -393,12 +398,12 @@ export function Library() {
               {results.length === 0 ? (
                 <EmptyState title="Nothing matches">Try fewer filters, or search for a different word.</EmptyState>
               ) : (
-                <div>
+                <div className="px-3 md:px-4 [&>article:last-of-type]:border-b-0">
                   {results.slice(0, limit).map((item) => (
                     <ItemCard key={item.id} item={item} selected={selected.has(item.id)} onToggle={(shift) => onToggle(item.id, shift)} />
                   ))}
                   {results.length > limit && (
-                    <div className="py-6 text-center">
+                    <div className="border-t border-line py-6 text-center">
                       <button type="button" className="btn" onClick={() => setLimit(limit + PAGE)}>
                         Show more ({results.length - limit} remaining)
                       </button>
@@ -406,7 +411,7 @@ export function Library() {
                   )}
                 </div>
               )}
-            </>
+            </section>
       )}
 
       <BulkBar ids={[...selected]} onClear={() => setSelected(new Set())} archivedView={filters.showArchived} />

@@ -100,8 +100,7 @@ export function Atlas() {
   return (
     <div className="page-frame">
       <header className="mb-8">
-        <p className="eyebrow">Studio</p>
-        <h1 className="page-title mt-1">Creation Atlas</h1>
+        <h1 className="page-title">Creation Atlas</h1>
         <p className="mt-3 max-w-2xl font-serif text-lg leading-relaxed text-ink-2">
           Plates that map how your work gets made. They only show what is already here: nothing is moved, copied or changed.
         </p>

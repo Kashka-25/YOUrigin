@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { UniversePanel } from '../components/UniversePanel';
+import { CoverPicture } from '../components/CoverPicture';
 import { ArrowLeft, ArrowUpRight, BookOpen, Link2, Plus, Search, Trash2, Unlink, Upload } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { DEFAULT_PROJECT_COLOUR, PROJECT_CATEGORIES, PROJECT_KIND_META, PROJECT_STATUS_META, TYPE_LABEL, projectKind } from '../domain/constants';
@@ -90,9 +91,7 @@ export function Projects() {
     <div className="page-frame">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="eyebrow mb-2">The things you're bringing into being</p>
           <h1 className="page-title">Projects</h1>
-          <p className="mt-3 max-w-xl font-serif text-lg text-ink-2">A simple home for the ideas, ventures and places you're developing.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" className="btn-primary" onClick={() => setCreating(true)}><Plus size={16} /> New project</button>
@@ -142,16 +141,14 @@ export function Projects() {
                   return (
                     <li key={project.id}>
                       <Link to={'/initiative/' + project.id} className="archive-card project-card group flex h-full flex-col p-5 transition-colors" style={projectColourStyle(project.colour)}>
-                        {project.coverAssetId && <AssetImage id={project.coverAssetId} alt="" className="mb-4 aspect-[16/9] w-full rounded-lg object-cover" />}
+                        <CoverPicture assetId={project.coverAssetId} colour={project.colour} seed={project.id} className="mb-4 aspect-[16/7] w-full rounded-lg" />
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <span className="project-colour-dot mb-3 block" aria-hidden />
-                            <p className="eyebrow mb-2">{group.home === 'Needs a home' ? 'Uncategorised' : group.home}</p>
                             <h3 className="font-serif text-2xl leading-tight text-ink group-hover:text-accent">{project.title}</h3>
                           </div>
                           <ProjectStatusLabel status={project.status} />
                         </div>
-                        {project.description && <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-ink-2">{project.description}</p>}
+                        {project.description && <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink-2">{project.description}</p>}
                         <div className="mt-auto flex items-center gap-3 pt-5 text-xs text-muted">
                           <span>{notes} {notes === 1 ? 'note' : 'notes'}</span>
                           <span aria-hidden>·</span>

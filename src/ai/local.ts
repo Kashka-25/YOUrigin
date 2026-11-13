@@ -184,7 +184,7 @@ export const localProvider: AIProvider = {
       const key = tag ? capitalise(tag) : TYPE_LABEL[i.type] + 's';
       groups.set(key, [...(groups.get(key) ?? []), i.id]);
     }
-    const order = { polished: 0, developing: 1, seed: 2 } as const;
+    const order = { polished: 0, developing: 1, seed: 2, none: 3 } as const;
     const byId = new Map(pool.map((p) => [p.id, p]));
     return [...groups.entries()]
       .sort((a, b) => b[1].length - a[1].length)
