@@ -23,7 +23,10 @@ export function StatusBadge({ status }: { status: Status; compact?: boolean }) {
   );
 }
 
-/** Pick a traffic light: no colour, red, amber or green. Dots only; names are for screen readers and tooltips. */
+/**
+ * Pick a traffic light. While choosing you see what each light means;
+ * once it rests on a note (StatusBadge) it is just the colour.
+ */
 export function StatusPicker({
   value,
   onChange,
@@ -35,10 +38,10 @@ export function StatusPicker({
   size?: 'sm' | 'md';
   label?: string;
 }) {
-  const box = size === 'sm' ? 'h-7 w-7' : 'h-9 w-9';
-  const dot = size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4';
+  const box = size === 'sm' ? 'min-h-8 px-2.5 text-xs' : 'min-h-10 px-3 text-sm';
+  const dot = size === 'sm' ? 'h-3 w-3' : 'h-3.5 w-3.5';
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex items-center gap-1">
+    <div role="radiogroup" aria-label={label} className="inline-flex flex-wrap items-center gap-1.5">
       {STATUSES.map((s) => {
         const active = s === value;
         const meta = STATUS_META[s];
@@ -48,12 +51,13 @@ export function StatusPicker({
             type="button"
             role="radio"
             aria-checked={active}
-            aria-label={meta.label}
+            aria-label={`${meta.label}: ${meta.short}`}
             title={meta.meaning}
             onClick={() => onChange(s)}
-            className={`inline-flex ${box} items-center justify-center rounded-full transition-colors hover:bg-paper-2 ${active ? `ring-2 ring-offset-2 ring-offset-card ${STATUS_CLASSES[s].ring}` : ''}`}
+            className={`inline-flex ${box} items-center gap-1.5 rounded-full border transition-colors ${active ? `border-transparent bg-paper-2 font-semibold text-ink ring-2 ${STATUS_CLASSES[s].ring}` : 'border-line text-ink-2 hover:bg-paper-2'}`}
           >
-            <span aria-hidden className={`${dot} rounded-full ${STATUS_CLASSES[s].dot} ${active ? '' : 'opacity-70'}`} />
+            <span aria-hidden className={`${dot} shrink-0 rounded-full ${STATUS_CLASSES[s].dot}`} />
+            {meta.short}
           </button>
         );
       })}
