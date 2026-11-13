@@ -8,29 +8,30 @@ export const PROJECT_CATEGORIES = ['App', 'Business', 'Creative', 'Place', 'Rese
 export const DEFAULT_PROJECT_COLOUR: ProjectColour = 'ochre';
 
 /**
- * Project colours, spread around the wheel so no two read alike, each with a shade per theme.
- * `hex` is the light-mode shade (also used for print), `dark` the dark-mode one. Both stand out
- * at least 3:1 from every background of that theme's colour scale (Bark to Moss, Void to Aurora), and `onLight` / `onDark` is the text colour that reads at
- * least 4.5:1 on top of each. The keys are what's stored on a Project; only shades changed.
+ * Project colours, spread around the wheel so no two read alike, each with a shade per theme:
+ * soft and light in light mode (light pinks and reds), deep and rich in dark mode (deep reds).
+ * `hex` is the light-mode shade, `dark` the dark-mode one. `onLight` / `onDark` is the text
+ * colour that reads at least 4.5:1 on top of each. Dots and swatches carry a faint outline
+ * (index.css) so a soft or deep shade never disappears into the page. Keys are what's stored.
  */
 export interface ProjectColourOption { value: ProjectColour; label: string; hex: string; dark: string; onLight: string; onDark: string }
 export const PROJECT_COLOURS: ProjectColourOption[] = [
-  { value: 'rose', label: 'Rose', hex: '#A71569', dark: '#F48FB1', onLight: '#FFFFFF', onDark: '#1A1420' },
-  { value: 'berry', label: 'Berry', hex: '#7E0A2E', dark: '#E8457E', onLight: '#FFFFFF', onDark: '#1A1420' },
-  { value: 'plum', label: 'Plum', hex: '#6D2A5E', dark: '#C77DB4', onLight: '#FFFFFF', onDark: '#1A1420' },
-  { value: 'coral', label: 'Coral', hex: '#9C340A', dark: '#FF9A76', onLight: '#FFFFFF', onDark: '#1A1420' },
-  { value: 'terracotta', label: 'Terracotta', hex: '#6E2A14', dark: '#C1512A', onLight: '#FFFFFF', onDark: '#FFFFFF' },
-  { value: 'amber', label: 'Amber', hex: '#834C07', dark: '#FFB547', onLight: '#FFFFFF', onDark: '#1A1420' },
-  { value: 'ochre', label: 'Ochre', hex: '#6B5408', dark: '#E2C04A', onLight: '#FFFFFF', onDark: '#1A1420' },
-  { value: 'olive', label: 'Olive', hex: '#505B0D', dark: '#B9C94A', onLight: '#FFFFFF', onDark: '#1A1420' },
-  { value: 'moss', label: 'Moss', hex: '#256324', dark: '#78C86C', onLight: '#FFFFFF', onDark: '#1A1420' },
-  { value: 'jade', label: 'Jade', hex: '#09634A', dark: '#3FD6A6', onLight: '#FFFFFF', onDark: '#1A1420' },
-  { value: 'teal', label: 'Teal', hex: '#0A616A', dark: '#3BB8C4', onLight: '#FFFFFF', onDark: '#1A1420' },
-  { value: 'sky', label: 'Sky', hex: '#165D8E', dark: '#7CC8F8', onLight: '#FFFFFF', onDark: '#1A1420' },
-  { value: 'indigo', label: 'Indigo', hex: '#24308F', dark: '#8D9CF0', onLight: '#FFFFFF', onDark: '#1A1420' },
-  { value: 'lavender', label: 'Lavender', hex: '#6D469B', dark: '#C9B6F0', onLight: '#FFFFFF', onDark: '#1A1420' },
-  { value: 'violet', label: 'Violet', hex: '#6A2DB8', dark: '#A97BF0', onLight: '#FFFFFF', onDark: '#1A1420' },
-  { value: 'slate', label: 'Slate', hex: '#4B5A6B', dark: '#A3B2C2', onLight: '#FFFFFF', onDark: '#1A1420' },
+  { value: 'rose', label: 'Rose', hex: '#F48FB1', dark: '#D81B60', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'berry', label: 'Berry', hex: '#EF7B7B', dark: '#9E0F2E', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'plum', label: 'Plum', hex: '#CE93D8', dark: '#7A1F5C', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'coral', label: 'Coral', hex: '#FF8A65', dark: '#E64A19', onLight: '#1A1420', onDark: '#1A1420' },
+  { value: 'terracotta', label: 'Terracotta', hex: '#D2875F', dark: '#A23B17', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'amber', label: 'Amber', hex: '#FFB74D', dark: '#E08600', onLight: '#1A1420', onDark: '#1A1420' },
+  { value: 'ochre', label: 'Ochre', hex: '#E6C14F', dark: '#B8860B', onLight: '#1A1420', onDark: '#1A1420' },
+  { value: 'olive', label: 'Olive', hex: '#AFC042', dark: '#6E7D12', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'moss', label: 'Moss', hex: '#66BB6A', dark: '#2E7D32', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'jade', label: 'Jade', hex: '#4DD0A8', dark: '#007D62', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'teal', label: 'Teal', hex: '#4DB6C0', dark: '#00707A', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'sky', label: 'Sky', hex: '#7CC4F5', dark: '#1565C0', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'indigo', label: 'Indigo', hex: '#7986CB', dark: '#283593', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'lavender', label: 'Lavender', hex: '#C3AEEA', dark: '#6A4FB0', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'violet', label: 'Violet', hex: '#A66BD6', dark: '#5E1A9E', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'slate', label: 'Slate', hex: '#9FB0BF', dark: '#455A64', onLight: '#1A1420', onDark: '#FFFFFF' },
 ];
 
 /** The colour option for a Project (falling back to the default). */
