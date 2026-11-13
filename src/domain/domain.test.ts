@@ -186,8 +186,16 @@ describe('book progress', () => {
     expect(p.structure).toBe(1);
     expect(p.content).toBeCloseTo(2 / 3);
     expect(p.editing).toBeCloseTo(1 / 3);
-    expect(p.counts).toEqual({ seed: 1, developing: 1, polished: 1, total: 3 });
-    expect(p.nextAction).toMatch(/Develop the seed .* in Closing/);
+    expect(p.counts).toEqual({ none: 0, seed: 1, developing: 1, polished: 1, total: 3 });
+    expect(p.nextAction).toMatch(/Develop .* in Closing/);
+  });
+
+  it('counts pieces with no traffic light without treating them as progress', () => {
+    const content = new Map([['n', item('n', 'none')], ['p', item('p', 'polished')]]);
+    const p = computeBookProgress(sections, [entry('e1', 's1', 'n'), entry('e2', 's2', 'p')], content);
+    expect(p.counts.none).toBe(1);
+    expect(p.content).toBeCloseTo(1 / 2);
+    expect(p.editing).toBeCloseTo(1 / 2);
   });
 
   it('points to the tray and empty sections first', () => {

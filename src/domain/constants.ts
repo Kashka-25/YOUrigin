@@ -1,6 +1,7 @@
 import type { Book, BookType, ContentType, ProjectColour, ProjectKind, ProjectStatus, Status } from './types';
 
-export const STATUSES: Status[] = ['seed', 'developing', 'polished'];
+/** Order shown in pickers: no colour, then red, amber, green. */
+export const STATUSES: Status[] = ['none', 'seed', 'developing', 'polished'];
 
 export const PROJECT_CATEGORIES = ['App', 'Business', 'Creative', 'Place', 'Research', 'Personal', 'Other'] as const;
 
@@ -35,28 +36,18 @@ export const PROJECT_STATUS_META: Record<
   complete: { label: 'Complete', description: 'Finished or fulfilled.', className: 'bg-polished/15 text-polished' },
 };
 
+/**
+ * Pieces use a traffic light rather than words. The keys stay seed / developing / polished
+ * so stored data and sync are untouched; 'none' means no light at all.
+ */
 export const STATUS_META: Record<
   Status,
   { label: string; colour: string; symbol: string; meaning: string }
 > = {
-  seed: {
-    label: 'Seed',
-    colour: 'seed',
-    symbol: '●',
-    meaning: 'Something alive here that has not grown yet.',
-  },
-  developing: {
-    label: 'Developing',
-    colour: 'developing',
-    symbol: '◐',
-    meaning: 'The core is there; it is still being shaped.',
-  },
-  polished: {
-    label: 'Polished',
-    colour: 'polished',
-    symbol: '◆',
-    meaning: 'Essentially finished, or close enough to share.',
-  },
+  none: { label: 'No colour', colour: 'muted', symbol: '○', meaning: 'No traffic light on this piece.' },
+  seed: { label: 'Red', colour: 'seed', symbol: '●', meaning: 'Red: just begun.' },
+  developing: { label: 'Amber', colour: 'developing', symbol: '●', meaning: 'Amber: taking shape.' },
+  polished: { label: 'Green', colour: 'polished', symbol: '●', meaning: 'Green: ready, or close enough to share.' },
 };
 
 export const CONTENT_TYPES: ContentType[] = [

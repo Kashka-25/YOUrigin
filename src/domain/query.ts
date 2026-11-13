@@ -88,7 +88,7 @@ export const EMPTY_FILTERS: LibraryFilters = {
   sort: 'updated',
 };
 
-const STATUS_ORDER: Record<Status, number> = { seed: 0, developing: 1, polished: 2 };
+const STATUS_ORDER: Record<Status, number> = { none: 0, seed: 1, developing: 2, polished: 3 };
 
 export function filterItems(items: ContentItem[], f: LibraryFilters, ctx: LibraryContext): ContentItem[] {
   const q = parseQuery(f.query);

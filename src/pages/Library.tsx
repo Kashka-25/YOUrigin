@@ -23,7 +23,9 @@ const VIEWS: { id: View; label: string }[] = [
 ];
 
 // Static class names so Tailwind can see them.
+const STATUS_DOT: Record<Status, string> = { none: 'border border-muted', seed: 'bg-seed', developing: 'bg-developing', polished: 'bg-polished' };
 const STATUS_ON: Record<Status, string> = {
+  none: 'border-ink-2 bg-paper-2 text-ink',
   seed: 'border-seed bg-seed-bg text-seed',
   developing: 'border-developing bg-developing-bg text-developing',
   polished: 'border-polished bg-polished-bg text-polished',
@@ -226,12 +228,14 @@ export function Library() {
                   key={s}
                   type="button"
                   aria-pressed={filters.statuses.includes(s)}
+                  title={STATUS_META[s].meaning}
                   onClick={() => set({ statuses: toggle(filters.statuses, s) })}
                   className={`rounded-full border px-3 py-1 text-xs font-semibold ${
                     filters.statuses.includes(s) ? STATUS_ON[s] : 'border-line text-ink-2'
                   }`}
                 >
-                  {STATUS_META[s].symbol} {STATUS_META[s].label}
+                  <span aria-hidden className={`inline-block h-2.5 w-2.5 rounded-full align-[-1px] ${STATUS_DOT[s]}`} />
+                  <span className="sr-only">{STATUS_META[s].label}</span>
                 </button>
               ))}
               <button
@@ -311,7 +315,7 @@ export function Library() {
                     <option value="updated">Recently touched</option>
                     <option value="created">Recently gathered</option>
                     <option value="title">Title</option>
-                    <option value="status">Status (seeds first)</option>
+                    <option value="status">Traffic light (red first)</option>
                   </select>
                 </div>
                 <div>

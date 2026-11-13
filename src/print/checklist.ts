@@ -88,7 +88,7 @@ export function publishingChecklist(book: Book, design: BookDesign, sections: Se
     const c = contentById.get(e.contentId);
     return c && !c.deletedAt;
   });
-  const empty = (): Record<Status, number> => ({ seed: 0, developing: 0, polished: 0 });
+  const empty = (): Record<Status, number> => ({ none: 0, seed: 0, developing: 0, polished: 0 });
 
   const chapters: ChapterSize[] = [...sections]
     .sort((a, b) => a.order - b.order)

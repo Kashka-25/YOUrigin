@@ -4,38 +4,41 @@ import type { ContentType, Status } from '../domain/types';
 import { CONTENT_TYPES, STATUSES, STATUS_META, TYPE_LABEL } from '../domain/constants';
 import type { SaveState } from '../hooks/useAutosave';
 
-const STATUS_CLASSES: Record<Status, { chip: string; dot: string; ring: string }> = {
-  seed: { chip: 'bg-seed-bg text-seed', dot: 'bg-seed', ring: 'border-seed' },
-  developing: { chip: 'bg-developing-bg text-developing', dot: 'bg-developing', ring: 'border-developing' },
-  polished: { chip: 'bg-polished-bg text-polished', dot: 'bg-polished', ring: 'border-polished' },
+const STATUS_CLASSES: Record<Status, { dot: string; ring: string }> = {
+  none: { dot: 'border border-muted bg-transparent', ring: 'ring-ink-2' },
+  seed: { dot: 'bg-seed', ring: 'ring-seed' },
+  developing: { dot: 'bg-developing', ring: 'ring-developing' },
+  polished: { dot: 'bg-polished', ring: 'ring-polished' },
 };
 
-export function StatusBadge({ status, compact = false }: { status: Status; compact?: boolean }) {
+/** A traffic-light dot for a piece's status; nothing at all when it has none. */
+export function StatusBadge({ status }: { status: Status; compact?: boolean }) {
+  if (status === 'none') return null;
   const meta = STATUS_META[status];
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_CLASSES[status].chip}`}
-      title={meta.meaning}
-    >
-      <span aria-hidden>{meta.symbol}</span>
-      {compact ? <span className="sr-only">{meta.label}</span> : meta.label}
+    <span className="inline-flex items-center" title={meta.meaning}>
+      <span aria-hidden className={`h-2.5 w-2.5 rounded-full ${STATUS_CLASSES[status].dot}`} />
+      <span className="sr-only">{meta.label}</span>
     </span>
   );
 }
 
+/** Pick a traffic light: no colour, red, amber or green. Dots only; names are for screen readers and tooltips. */
 export function StatusPicker({
   value,
   onChange,
   size = 'md',
-  label = 'Creative status',
+  label = 'Traffic light',
 }: {
   value: Status;
   onChange: (s: Status) => void;
   size?: 'sm' | 'md';
   label?: string;
 }) {
+  const box = size === 'sm' ? 'h-7 w-7' : 'h-9 w-9';
+  const dot = size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4';
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex flex-wrap gap-1.5">
+    <div role="radiogroup" aria-label={label} className="inline-flex items-center gap-1">
       {STATUSES.map((s) => {
         const active = s === value;
         const meta = STATUS_META[s];
@@ -45,16 +48,12 @@ export function StatusPicker({
             type="button"
             role="radio"
             aria-checked={active}
+            aria-label={meta.label}
             title={meta.meaning}
             onClick={() => onChange(s)}
-            className={`inline-flex items-center gap-1.5 rounded-full border font-medium transition-colors ${
-              size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3.5 py-1.5 text-sm'
-            } ${active ? `${STATUS_CLASSES[s].chip} ${STATUS_CLASSES[s].ring}` : 'border-line text-ink-2 hover:bg-paper-2'}`}
+            className={`inline-flex ${box} items-center justify-center rounded-full transition-colors hover:bg-paper-2 ${active ? `ring-2 ring-offset-2 ring-offset-card ${STATUS_CLASSES[s].ring}` : ''}`}
           >
-            <span aria-hidden className={active ? '' : 'opacity-60'}>
-              {meta.symbol}
-            </span>
-            {meta.label}
+            <span aria-hidden className={`${dot} rounded-full ${STATUS_CLASSES[s].dot} ${active ? '' : 'opacity-70'}`} />
           </button>
         );
       })}

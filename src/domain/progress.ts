@@ -20,7 +20,7 @@ export interface BookProgress {
   nextAction: string;
 }
 
-const STATUS_WEIGHT: Record<Status, number> = { seed: 0, developing: 0.5, polished: 1 };
+const STATUS_WEIGHT: Record<Status, number> = { none: 0, seed: 0, developing: 0.5, polished: 1 };
 
 /**
  * All figures are derived from real data:
@@ -38,7 +38,7 @@ export function computeBookProgress(
     const c = contentById.get(e.contentId);
     return c && !c.deletedAt;
   });
-  const counts = { seed: 0, developing: 0, polished: 0, total: 0 };
+  const counts = { none: 0, seed: 0, developing: 0, polished: 0, total: 0 };
   for (const e of live) {
     const c = contentById.get(e.contentId)!;
     counts[c.status]++;
@@ -94,7 +94,7 @@ function nextBestAction(
       const hit = list.find((e) => contentById.get(e.contentId)!.status === status);
       if (hit) {
         const t = displayTitle(contentById.get(hit.contentId)!);
-        return status === 'seed' ? `Develop the seed “${t}” in ${s.title}.` : `Refine “${t}” in ${s.title}.`;
+        return status === 'seed' ? `Develop “${t}” in ${s.title}.` : `Refine “${t}” in ${s.title}.`;
       }
     }
   }

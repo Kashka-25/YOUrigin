@@ -8,7 +8,7 @@ import { STATUSES, STATUS_META, TYPE_LABEL } from '../../domain/constants';
 import type { ContentItem, Status } from '../../domain/types';
 import { StatusBadge } from '../ui';
 
-const DOT: Record<Status, string> = { seed: 'bg-seed', developing: 'bg-developing', polished: 'bg-polished' };
+const DOT: Record<Status, string> = { none: 'border border-line bg-transparent', seed: 'bg-seed', developing: 'bg-developing', polished: 'bg-polished' };
 
 /** Book order: every placed piece, chapter by chapter. Shared by Contents, Previous/Next. */
 export function useBookOrder(bookId: string | null | undefined) {
@@ -39,7 +39,7 @@ export function ContentsList({ bookId, currentId, compact = false }: { bookId: s
   const [only, setOnly] = useState<Status | null>(null);
   if (!order) return null;
   const { parts, tray, flat } = order;
-  const counts = { seed: 0, developing: 0, polished: 0 } as Record<Status, number>;
+  const counts: Record<Status, number> = { none: 0, seed: 0, developing: 0, polished: 0 };
   flat.forEach((c) => counts[c.status]++);
   let n = 0;
 
@@ -78,11 +78,12 @@ export function ContentsList({ bookId, currentId, compact = false }: { bookId: s
             key={s}
             type="button"
             aria-pressed={only === s}
+            title={STATUS_META[s].meaning}
             onClick={() => setOnly(only === s ? null : s)}
             className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${only === s ? 'border-accent bg-paper-2 text-ink' : 'border-line text-ink-2'}`}
           >
             <span className={`h-2 w-2 rounded-full ${DOT[s]}`} aria-hidden />
-            {STATUS_META[s].label} {counts[s]}
+            <span className="sr-only">{STATUS_META[s].label}</span> {counts[s]}
           </button>
         ))}
       </div>
