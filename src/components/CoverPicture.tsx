@@ -29,7 +29,7 @@ export function CoverPicture({
 }) {
   const gid = useId().replace(/:/g, '');
   if (assetId) return <AssetImage id={assetId} alt="" className={`object-cover ${className}`} />;
-  const hex = HEX.get(colour ?? DEFAULT_PROJECT_COLOUR) ?? '#A77A35';
+  const hex = HEX.get(colour ?? DEFAULT_PROJECT_COLOUR) ?? '#C9A227';
   const n = hash(seed);
   const motif = n % 4;
   const x = 20 + (n % 60);

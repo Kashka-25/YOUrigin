@@ -7,23 +7,27 @@ export const PROJECT_CATEGORIES = ['App', 'Business', 'Creative', 'Place', 'Rese
 
 export const DEFAULT_PROJECT_COLOUR: ProjectColour = 'ochre';
 
+/**
+ * Project colours, spread around the wheel and across light/deep so no two read alike.
+ * The keys are what's stored on each Project; only the shades changed (13 Nov 2026).
+ */
 export const PROJECT_COLOURS: { value: ProjectColour; label: string; hex: string }[] = [
-  { value: 'rose', label: 'Rose', hex: '#B86675' },
-  { value: 'coral', label: 'Coral', hex: '#CA795C' },
-  { value: 'terracotta', label: 'Terracotta', hex: '#B9694D' },
-  { value: 'ochre', label: 'Ochre', hex: '#A77A35' },
-  { value: 'amber', label: 'Amber', hex: '#B78B39' },
-  { value: 'olive', label: 'Olive', hex: '#878C4E' },
-  { value: 'moss', label: 'Moss', hex: '#64836A' },
-  { value: 'jade', label: 'Jade', hex: '#4E897B' },
-  { value: 'teal', label: 'Teal', hex: '#428C8C' },
-  { value: 'sky', label: 'Sky', hex: '#5D8CA8' },
-  { value: 'indigo', label: 'Indigo', hex: '#666FA0' },
-  { value: 'lavender', label: 'Lavender', hex: '#8B78B6' },
-  { value: 'violet', label: 'Violet', hex: '#9673A5' },
-  { value: 'plum', label: 'Plum', hex: '#A56D92' },
-  { value: 'berry', label: 'Berry', hex: '#A65D6E' },
-  { value: 'slate', label: 'Slate', hex: '#6D7D8D' },
+  { value: 'rose', label: 'Rose', hex: '#F06292' },
+  { value: 'berry', label: 'Berry', hex: '#C2185B' },
+  { value: 'plum', label: 'Plum', hex: '#6D2A5E' },
+  { value: 'coral', label: 'Coral', hex: '#FF7F50' },
+  { value: 'terracotta', label: 'Terracotta', hex: '#A33E22' },
+  { value: 'amber', label: 'Amber', hex: '#F59E0B' },
+  { value: 'ochre', label: 'Ochre', hex: '#C9A227' },
+  { value: 'olive', label: 'Olive', hex: '#7D8B1F' },
+  { value: 'moss', label: 'Moss', hex: '#3E8E3A' },
+  { value: 'jade', label: 'Jade', hex: '#16A57F' },
+  { value: 'teal', label: 'Teal', hex: '#0E7C86' },
+  { value: 'sky', label: 'Sky', hex: '#4FB3F0' },
+  { value: 'indigo', label: 'Indigo', hex: '#3949AB' },
+  { value: 'lavender', label: 'Lavender', hex: '#B39DDB' },
+  { value: 'violet', label: 'Violet', hex: '#7B3FC4' },
+  { value: 'slate', label: 'Slate', hex: '#66788A' },
 ];
 
 export const PROJECT_STATUS_META: Record<
