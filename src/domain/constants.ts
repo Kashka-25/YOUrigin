@@ -8,27 +8,35 @@ export const PROJECT_CATEGORIES = ['App', 'Business', 'Creative', 'Place', 'Rese
 export const DEFAULT_PROJECT_COLOUR: ProjectColour = 'ochre';
 
 /**
- * Project colours, spread around the wheel and across light/deep so no two read alike.
- * The keys are what's stored on each Project; only the shades changed (13 Nov 2026).
+ * Project colours, spread around the wheel so no two read alike, each with a shade per theme.
+ * `hex` is the light-mode shade (also used for print), `dark` the dark-mode one. Both stand out
+ * at least 3:1 from every background of that theme's colour scale (Bark to Moss, Void to Aurora), and `onLight` / `onDark` is the text colour that reads at
+ * least 4.5:1 on top of each. The keys are what's stored on a Project; only shades changed.
  */
-export const PROJECT_COLOURS: { value: ProjectColour; label: string; hex: string }[] = [
-  { value: 'rose', label: 'Rose', hex: '#F06292' },
-  { value: 'berry', label: 'Berry', hex: '#C2185B' },
-  { value: 'plum', label: 'Plum', hex: '#6D2A5E' },
-  { value: 'coral', label: 'Coral', hex: '#FF7F50' },
-  { value: 'terracotta', label: 'Terracotta', hex: '#A33E22' },
-  { value: 'amber', label: 'Amber', hex: '#F59E0B' },
-  { value: 'ochre', label: 'Ochre', hex: '#C9A227' },
-  { value: 'olive', label: 'Olive', hex: '#7D8B1F' },
-  { value: 'moss', label: 'Moss', hex: '#3E8E3A' },
-  { value: 'jade', label: 'Jade', hex: '#16A57F' },
-  { value: 'teal', label: 'Teal', hex: '#0E7C86' },
-  { value: 'sky', label: 'Sky', hex: '#4FB3F0' },
-  { value: 'indigo', label: 'Indigo', hex: '#3949AB' },
-  { value: 'lavender', label: 'Lavender', hex: '#B39DDB' },
-  { value: 'violet', label: 'Violet', hex: '#7B3FC4' },
-  { value: 'slate', label: 'Slate', hex: '#66788A' },
+export interface ProjectColourOption { value: ProjectColour; label: string; hex: string; dark: string; onLight: string; onDark: string }
+export const PROJECT_COLOURS: ProjectColourOption[] = [
+  { value: 'rose', label: 'Rose', hex: '#A71569', dark: '#F48FB1', onLight: '#FFFFFF', onDark: '#1A1420' },
+  { value: 'berry', label: 'Berry', hex: '#7E0A2E', dark: '#E8457E', onLight: '#FFFFFF', onDark: '#1A1420' },
+  { value: 'plum', label: 'Plum', hex: '#6D2A5E', dark: '#C77DB4', onLight: '#FFFFFF', onDark: '#1A1420' },
+  { value: 'coral', label: 'Coral', hex: '#9C340A', dark: '#FF9A76', onLight: '#FFFFFF', onDark: '#1A1420' },
+  { value: 'terracotta', label: 'Terracotta', hex: '#6E2A14', dark: '#C1512A', onLight: '#FFFFFF', onDark: '#FFFFFF' },
+  { value: 'amber', label: 'Amber', hex: '#834C07', dark: '#FFB547', onLight: '#FFFFFF', onDark: '#1A1420' },
+  { value: 'ochre', label: 'Ochre', hex: '#6B5408', dark: '#E2C04A', onLight: '#FFFFFF', onDark: '#1A1420' },
+  { value: 'olive', label: 'Olive', hex: '#505B0D', dark: '#B9C94A', onLight: '#FFFFFF', onDark: '#1A1420' },
+  { value: 'moss', label: 'Moss', hex: '#256324', dark: '#78C86C', onLight: '#FFFFFF', onDark: '#1A1420' },
+  { value: 'jade', label: 'Jade', hex: '#09634A', dark: '#3FD6A6', onLight: '#FFFFFF', onDark: '#1A1420' },
+  { value: 'teal', label: 'Teal', hex: '#0A616A', dark: '#3BB8C4', onLight: '#FFFFFF', onDark: '#1A1420' },
+  { value: 'sky', label: 'Sky', hex: '#165D8E', dark: '#7CC8F8', onLight: '#FFFFFF', onDark: '#1A1420' },
+  { value: 'indigo', label: 'Indigo', hex: '#24308F', dark: '#8D9CF0', onLight: '#FFFFFF', onDark: '#1A1420' },
+  { value: 'lavender', label: 'Lavender', hex: '#6D469B', dark: '#C9B6F0', onLight: '#FFFFFF', onDark: '#1A1420' },
+  { value: 'violet', label: 'Violet', hex: '#6A2DB8', dark: '#A97BF0', onLight: '#FFFFFF', onDark: '#1A1420' },
+  { value: 'slate', label: 'Slate', hex: '#4B5A6B', dark: '#A3B2C2', onLight: '#FFFFFF', onDark: '#1A1420' },
 ];
+
+/** The colour option for a Project (falling back to the default). */
+export function projectColourOption(colour?: ProjectColour): ProjectColourOption {
+  return PROJECT_COLOURS.find((c) => c.value === colour) ?? PROJECT_COLOURS.find((c) => c.value === DEFAULT_PROJECT_COLOUR)!;
+}
 
 export const PROJECT_STATUS_META: Record<
   ProjectStatus,

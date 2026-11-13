@@ -1,12 +1,15 @@
 import type { CSSProperties } from 'react';
 import { Check } from 'lucide-react';
 import type { ProjectColour } from '../domain/types';
-import { DEFAULT_PROJECT_COLOUR, PROJECT_COLOURS } from '../domain/constants';
+import { PROJECT_COLOURS, projectColourOption } from '../domain/constants';
 
+/**
+ * Both theme shades plus their readable text colours, as CSS variables. index.css picks the
+ * light or dark pair (--project-colour, --project-on) for whichever theme is showing.
+ */
 export function projectColourStyle(colour?: ProjectColour): CSSProperties {
-  const hex = PROJECT_COLOURS.find((option) => option.value === colour)?.hex
-    ?? PROJECT_COLOURS.find((option) => option.value === DEFAULT_PROJECT_COLOUR)!.hex;
-  return { '--project-colour': hex } as CSSProperties;
+  const c = projectColourOption(colour);
+  return { '--pc-light': c.hex, '--pc-dark': c.dark, '--pc-on-light': c.onLight, '--pc-on-dark': c.onDark } as CSSProperties;
 }
 
 export function ProjectColourPicker({
@@ -27,7 +30,7 @@ export function ProjectColourPicker({
             key={option.value}
             type="button"
             className="project-colour-swatch"
-            style={{ backgroundColor: option.hex }}
+            style={projectColourStyle(option.value)}
             aria-label={option.label}
             aria-pressed={value === option.value}
             title={option.label}
