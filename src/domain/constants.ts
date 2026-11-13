@@ -7,24 +7,37 @@ export const PROJECT_CATEGORIES = ['App', 'Business', 'Creative', 'Place', 'Rese
 
 export const DEFAULT_PROJECT_COLOUR: ProjectColour = 'ochre';
 
-export const PROJECT_COLOURS: { value: ProjectColour; label: string; hex: string }[] = [
-  { value: 'rose', label: 'Rose', hex: '#B86675' },
-  { value: 'coral', label: 'Coral', hex: '#CA795C' },
-  { value: 'terracotta', label: 'Terracotta', hex: '#B9694D' },
-  { value: 'ochre', label: 'Ochre', hex: '#A77A35' },
-  { value: 'amber', label: 'Amber', hex: '#B78B39' },
-  { value: 'olive', label: 'Olive', hex: '#878C4E' },
-  { value: 'moss', label: 'Moss', hex: '#64836A' },
-  { value: 'jade', label: 'Jade', hex: '#4E897B' },
-  { value: 'teal', label: 'Teal', hex: '#428C8C' },
-  { value: 'sky', label: 'Sky', hex: '#5D8CA8' },
-  { value: 'indigo', label: 'Indigo', hex: '#666FA0' },
-  { value: 'lavender', label: 'Lavender', hex: '#8B78B6' },
-  { value: 'violet', label: 'Violet', hex: '#9673A5' },
-  { value: 'plum', label: 'Plum', hex: '#A56D92' },
-  { value: 'berry', label: 'Berry', hex: '#A65D6E' },
-  { value: 'slate', label: 'Slate', hex: '#6D7D8D' },
+/**
+ * Project colours, spread around the wheel so no two read alike, each with a shade per theme:
+ * soft and light in light mode (light pinks and reds), deep and rich in dark mode (deep reds).
+ * `hex` is the light-mode shade, `dark` the dark-mode one. `onLight` / `onDark` is the text
+ * colour that reads at least 4.5:1 on top of each. Dots and swatches carry a faint outline
+ * (index.css) so a soft or deep shade never disappears into the page. Keys are what's stored.
+ */
+export interface ProjectColourOption { value: ProjectColour; label: string; hex: string; dark: string; onLight: string; onDark: string }
+export const PROJECT_COLOURS: ProjectColourOption[] = [
+  { value: 'rose', label: 'Rose', hex: '#F48FB1', dark: '#D81B60', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'berry', label: 'Berry', hex: '#EF7B7B', dark: '#9E0F2E', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'plum', label: 'Plum', hex: '#CE93D8', dark: '#7A1F5C', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'coral', label: 'Coral', hex: '#FF8A65', dark: '#E64A19', onLight: '#1A1420', onDark: '#1A1420' },
+  { value: 'terracotta', label: 'Terracotta', hex: '#D2875F', dark: '#A23B17', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'amber', label: 'Amber', hex: '#FFB74D', dark: '#E08600', onLight: '#1A1420', onDark: '#1A1420' },
+  { value: 'ochre', label: 'Ochre', hex: '#E6C14F', dark: '#B8860B', onLight: '#1A1420', onDark: '#1A1420' },
+  { value: 'olive', label: 'Olive', hex: '#AFC042', dark: '#6E7D12', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'moss', label: 'Moss', hex: '#66BB6A', dark: '#2E7D32', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'jade', label: 'Jade', hex: '#4DD0A8', dark: '#007D62', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'teal', label: 'Teal', hex: '#4DB6C0', dark: '#00707A', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'sky', label: 'Sky', hex: '#7CC4F5', dark: '#1565C0', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'indigo', label: 'Indigo', hex: '#7986CB', dark: '#283593', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'lavender', label: 'Lavender', hex: '#C3AEEA', dark: '#6A4FB0', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'violet', label: 'Violet', hex: '#A66BD6', dark: '#5E1A9E', onLight: '#1A1420', onDark: '#FFFFFF' },
+  { value: 'slate', label: 'Slate', hex: '#9FB0BF', dark: '#455A64', onLight: '#1A1420', onDark: '#FFFFFF' },
 ];
+
+/** The colour option for a Project (falling back to the default). */
+export function projectColourOption(colour?: ProjectColour): ProjectColourOption {
+  return PROJECT_COLOURS.find((c) => c.value === colour) ?? PROJECT_COLOURS.find((c) => c.value === DEFAULT_PROJECT_COLOUR)!;
+}
 
 export const PROJECT_STATUS_META: Record<
   ProjectStatus,

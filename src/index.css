@@ -198,7 +198,16 @@ html[data-focus] .chrome { display: none !important; }
   .manuscript-piece { break-inside: avoid; }
 }
 
-/* Project identity colours are deliberately small accents, not large fills. */
+/* Project identity colours are deliberately small accents, not large fills.
+   Each element gets both theme shades (projectColourStyle); this picks the one for the theme. */
+.project-card, .project-colour-dot, .project-colour-swatch, .project-cover {
+  --project-colour: var(--pc-light, var(--gold));
+  --project-on: var(--pc-on-light, #fff);
+}
+.dark :is(.project-card, .project-colour-dot, .project-colour-swatch, .project-cover) {
+  --project-colour: var(--pc-dark, var(--gold));
+  --project-on: var(--pc-on-dark, #1a1420);
+}
 .project-card {
   border-top: 3px solid var(--project-colour, var(--gold));
   background: linear-gradient(
@@ -212,7 +221,8 @@ html[data-focus] .chrome { display: none !important; }
   height: .72rem;
   border-radius: 999px;
   background: var(--project-colour, var(--gold));
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--project-colour, var(--gold)) 16%, transparent);
+  /* A faint outline keeps light shades visible on light pages and deep ones on dark pages. */
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 28%, transparent), 0 0 0 4px color-mix(in srgb, var(--project-colour, var(--gold)) 16%, transparent);
 }
 .project-colour-swatch {
   display: inline-flex;
@@ -222,14 +232,15 @@ html[data-focus] .chrome { display: none !important; }
   justify-content: center;
   border: 2px solid transparent;
   border-radius: 999px;
-  color: white;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12);
+  background: var(--project-colour);
+  color: var(--project-on);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 28%, transparent);
   transition: transform .15s ease, box-shadow .15s ease;
 }
 .project-colour-swatch:hover { transform: scale(1.08); }
 .project-colour-swatch[aria-pressed="true"] {
   border-color: var(--card);
-  box-shadow: 0 0 0 2px var(--accent), inset 0 0 0 1px rgba(0, 0, 0, .12);
+  box-shadow: 0 0 0 2px var(--accent), inset 0 0 0 1px color-mix(in srgb, var(--ink) 28%, transparent);
 }
 
 /* Nature and Cosmos sliders, matching the tactile YOU colour-scale control. */

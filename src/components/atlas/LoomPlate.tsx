@@ -1,13 +1,24 @@
 import { forwardRef, type KeyboardEvent } from 'react';
 import { LOOSE_THREAD, type Loom, type LoomLayout } from '../../domain/loom';
 import type { ContentItem } from '../../domain/types';
-import { PROJECT_COLOURS, DEFAULT_PROJECT_COLOUR, STATUS_META } from '../../domain/constants';
+import { projectColourOption, STATUS_META } from '../../domain/constants';
 import { displayTitle } from '../../domain/text';
 import type { PlatePalette } from './LineagePlate';
 
 const SERIF = "'Newsreader Variable', 'Iowan Old Style', Georgia, serif";
 const SANS = "'Inter Variable', system-ui, sans-serif";
-const HEX = new Map(PROJECT_COLOURS.map((c) => [c.value, c.hex]));
+/** Rough brightness (0-255) of a #rrggbb colour. */
+function brightness(hex: string): number {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return 0;
+  const n = parseInt(m[1], 16);
+  return 0.2126 * (n >> 16) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
+}
+/** A thread is a thin line, so use whichever of the Project's two shades stands further from the paper. */
+function threadShade(light: string, dark: string, paper: string): string {
+  const p = brightness(paper);
+  return Math.abs(brightness(light) - p) >= Math.abs(brightness(dark) - p) ? light : dark;
+}
 
 function clip(text: string, max: number): string {
   return text.length > max ? text.slice(0, max - 1).trimEnd() + '…' : text;
@@ -67,7 +78,8 @@ export const LoomPlate = forwardRef<SVGSVGElement, Props>(function LoomPlate({ l
       {loom.threads.map((thread) => {
         const row = layout.rows.find((r) => r.id === thread.id)!;
         const loose = thread.id === LOOSE_THREAD;
-        const colour = loose ? palette.muted : (HEX.get(thread.colour ?? DEFAULT_PROJECT_COLOUR) ?? palette.gold);
+        const shade = projectColourOption(thread.colour);
+        const colour = loose ? palette.muted : threadShade(shade.hex, shade.dark, palette.paper);
         const start = layout.labelWidth;
         return (
           <g key={thread.id}>
