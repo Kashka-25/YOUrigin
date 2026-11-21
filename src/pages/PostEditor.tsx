@@ -1,17 +1,18 @@
 import { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft, Check, ExternalLink, FileImage, ImagePlus, Link2, Plus, Quote, Search, Sparkles, Trash2, Undo2, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, ExternalLink, ImagePlus, Link2, Plus, Quote, Search, Sparkles, Trash2, Undo2, X } from 'lucide-react';
 import { EmptyState, SaveIndicator, Spinner } from '../components/ui';
 import { Modal, useConfirm } from '../components/Modal';
 import { useToast } from '../components/Toast';
 import { AutoTextarea } from '../components/AutoTextarea';
-import { AssetImage } from '../components/AssetImage';
+import { MediaThumb, PostPreview } from '../components/posts/PostMedia';
 import { FORMAT_ICON, PostStatusPill, WorldDot } from '../components/posts/PostBits';
 import { useAutosave } from '../hooks/useAutosave';
 import { DEMO } from '../demo/mode';
 import { useLibrary } from '../hooks/useLibrary';
 import { deletePost, linkPiece, restorePost, setPostStatus, unlinkPiece, updatePost, usePost, type PostPatch } from '../db/posts';
-import { IMAGE_ACCEPT, removeAssetIfUnused, saveImage } from '../db/assets';
+import { mediaFromFile, removeMediaIfUnused } from '../db/postMedia';
+import { POST_MEDIA_ACCEPT, collectImportFiles } from '../io/postMedia';
 import { TYPE_LABEL } from '../domain/constants';
 import { displayTitle, excerpt } from '../domain/text';
 import type { ContentItem } from '../domain/types';
@@ -190,16 +191,23 @@ function Editor({ post }: { post: Post }) {
     toast(status === 'approved' ? 'Approved. It’s ready to export for scheduling.' : status === 'posted' ? 'Marked as posted.' : `Moved to ${STATUS_LABEL[status]}.`);
   };
 
-  const addImages = async (files: File[]) => {
+  const [adding, setAdding] = useState(false);
+  const addMedia = async (picked: File[]) => {
+    setAdding(true);
     try {
+      // A .zip is opened; images and videos are added in the order picked.
+      const { media } = await collectImportFiles(picked);
       const added: PostMedia[] = [];
-      for (const f of files) {
-        const { asset } = await saveImage(f);
-        added.push({ kind: 'asset', assetId: asset.id });
+      for (const f of media.values()) {
+        const m = await mediaFromFile(f);
+        if (m) added.push(m);
       }
+      if (!added.length) toast('Those files aren’t images or videos.');
       set({ media: [...fields.media, ...added] });
     } catch (e) {
       toast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -207,7 +215,15 @@ function Editor({ post }: { post: Post }) {
     const m = fields.media[index];
     set({ media: fields.media.filter((_, i) => i !== index) });
     await flush();
-    if (m.kind === 'asset') await removeAssetIfUnused(m.assetId);
+    await removeMediaIfUnused(m);
+  };
+
+  const moveMedia = (index: number, by: -1 | 1) => {
+    const to = index + by;
+    if (to < 0 || to >= fields.media.length) return;
+    const media = [...fields.media];
+    [media[index], media[to]] = [media[to], media[index]];
+    set({ media });
   };
 
   const remove = async () => {
@@ -267,6 +283,11 @@ function Editor({ post }: { post: Post }) {
       )}
 
       <div className="mx-auto max-w-2xl space-y-5">
+        <section aria-label="Preview">
+          <PostPreview post={{ ...fields, hashtags: tags }} />
+          <p className="mt-2 text-center text-xs text-muted">How it will look. It updates as you edit.</p>
+        </section>
+
         <section className="grid grid-cols-2 gap-3">
           <label>
             <span className="label">Date</span>
@@ -366,29 +387,34 @@ function Editor({ post }: { post: Post }) {
         </label>
 
         <section>
-          <span className="label">Media</span>
+          <span className="label flex justify-between">
+            Images and videos
+            <span className="font-normal normal-case tracking-normal">{fields.media.length ? `${fields.media.length} in order` : ''}</span>
+          </span>
           {fields.media.length > 0 && (
-            <ul className="mb-2 grid grid-cols-3 gap-2">
+            <ul className="mb-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
               {fields.media.map((m, i) => (
-                <li key={m.kind === 'asset' ? m.assetId : `${m.name}-${i}`} className="relative">
-                  {m.kind === 'asset' ? (
-                    <AssetImage id={m.assetId} alt="" className="aspect-[4/5] w-full rounded-lg object-cover" />
-                  ) : (
-                    <span className="flex aspect-[4/5] w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-line p-2 text-center text-xs text-ink-2">
-                      <FileImage size={18} aria-hidden />
-                      <span className="break-all">{m.name}</span>
-                    </span>
-                  )}
-                  <button type="button" className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white" onClick={() => void removeMedia(i)} aria-label={`Remove ${m.kind === 'file' ? m.name : 'image'}`}>
+                <li key={m.kind === 'asset' ? `${m.assetId}-${i}` : m.kind === 'clip' ? `${m.clipId}-${i}` : `${m.name}-${i}`} className="relative">
+                  <MediaThumb media={m} className="aspect-[4/5] w-full rounded-lg" />
+                  <span className="absolute left-1 top-1 rounded-full bg-black/60 px-1.5 text-[11px] font-semibold text-white tabular-nums">{i + 1}</span>
+                  <button type="button" className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white" onClick={() => void removeMedia(i)} aria-label={`Remove ${m.kind === 'asset' ? 'image' : m.name} (${i + 1})`}>
                     <X size={14} />
                   </button>
+                  <span className="absolute inset-x-1 bottom-1 flex justify-between">
+                    <button type="button" className="rounded-full bg-black/60 p-1 text-white disabled:opacity-0" disabled={i === 0} onClick={() => moveMedia(i, -1)} aria-label={`Move ${i + 1} earlier`}>
+                      <ArrowLeft size={14} />
+                    </button>
+                    <button type="button" className="rounded-full bg-black/60 p-1 text-white disabled:opacity-0" disabled={i === fields.media.length - 1} onClick={() => moveMedia(i, 1)} aria-label={`Move ${i + 1} later`}>
+                      <ArrowRight size={14} />
+                    </button>
+                  </span>
                 </li>
               ))}
             </ul>
           )}
           <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn" onClick={() => imageInput.current?.click()}>
-              <ImagePlus size={16} /> Add image
+            <button type="button" className="btn" disabled={adding} onClick={() => imageInput.current?.click()}>
+              <ImagePlus size={16} /> {adding ? 'Adding…' : 'Add images or videos'}
             </button>
             <form
               className="flex min-w-0 flex-1 gap-2"
@@ -405,18 +431,19 @@ function Editor({ post }: { post: Post }) {
               </button>
             </form>
           </div>
+          <p className="mt-1.5 text-xs text-muted">Pictures sync to all your devices. Videos stay on the device you add them on; the others show a still frame.</p>
           <input
             ref={imageInput}
             type="file"
-            accept={IMAGE_ACCEPT}
+            accept={POST_MEDIA_ACCEPT}
             multiple
             className="sr-only"
             tabIndex={-1}
-            aria-label="Images for this post"
+            aria-label="Images and videos for this post"
             onChange={(e) => {
               const files = [...(e.target.files ?? [])];
               e.target.value = '';
-              if (files.length) void addImages(files);
+              if (files.length) void addMedia(files);
             }}
           />
         </section>

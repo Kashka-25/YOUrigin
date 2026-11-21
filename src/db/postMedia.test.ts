@@ -1,0 +1,143 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import Dexie from 'dexie';
+import JSZip from 'jszip';
+import { db, SCHEMA_VERSION, YOUriginDB } from './db';
+import { createPost } from './posts';
+import { attachMediaToPosts, fillMedia, removeMediaIfUnused, saveClip, withMediaFiles, type MediaSavers } from './postMedia';
+import { exportBackup } from './backup';
+import { SYNC_TABLES } from '../sync/tracking';
+import { collectImportFiles, findMedia, mediaKey } from '../io/postMedia';
+import { draftsToPosts, parsePostDrafts } from '../io/importPosts';
+import { newId } from '../domain/text';
+import type { PostMedia } from '../posts/model';
+
+beforeEach(async () => {
+  await db.delete();
+  await db.open();
+});
+
+const jpg = (name: string) => new File([new Uint8Array([0xff, 0xd8, 0xff, 1, 2, 3])], name, { type: 'image/jpeg' });
+const mp4 = (name: string) => new File([new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112])], name, { type: 'video/mp4' });
+
+/** Stand-ins for storing pictures and videos (the browser does the real decoding). */
+function fakeSavers() {
+  const calls = { image: [] as string[], clip: [] as string[] };
+  const savers: MediaSavers = {
+    image: async (f) => {
+      calls.image.push(f.name);
+      return `asset-${f.name}`;
+    },
+    clip: async (f) => {
+      calls.clip.push(f.name);
+      return { clipId: `clip-${f.name}`, posterAssetId: `still-${f.name}` };
+    },
+  };
+  return { savers, calls };
+}
+
+const drafts = JSON.stringify({
+  kind: 'post-drafts',
+  version: 1,
+  posts: [
+    { key: 'a', format: 'carousel', world: 'healing', caption: 'Invented', media: [{ name: 'a-01.jpg' }, { name: 'a-02.jpg' }] },
+    { key: 'b', format: 'reel', world: 'coco-making', caption: 'Invented', media: ['b-reel.mp4'] },
+    { key: 'c', format: 'single-image', world: 'healing', caption: 'Invented', media: ['shared.jpg', 'not-picked.jpg'] },
+    { key: 'd', format: 'single-image', world: 'healing', caption: 'Invented', media: ['Shared.JPG'] },
+  ],
+});
+
+describe('picking media with drafts', () => {
+  it('sorts picked files into the drafts file and media, matching names by file name only', async () => {
+    const { drafts: found, media } = await collectImportFiles([new File([drafts], 'drafts.json', { type: 'application/json' }), jpg('a-01.jpg'), mp4('b-reel.mp4'), new File(['x'], 'notes.txt')]);
+    expect(found.map((f) => f.name)).toEqual(['drafts.json']);
+    expect([...media.keys()]).toEqual(['a-01.jpg', 'b-reel.mp4']);
+    expect(findMedia(media, 'To post/2026-11-23/A-01.JPG')?.name).toBe('a-01.jpg');
+    expect(mediaKey('C:\\To post\\x\\Slide-1.jpg')).toBe('slide-1.jpg');
+  });
+
+  it('opens a .zip holding the drafts file and its media in folders', async () => {
+    const zip = new JSZip();
+    zip.file('Claude - posts/yourigin-drafts.json', drafts);
+    zip.file('Claude - posts/a/a-01.jpg', new Uint8Array([1, 2, 3]));
+    zip.file('Claude - posts/b/b-reel.mp4', new Uint8Array([4, 5, 6]));
+    zip.file('__MACOSX/a/._a-01.jpg', new Uint8Array([9]));
+    const bytes = await zip.generateAsync({ type: 'uint8array' });
+    const { drafts: found, media } = await collectImportFiles([new File([bytes.buffer as ArrayBuffer], 'posts.zip', { type: 'application/zip' })]);
+    expect(found.map((f) => f.name)).toEqual(['yourigin-drafts.json']);
+    expect([...media.keys()].sort()).toEqual(['a-01.jpg', 'b-reel.mp4']);
+    expect(media.get('b-reel.mp4')?.type).toBe('video/mp4');
+  });
+});
+
+describe('media for posts', () => {
+  it('imported drafts get their pictures and videos; a file shared by two posts is stored once', async () => {
+    const { savers, calls } = fakeSavers();
+    const files = new Map([jpg('a-01.jpg'), jpg('a-02.jpg'), mp4('b-reel.mp4'), jpg('shared.jpg')].map((f) => [mediaKey(f.name), f]));
+    const posts = await withMediaFiles(draftsToPosts(parsePostDrafts(drafts)), files, savers);
+    expect(posts[0].media).toEqual([{ kind: 'asset', assetId: 'asset-a-01.jpg' }, { kind: 'asset', assetId: 'asset-a-02.jpg' }]);
+    expect(posts[1].media).toEqual([{ kind: 'clip', name: 'b-reel.mp4', clipId: 'clip-b-reel.mp4', posterAssetId: 'still-b-reel.mp4' }]);
+    // the file that wasn't picked stays a file name, in its place
+    expect(posts[2].media).toEqual([{ kind: 'asset', assetId: 'asset-shared.jpg' }, { kind: 'file', name: 'not-picked.jpg' }]);
+    expect(posts[3].media).toEqual([{ kind: 'asset', assetId: 'asset-shared.jpg' }]);
+    expect(calls.image.filter((n) => n === 'shared.jpg')).toHaveLength(1);
+  });
+
+  it('without media picked, drafts keep their file names', async () => {
+    const posts = await withMediaFiles(draftsToPosts(parsePostDrafts(drafts)), new Map(), fakeSavers().savers);
+    expect(posts[0].media).toEqual([{ kind: 'file', name: 'a-01.jpg' }, { kind: 'file', name: 'a-02.jpg' }]);
+  });
+
+  it('media added later fills posts already here that name it, keeping their order', async () => {
+    const id = await createPost({ media: [{ kind: 'file', name: 'one.jpg' }, { kind: 'asset', assetId: 'kept' }, { kind: 'file', name: 'two.mp4' }] });
+    const other = await createPost({ media: [{ kind: 'file', name: 'elsewhere.jpg' }] });
+    const { savers } = fakeSavers();
+    const r = await attachMediaToPosts(new Map([jpg('one.jpg'), mp4('two.mp4')].map((f) => [mediaKey(f.name), f])), savers);
+    expect(r).toEqual({ posts: 1, files: 2, placed: 2 });
+    expect((await db.posts.get(id))?.media).toEqual([
+      { kind: 'asset', assetId: 'asset-one.jpg' },
+      { kind: 'asset', assetId: 'kept' },
+      { kind: 'clip', name: 'two.mp4', clipId: 'clip-two.mp4', posterAssetId: 'still-two.mp4' },
+    ]);
+    expect((await db.posts.get(other))?.media).toEqual([{ kind: 'file', name: 'elsewhere.jpg' }]);
+  });
+
+  it('fillMedia leaves media that is already stored alone', async () => {
+    const media: PostMedia[] = [{ kind: 'asset', assetId: 'x' }];
+    expect(await fillMedia(media, new Map([['x', jpg('x')]]), fakeSavers().savers)).toEqual({ media, filled: 0 });
+  });
+});
+
+describe('videos', () => {
+  it('a video is kept on this device, never synced or backed up, and removed once no post uses it', async () => {
+    const { clipId, posterAssetId } = await saveClip(mp4('reel.mp4'), async () => ({ width: 1080, height: 1920, duration: 19, poster: null }));
+    expect(posterAssetId).toBeUndefined();
+    const stored = await db.clips.get(clipId);
+    expect(stored).toMatchObject({ name: 'reel.mp4', mime: 'video/mp4', width: 1080, height: 1920, duration: 19 });
+    expect(SYNC_TABLES).not.toContain('clips');
+    expect(Object.keys((await exportBackup()).tables)).not.toContain('clips');
+
+    const media: PostMedia = { kind: 'clip', clipId, name: 'reel.mp4' };
+    const id = await createPost({ media: [media] });
+    await removeMediaIfUnused(media);
+    expect(await db.clips.get(clipId)).toBeTruthy();
+    await db.posts.update(id, { media: [] });
+    await removeMediaIfUnused(media);
+    expect(await db.clips.get(clipId)).toBeUndefined();
+  });
+
+  it('upgrading from version 6 keeps posts and adds an empty clips table', async () => {
+    expect(SCHEMA_VERSION).toBe(7);
+    const name = `upgrade-${newId()}`;
+    const old = new Dexie(name);
+    old.version(60).stores({ posts: 'id, updatedAt, status, scheduledAt, world, *pieceIds', assets: 'id, updatedAt' });
+    await old.open();
+    await old.table('posts').add({ id: 'p1', caption: 'still here', media: [{ kind: 'file', name: 'x.jpg' }] });
+    old.close();
+    const upgraded = new YOUriginDB(name);
+    await upgraded.open();
+    expect((await upgraded.posts.get('p1'))?.caption).toBe('still here');
+    expect(await upgraded.clips.count()).toBe(0);
+    upgraded.close();
+    await Dexie.delete(name);
+  });
+});

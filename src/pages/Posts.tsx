@@ -1,11 +1,12 @@
 import { useRef, useState, type DragEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Download, Move, Plus, Upload } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Download, FolderOpen, ImagePlus, Move, Plus, Upload } from 'lucide-react';
 import { EmptyState, Spinner } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { createPost, movePostInFeed, setPostStatus, usePosts } from '../db/posts';
-import { POST_DRAFTS_ACCEPT, type PostDraftsFile } from '../io/importPosts';
-import { ImportPostDraftsDialog, readPostDraftsFile } from '../components/posts/ImportPostDrafts';
+import { POST_IMPORT_ACCEPT, POST_MEDIA_ACCEPT, collectImportFiles } from '../io/postMedia';
+import { attachMediaToPosts } from '../db/postMedia';
+import { ImportPostDraftsDialog, readPostDraftsFiles, type DraftsReview } from '../components/posts/ImportPostDrafts';
 import { ExportPostsDialog } from '../components/posts/ExportPosts';
 import { FeedTileFace, PostChip, WorldDot, postTitle } from '../components/posts/PostBits';
 import {
@@ -389,7 +390,10 @@ export function Posts() {
   const view = (VIEWS.find((v) => v.id === params.get('view'))?.id ?? rememberedView()) as View;
   const at = parseDay(params.get('at')) ?? new Date();
   const fileInput = useRef<HTMLInputElement>(null);
-  const [review, setReview] = useState<PostDraftsFile | null>(null);
+  const folderInput = useRef<HTMLInputElement>(null);
+  const mediaInput = useRef<HTMLInputElement>(null);
+  const [review, setReview] = useState<DraftsReview | null>(null);
+  const [attaching, setAttaching] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const setView = (v: View) => {
@@ -408,12 +412,27 @@ export function Posts() {
     setParams(next, { replace: true });
   };
 
-  const openFile = async (file: File | undefined) => {
-    if (!file) return;
+  const openFiles = async (files: File[]) => {
+    if (!files.length) return;
     try {
-      setReview(await readPostDraftsFile(file));
+      setReview(await readPostDraftsFiles(files));
     } catch (e) {
       toast(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  /** Images and videos for posts already here, matched by the file names they list. */
+  const attachMedia = async (files: File[]) => {
+    if (!files.length) return;
+    setAttaching(true);
+    try {
+      const { media } = await collectImportFiles(files);
+      const r = await attachMediaToPosts(media);
+      toast(r.posts ? `Added ${r.files} image${r.files === 1 ? '' : 's'} and video${r.files === 1 ? '' : 's'} to ${r.posts} post${r.posts === 1 ? '' : 's'}.` : 'None of those files are named in your posts.');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setAttaching(false);
     }
   };
 
@@ -425,8 +444,14 @@ export function Posts() {
           <p className="mt-3 max-w-xl font-serif text-lg text-ink-2">Plan, write and approve what you share on Instagram. Posts link to your pieces; they never copy them.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn" onClick={() => fileInput.current?.click()}>
+          <button type="button" className="btn" onClick={() => fileInput.current?.click()} title="Pick the drafts file with its images and videos, or a .zip">
             <Upload size={16} /> Import drafts
+          </button>
+          <button type="button" className="btn hidden md:inline-flex" onClick={() => folderInput.current?.click()} title="Pick a folder that holds a drafts file and its images and videos">
+            <FolderOpen size={16} /> Import a folder
+          </button>
+          <button type="button" className="btn" disabled={attaching} onClick={() => mediaInput.current?.click()} title="Add images and videos to posts that list them by file name">
+            <ImagePlus size={16} /> {attaching ? 'Adding…' : 'Add media'}
           </button>
           <button type="button" className="btn" onClick={() => setExporting(true)}>
             <Download size={16} /> Export approved
@@ -470,17 +495,49 @@ export function Posts() {
       <input
         ref={fileInput}
         type="file"
-        accept={POST_DRAFTS_ACCEPT}
+        accept={POST_IMPORT_ACCEPT}
+        multiple
         className="sr-only"
         tabIndex={-1}
-        aria-label="Post drafts file"
+        aria-label="Post drafts file, with its images and videos"
         onChange={(e) => {
-          const file = e.target.files?.[0];
+          const files = [...(e.target.files ?? [])];
           e.target.value = '';
-          void openFile(file);
+          void openFiles(files);
         }}
       />
-      <ImportPostDraftsDialog file={review} onClose={() => setReview(null)} />
+      <input
+        ref={(el) => {
+          folderInput.current = el;
+          // Folder picking is a non-standard attribute React doesn't know.
+          el?.setAttribute('webkitdirectory', '');
+        }}
+        type="file"
+        multiple
+        className="sr-only"
+        tabIndex={-1}
+        aria-label="Folder with a drafts file and its media"
+        onChange={(e) => {
+          const files = [...(e.target.files ?? [])];
+          e.target.value = '';
+          void openFiles(files);
+        }}
+      />
+      <input
+        ref={mediaInput}
+        type="file"
+        accept={POST_MEDIA_ACCEPT}
+        multiple
+        className="sr-only"
+        tabIndex={-1}
+        aria-label="Images and videos for your posts"
+        onChange={(e) => {
+          const files = [...(e.target.files ?? [])];
+          e.target.value = '';
+          void attachMedia(files);
+        }}
+      />
+      <ImportPostDraftsDialog review={review} onClose={() => setReview(null)} />
       <ExportPostsDialog open={exporting} onClose={() => setExporting(false)} posts={posts ?? []} />
     </div>
   );

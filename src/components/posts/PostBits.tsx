@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Clapperboard, GalleryHorizontal, Image as ImageIcon, Quote, CircleDashed, Sparkles } from 'lucide-react';
 import { projectColourStyle } from '../ProjectColourPicker';
 import { AssetImage } from '../AssetImage';
+import { MediaThumb, firstPicture } from './PostMedia';
 import type { ProjectColour } from '../../domain/types';
 import { FORMAT_LABEL, STATUS_LABEL, WORLD_COLOUR, WORLD_LABEL, timeKey, type Post, type PostFormat, type PostStatus, type PostWorld } from '../../posts/model';
 
@@ -59,7 +60,10 @@ export function PostChip({ post, showTime = true, showStatus = true }: { post: P
         {post.origin.kind === 'claude' && post.status === 'draft' && <Sparkles size={12} className="text-gold" aria-label="Drafted by Claude" />}
         {showStatus && <PostStatusPill status={post.status} className="ml-auto" />}
       </span>
-      <span className="mt-1 block font-serif text-[15px] leading-snug text-ink">{postTitle(post)}</span>
+      <span className="mt-1 flex items-start gap-2">
+        {firstPicture(post.media) && <MediaThumb media={firstPicture(post.media)!} className="aspect-[4/5] w-10 shrink-0 rounded-md" />}
+        <span className="block min-w-0 font-serif text-[15px] leading-snug text-ink">{postTitle(post)}</span>
+      </span>
     </Link>
   );
 }
@@ -67,11 +71,12 @@ export function PostChip({ post, showTime = true, showStatus = true }: { post: P
 /** A post as it will look in the profile grid: its first picture, or its hook on the world's colour. */
 export function FeedTileFace({ post }: { post: Post }) {
   const Icon = FORMAT_ICON[post.format];
-  const picture = post.media.find((m) => m.kind === 'asset');
+  const picture = firstPicture(post.media);
+  const pictureId = picture?.kind === 'asset' ? picture.assetId : picture?.kind === 'clip' ? picture.posterAssetId : undefined;
   return (
     <span className="post-tile relative block aspect-[4/5] w-full overflow-hidden" style={worldStyle(post.world)}>
-      {picture && picture.kind === 'asset' ? (
-        <AssetImage id={picture.assetId} alt={post.altText} className="absolute inset-0 h-full w-full object-cover" />
+      {pictureId ? (
+        <AssetImage id={pictureId} alt={post.altText} className="absolute inset-0 h-full w-full object-cover" />
       ) : (
         <span className="absolute inset-0 flex items-center justify-center p-2 text-center font-serif text-[13px] leading-snug text-ink sm:p-4 sm:text-base">
           <span className="line-clamp-5">{post.hook.trim() || postTitle(post)}</span>
