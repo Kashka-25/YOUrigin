@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type Ref } from 'react';
 import { ChevronLeft, ChevronRight, FileImage, Film, Play, Upload } from 'lucide-react';
 import { AssetImage } from '../AssetImage';
 import { addClipOnThisDevice, useClipUrl } from '../../db/postMedia';
@@ -33,13 +33,13 @@ export function firstPicture(media: PostMedia[]): PostMedia | undefined {
   return media.find((m) => m.kind === 'asset' || (m.kind === 'clip' && m.posterAssetId));
 }
 
-function ClipPlayer({ media, tall }: { media: Extract<PostMedia, { kind: 'clip' }>; tall: boolean }) {
+function ClipPlayer({ media, tall, videoRef }: { media: Extract<PostMedia, { kind: 'clip' }>; tall: boolean; videoRef?: Ref<HTMLVideoElement> }) {
   const { url, missing } = useClipUrl(media.clipId);
   const input = useRef<HTMLInputElement>(null);
   const [adding, setAdding] = useState(false);
   const [problem, setProblem] = useState('');
   if (url) {
-    return <video src={url} className="h-full w-full bg-black object-contain" controls playsInline loop preload="metadata" aria-label={media.name} />;
+    return <video ref={videoRef} src={url} className="h-full w-full bg-black object-contain" controls playsInline loop preload="metadata" aria-label={media.name} />;
   }
   const add = async (file: File | undefined) => {
     if (!file) return;
@@ -93,8 +93,8 @@ function ClipPlayer({ media, tall }: { media: Extract<PostMedia, { kind: 'clip' 
   );
 }
 
-export function Slide({ media, alt, tall }: { media: PostMedia; alt: string; tall: boolean }) {
-  if (media.kind === 'clip') return <ClipPlayer media={media} tall={tall} />;
+export function Slide({ media, alt, tall, videoRef }: { media: PostMedia; alt: string; tall: boolean; videoRef?: Ref<HTMLVideoElement> }) {
+  if (media.kind === 'clip') return <ClipPlayer media={media} tall={tall} videoRef={videoRef} />;
   if (media.kind === 'asset') return <AssetImage id={media.assetId} alt={alt} className="h-full w-full object-cover" />;
   return (
     <span className="flex h-full w-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-ink-2">

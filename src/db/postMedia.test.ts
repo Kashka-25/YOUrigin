@@ -193,3 +193,21 @@ describe('a video imported on another device', () => {
     expect(await db.posts.get(id)).toEqual(before);
   });
 });
+
+describe('a video cover', () => {
+  it('a new cover replaces the old one on that video only, and says which picture it replaced', async () => {
+    const { withCover } = await import('./postMedia');
+    const media: PostMedia[] = [
+      { kind: 'asset', assetId: 'slide' },
+      { kind: 'clip', clipId: 'v', name: 'reel.mp4', posterAssetId: 'old-still' },
+    ];
+    expect(withCover(media, 1, 'new-cover')).toEqual({
+      media: [{ kind: 'asset', assetId: 'slide' }, { kind: 'clip', clipId: 'v', name: 'reel.mp4', posterAssetId: 'new-cover' }],
+      replaced: 'old-still',
+    });
+    // not a video: nothing changes
+    expect(withCover(media, 0, 'new-cover')).toEqual({ media });
+    // a video without a cover yet gets one, with nothing to replace
+    expect(withCover([{ kind: 'clip', clipId: 'v', name: 'reel.mp4' }], 0, 'first')).toEqual({ media: [{ kind: 'clip', clipId: 'v', name: 'reel.mp4', posterAssetId: 'first' }] });
+  });
+});

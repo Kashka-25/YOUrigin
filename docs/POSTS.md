@@ -27,6 +27,7 @@ Laid out like Instagram's "New post" so it feels familiar:
 
 - **Photos and videos first**, at the very top: add them, see the selected one large (swipe or use the arrows), and arrange them in the strip below by dragging. **+** adds more; the bin removes the one shown. Dropping files on it works on the laptop. Adding media sets the format the way Instagram does: a video makes a Reel, several pictures a carousel, one picture a single image (quote cards and Stories stay as chosen).
 - **Caption** next, then everything else in rows you tap open: Schedule, Format and world, On-image hook, Call to action, Hashtags, Alt text, Linked pieces, Files in Drive, Notes to self and Status. Each row shows a short summary while closed.
+- **Cover** (for a video): like Instagram's Edit cover. **Choose from video** opens a filmstrip and slider over the video; slide to a moment (it shows large above) and **Use this frame**. Or **Upload a picture**. The cover is a picture, so it syncs to every device and is what the grid and lists show.
 - **Preview** (top right) shows the post with its caption as followers will see it.
 
 ## Ideas
