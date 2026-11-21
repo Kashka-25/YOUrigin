@@ -1,4 +1,4 @@
-import { useRef, useState, type DragEvent } from 'react';
+import { useRef, useState, type DragEvent, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Download, FolderOpen, ImagePlus, Lightbulb, Move, Plus, Upload } from 'lucide-react';
 import { EmptyState, Spinner } from '../components/ui';
@@ -410,6 +410,17 @@ function IdeasView({ posts }: { posts: Post[] }) {
     }
   };
 
+  // A post idea in words alone: kept as its own idea (a quote card until media is added).
+  const [jot, setJot] = useState('');
+  const keepJot = async (e: FormEvent) => {
+    e.preventDefault();
+    const text = jot.trim();
+    if (!text) return;
+    await createPost({ status: 'idea', format: 'quote-card', caption: text });
+    setJot('');
+    toast('Idea kept.');
+  };
+
   const toggle = (id: string) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
   const finish = () => {
     setSelecting(false);
@@ -446,9 +457,23 @@ function IdeasView({ posts }: { posts: Post[] }) {
         void add([...e.dataTransfer.files]);
       }}
     >
+      <form onSubmit={(e) => void keepJot(e)} className="mx-auto mb-4 flex max-w-xl gap-2">
+        <input
+          className="input min-w-0 flex-1"
+          value={jot}
+          onChange={(e) => setJot(e.target.value)}
+          placeholder="Jot a post idea…"
+          aria-label="A post idea in words"
+          enterKeyHint="done"
+        />
+        <button type="submit" className="btn-primary shrink-0" disabled={!jot.trim()}>
+          Keep
+        </button>
+      </form>
+
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <p className="min-w-0 flex-1 text-sm text-ink-2">
-          {selecting ? (chosen.length ? `${chosen.length} selected, in the order you tapped them.` : 'Tap ideas to select them.') : 'Photos and videos you might post. Sort through them when you’re ready.'}
+          {selecting ? (chosen.length ? `${chosen.length} selected, in the order you tapped them.` : 'Tap ideas to select them.') : 'Words, photos and videos you might post.'}
         </p>
         {ideas.length > 0 && (
           <button type="button" className={selecting ? 'btn-primary' : 'btn'} aria-pressed={selecting} onClick={() => (selecting ? finish() : setSelecting(true))}>
@@ -586,7 +611,6 @@ export function Posts() {
       <header className="page-intro flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="page-title">Posts</h1>
-          <p className="mt-3 max-w-xl font-serif text-lg text-ink-2">Plan, write and approve what you share on Instagram. Posts link to your pieces; they never copy them.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" className="btn" onClick={() => fileInput.current?.click()} title="Pick the drafts file with its images and videos, or a .zip">
