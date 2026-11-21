@@ -23,6 +23,11 @@ export interface Project extends Syncable {
   /** Optional free-form category used only for filtering. Empty means uncategorised. */
   category: string;
   status: ProjectStatus;
+  /**
+   * The Creation this one sits inside (Lyrics & Music › Songs › Writing). Missing: top level.
+   * Unindexed and optional, so no schema change; see src/domain/creations.ts.
+   */
+  parentId?: string;
   /** Where this Project lives in Creative Universe, Cassidy's portfolio hub. Missing: placed by its portfolio section. */
   universe?: UniverseLink;
   /** What changed, in Cassidy's words, newest first. Travels with the Project to Creative Universe. */
