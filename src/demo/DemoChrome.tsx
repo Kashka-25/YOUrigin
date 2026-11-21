@@ -130,7 +130,7 @@ export function DemoWelcome() {
     try {
       await startDemo(choice);
       // The example opens on the overview of Juno's world; a blank start on Gather.
-      window.location.hash = choice === 'example' ? '#/universe' : '#/';
+      window.location.hash = choice === 'example' ? '#/initiatives' : '#/';
     } finally {
       setBusy(null);
     }

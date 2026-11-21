@@ -91,10 +91,10 @@ export function Projects() {
     <div className="page-frame">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="page-title">Projects</h1>
+          <h1 className="page-title">Creations</h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn-primary" onClick={() => setCreating(true)}><Plus size={16} /> New project</button>
+          <button type="button" className="btn-primary" onClick={() => setCreating(true)}><Plus size={16} /> New creation</button>
         </div>
       </header>
 
@@ -165,7 +165,7 @@ export function Projects() {
         </div>
       )}
 
-      <Modal open={creating} onClose={() => setCreating(false)} title="New project">
+      <Modal open={creating} onClose={() => setCreating(false)} title="New creation">
         <form className="space-y-4" onSubmit={submit}>
           <div>
             <label className="label" htmlFor="project-title">Name</label>

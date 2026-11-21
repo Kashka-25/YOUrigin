@@ -49,7 +49,7 @@ export function MyUniverse() {
           
           <div className="mt-7 flex flex-wrap gap-3">
             <Link to="/projects" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#d6ad6d] px-4 py-2 text-sm font-semibold text-[#211827] hover:brightness-105"><BookOpen size={16}/> Explore your works</Link>
-            <Link to="/" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm text-[#e8dfe9] hover:bg-white/5"><Feather size={16}/> Gather a thought</Link>
+            <Link to="/" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm text-[#e8dfe9] hover:bg-white/5"><Feather size={16}/> Capture a thought</Link>
           </div>
         </div>
       </section>
