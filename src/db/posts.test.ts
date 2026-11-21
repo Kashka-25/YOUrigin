@@ -71,7 +71,7 @@ describe('posts', () => {
   });
 
   it('upgrading from version 5 keeps everything and adds an empty posts table', async () => {
-    expect(SCHEMA_VERSION).toBe(6);
+    expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(6);
     const name = `upgrade-${newId()}`;
     const old = new Dexie(name);
     old.version(50).stores({

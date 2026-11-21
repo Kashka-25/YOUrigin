@@ -9,7 +9,14 @@ export type PostFormat = 'reel' | 'carousel' | 'quote-card' | 'story' | 'single-
 export type PostWorld = 'healing' | 'digital-homes' | 'worlds-stories' | 'music-sound' | 'coco-making';
 
 /** A picture stored in YOUrigin, or a file kept elsewhere (Google Drive, the phone) named by its file name. */
-export type PostMedia = { kind: 'asset'; assetId: string } | { kind: 'file'; name: string; note?: string };
+export type PostMedia =
+  | { kind: 'asset'; assetId: string }
+  | { kind: 'file'; name: string; note?: string }
+  /**
+   * A video kept on the device it was added on (videos are too large to sync).
+   * Its still frame is an asset, so every device can show the post's picture.
+   */
+  | { kind: 'clip'; clipId: string; name: string; posterAssetId?: string };
 
 export type PostOrigin =
   | { kind: 'cassidy' }

@@ -138,6 +138,21 @@ export interface Asset extends Syncable {
   bytes: number;
 }
 
+/** A video stored on this device only (never synced or backed up: too large). */
+export interface Clip {
+  id: string;
+  name: string;
+  mime: string;
+  blob: Blob;
+  bytes: number;
+  width: number;
+  height: number;
+  /** Seconds. */
+  duration: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface TagFamily extends Syncable {
   name: string;
   order: number;

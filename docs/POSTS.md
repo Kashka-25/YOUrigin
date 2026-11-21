@@ -5,8 +5,9 @@ Plan, write, review and approve social media posts (Instagram) inside YOUrigin. 
 ## The weekly flow
 
 1. Media goes into the Google Drive "To post" folder.
-2. Claude drafts the week and saves a **drafts file** (format below).
-3. In **Posts → Import drafts**, the file is shown for review. Every post kept arrives as a **Draft**, whatever the file says. Re-importing the same file adds nothing and never overwrites edits.
+2. Claude drafts the week and saves a **drafts file** (format below), usually with its slides and videos beside it and as one **.zip**.
+3. In **Posts → Import drafts**, pick the drafts file **together with its images and videos**, or the **.zip** (easiest on the phone), or use **Import a folder** on the laptop. The review shows each draft with the media found for it. Every post kept arrives as a **Draft**, whatever the file says. Re-importing the same file adds nothing and never overwrites edits.
+   - Posts imported without their media keep the file names; **Add media** on the Posts page fills them in later, matching by file name.
 4. Edit each draft, then **Approve** it.
 5. **Export approved** saves the approved posts in a date range as `.json` (for scheduling in Metricool, later) and `.md` (readable). Exporting changes nothing and sends nothing.
 6. Once a post is live, **Mark posted** and paste its link.
@@ -20,6 +21,13 @@ Plan, write, review and approve social media posts (Instagram) inside YOUrigin. 
 
 Posted times are placeholders until real insights are in (`WEEK_PLAN` in `src/posts/model.ts`).
 
+## Seeing what you're making
+
+- Every post opens with a **preview** as followers will see it: swipe or use the arrows through a carousel's slides, or play the Reel, with the caption, call to action and hashtags underneath. It updates as you edit.
+- The Week, Month and Board views show each post's first picture; the Grid shows the profile with real pictures (a video's still frame).
+- **Pictures** are ordinary stored images: they sync to every device, end-to-end encrypted.
+- **Videos** are kept on the device they were added on (`clips` table, schema v7), because they are far larger than sync's ~3 MB requests; they are not synced or in backups. A still frame of each video is stored as a picture, so other devices show the post's picture and a note saying where the video is.
+
 ## A post
 
 | Field | Notes |
@@ -31,7 +39,7 @@ Posted times are placeholders until real insights are in (`WEEK_PLAN` in `src/po
 | On-image hook | Can be picked from a line of a linked piece; a quote card notes when that line is no longer in the piece |
 | Caption, call to action, hashtags, alt text | Caption counter (2,200) and hashtag counter (30) |
 | Linked pieces | Links to poems, fragments, lyrics by id. Content exists once: the post never copies them |
-| Media | Images stored in YOUrigin, or a file name (for example in Drive) |
+| Media | Images stored in YOUrigin, videos, or a file name (for example in Drive). Shown in order, and reordered with the arrows |
 | Notes to self | Never exported |
 
 Gentle checks (never blocking): a caption that touches on crisis without a helpline; cannabis words (Instagram restricts cannabis promotion); missing alt text; over the caption or hashtag limits.
@@ -73,7 +81,7 @@ A JSON file. A full example with invented text: [`samples/post-drafts.sample.jso
 - `world`: `healing`, `digital-homes`, `worlds-stories`, `music-sound`, `coco-making` (labels such as "Worlds & Stories" work too).
 - `hashtags`: a list, or one string.
 - `pieces`: pieces already in YOUrigin, by `{ "id": "…" }` or `{ "title": "…" }` (or just the title as a string). A title links only when exactly one piece has it; otherwise the review shows it to link by hand. Import never creates pieces.
-- `media`: file names (or `{ "name", "note" }`).
+- `media`: file names (or `{ "name", "note" }`), in slide order. Picked or zipped files are matched by file name only (folders and letter case don't matter); a file used by several posts is stored once.
 - `status` is ignored: every draft arrives as a Draft.
 
 Unknown formats, worlds or dates don't stop the import: the review shows a note and a safe default.

@@ -88,7 +88,9 @@ export function buildSchedule(
         media: p.media.map((m) =>
           m.kind === 'asset'
             ? { name: lookup.assets.get(m.assetId)?.name ?? 'image stored in YOUrigin', storedInYOUrigin: true }
-            : { name: m.name, storedInYOUrigin: false, ...(m.note ? { note: m.note } : {}) },
+            : m.kind === 'clip'
+              ? { name: m.name, storedInYOUrigin: true, note: 'video kept on the device it was added on' }
+              : { name: m.name, storedInYOUrigin: false, ...(m.note ? { note: m.note } : {}) },
         ),
         pieces: p.pieceIds.flatMap((id) => {
           const piece = lookup.pieces.get(id);

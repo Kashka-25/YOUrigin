@@ -13,6 +13,7 @@ import type {
   TagFamily,
   Template,
   Asset,
+  Clip,
   Project,
 } from '../domain/types';
 import type { Portfolio } from '../portfolio/model';
@@ -22,7 +23,7 @@ import { installChangeTracking } from '../sync/tracking';
 import { DEMO, DEMO_DB_NAME } from '../demo/mode';
 import { appOutbox, isSyncEnabled } from '../sync/runtime';
 
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 /**
  * One-time, non-destructive migration: each existing standalone Work gets a
@@ -97,6 +98,7 @@ export class YOUriginDB extends Dexie {
   projects!: Table<Project, string>;
   portfolios!: Table<Portfolio, string>;
   posts!: Table<Post, string>;
+  clips!: Table<Clip, string>;
 
   constructor(name = 'yourigin') {
     super(name);
@@ -133,6 +135,8 @@ export class YOUriginDB extends Dexie {
     this.version(5).stores({ portfolios: 'id, updatedAt' });
     // v6: Posts, social media posts planned and approved here. They link to pieces by id.
     this.version(6).stores({ posts: 'id, updatedAt, status, scheduledAt, world, *pieceIds' });
+    // v7: videos for posts, kept on this device only (not synced or backed up: too large).
+    this.version(7).stores({ clips: 'id, updatedAt' });
   }
 }
 
