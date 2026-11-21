@@ -1,0 +1,48 @@
+{
+  "app": "YOUrigin",
+  "kind": "post-drafts",
+  "version": 1,
+  "week": "2026-11-23",
+  "posts": [
+    {
+      "key": "2026-11-23-healing-quote",
+      "date": "2026-11-23",
+      "time": "19:00",
+      "format": "quote-card",
+      "world": "Healing",
+      "hook": "The lantern was lit long before I found the shore.",
+      "caption": "Some evenings the body arrives home before the mind does.\n\nThis is a sample caption, invented for testing.",
+      "hashtags": ["#sample", "#nervoussystem", "#home"],
+      "altText": "Cream text on a deep blue card: a line about a lantern and a shore.",
+      "cta": "Save this for a slower evening ✨️",
+      "pieces": [{ "title": "The Lantern Shore" }],
+      "media": [{ "name": "lantern-card.png", "note": "In the Drive 'To post' folder" }],
+      "notes": "Sample only."
+    },
+    {
+      "key": "2026-11-26-music-reel",
+      "date": "2026-11-26",
+      "time": "19:00",
+      "format": "reel",
+      "world": "music-sound",
+      "hook": "Thirty seconds of a song still finding its words.",
+      "caption": "An invented caption about humming into a phone at midnight. 🎶",
+      "hashtags": "#sample #freestyle #songwriting",
+      "altText": "A hand holding a phone near a guitar, warm lamp light.",
+      "cta": "Send this to someone who hums 💛",
+      "media": ["midnight-hum.mp4"]
+    },
+    {
+      "key": "2026-11-28-coco-carousel",
+      "date": "2026-11-28",
+      "time": "11:00",
+      "format": "carousel",
+      "world": "Coco & the Making",
+      "hook": "How a character learns to smile, in five frames.",
+      "caption": "Sample caption: behind the scenes of a 3D guide, frame by frame.",
+      "hashtags": ["#sample", "#blender", "#characterdesign"],
+      "altText": "Five renders of a small chimp character, each smile a little warmer.",
+      "cta": "Which frame is your favourite?"
+    }
+  ]
+}

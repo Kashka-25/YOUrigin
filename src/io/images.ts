@@ -12,6 +12,45 @@ export interface ShrunkImage {
   height: number;
   bytes: number;
   originalBytes: number;
+  /** The file name to keep: a converted HEIC photo ends in .jpg. */
+  name: string;
+}
+
+// ---- HEIC / HEIF ---------------------------------------------------------------
+// Phones (iPhone, and Samsung with "high efficiency" photos on) save HEIC, which
+// only Safari can read. Such photos are converted to JPEG on the device before
+// anything else happens. The decoder is only downloaded when one arrives.
+
+const HEIC_TYPE = /^image\/hei[cf](-sequence)?$/i;
+const HEIC_NAME = /\.hei[cf]$/i;
+const HEIC_BRANDS = new Set(['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'hevm', 'hevs', 'mif1', 'msf1']);
+
+/** True for HEIC/HEIF photos, by type, by name, or (when a share arrives without either) by the file's first bytes. */
+export async function isHeicFile(file: Blob & { name?: string }): Promise<boolean> {
+  if (HEIC_TYPE.test(file.type) || HEIC_NAME.test(file.name ?? '')) return true;
+  if (file.type && file.type !== 'application/octet-stream') return false;
+  try {
+    const head = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+    const box = String.fromCharCode(...head.slice(4, 8));
+    const brand = String.fromCharCode(...head.slice(8, 12));
+    return box === 'ftyp' && HEIC_BRANDS.has(brand);
+  } catch {
+    return false;
+  }
+}
+
+/** Converts a HEIC/HEIF photo to a JPEG file with the same name ending in .jpg; anything else is returned as it is. */
+export async function readableImage(file: File): Promise<{ file: File; converted: boolean }> {
+  if (!(await isHeicFile(file))) return { file, converted: false };
+  try {
+    const { heicTo } = await import('heic-to');
+    const jpeg = await heicTo({ blob: file, type: 'image/jpeg', quality: 0.92 });
+    const name = `${(file.name || 'photo').replace(/\.hei[cf]$/i, '')}.jpg`;
+    return { file: new File([jpeg], name, { type: 'image/jpeg', lastModified: file.lastModified }), converted: true };
+  } catch (e) {
+    console.error(e);
+    throw new Error('This HEIC photo couldn’t be converted. Try sharing it again, or save it as a JPEG first.', { cause: e });
+  }
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
@@ -40,10 +79,12 @@ function hasTransparency(ctx: CanvasRenderingContext2D, w: number, h: number): b
  * WebP where the browser supports it (keeps transparency), otherwise JPEG/PNG.
  * Quality steps down only until the file is a sensible size.
  */
-export async function shrinkImage(file: File, maxEdge = PRINT_MAX_EDGE): Promise<ShrunkImage> {
-  if (file.type === 'image/svg+xml') {
-    return { dataUrl: await blobToDataUrl(file), mime: file.type, width: 0, height: 0, bytes: file.size, originalBytes: file.size };
+export async function shrinkImage(input: File, maxEdge = PRINT_MAX_EDGE): Promise<ShrunkImage> {
+  if (input.type === 'image/svg+xml') {
+    return { dataUrl: await blobToDataUrl(input), mime: input.type, width: 0, height: 0, bytes: input.size, originalBytes: input.size, name: input.name };
   }
+  // HEIC becomes JPEG (and stays JPEG, or PNG if it has transparency), so it opens everywhere.
+  const { file, converted } = await readableImage(input);
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
   let scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement('canvas');
@@ -66,7 +107,7 @@ export async function shrinkImage(file: File, maxEdge = PRINT_MAX_EDGE): Promise
       draw();
     }
     const quality = [0.86, 0.78, 0.7][attempt % 3];
-    let blob = await toBlob(canvas, 'image/webp', quality);
+    let blob = converted ? null : await toBlob(canvas, 'image/webp', quality);
     if (!blob || blob.type !== 'image/webp') blob = await toBlob(canvas, transparent ? 'image/png' : 'image/jpeg', transparent ? undefined : quality);
     if (!blob) break;
     best = blob;
@@ -83,7 +124,8 @@ export async function shrinkImage(file: File, maxEdge = PRINT_MAX_EDGE): Promise
     width: canvas.width,
     height: canvas.height,
     bytes: out.size,
-    originalBytes: file.size,
+    originalBytes: input.size,
+    name: file.name,
   };
 }
 

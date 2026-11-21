@@ -16,12 +16,13 @@ import type {
   Project,
 } from '../domain/types';
 import type { Portfolio } from '../portfolio/model';
+import type { Post } from '../posts/model';
 import { BUILT_IN_FAMILIES, BUILT_IN_TEMPLATES } from '../domain/constants';
 import { installChangeTracking } from '../sync/tracking';
 import { DEMO, DEMO_DB_NAME } from '../demo/mode';
 import { appOutbox, isSyncEnabled } from '../sync/runtime';
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 /**
  * One-time, non-destructive migration: each existing standalone Work gets a
@@ -95,6 +96,7 @@ export class YOUriginDB extends Dexie {
   assets!: Table<Asset, string>;
   projects!: Table<Project, string>;
   portfolios!: Table<Portfolio, string>;
+  posts!: Table<Post, string>;
 
   constructor(name = 'yourigin') {
     super(name);
@@ -129,6 +131,8 @@ export class YOUriginDB extends Dexie {
     });
     // v5: Portfolios, curated pages made from chosen Projects, Works and pieces.
     this.version(5).stores({ portfolios: 'id, updatedAt' });
+    // v6: Posts, social media posts planned and approved here. They link to pieces by id.
+    this.version(6).stores({ posts: 'id, updatedAt, status, scheduledAt, world, *pieceIds' });
   }
 }
 

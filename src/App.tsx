@@ -29,6 +29,8 @@ import { Shared } from './pages/Shared';
 import { Portfolios } from './pages/Portfolios';
 import { PortfolioEditor } from './pages/PortfolioEditor';
 import { PortfolioPreview } from './pages/PortfolioPreview';
+import { Posts } from './pages/Posts';
+import { PostEditor } from './pages/PostEditor';
 import { DEMO } from './demo/mode';
 import { DemoBar, DemoWelcome } from './demo/DemoChrome';
 import { useDemoChoice } from './demo/state';
@@ -173,6 +175,8 @@ export default function App() {
                       <Route path="/shared" element={<Shared />} />
                       <Route path="/portfolios" element={<Portfolios />} />
                       <Route path="/portfolios/:id" element={<PortfolioEditor />} />
+                      <Route path="/posts" element={<Posts />} />
+                      <Route path="/posts/:id" element={<PostEditor />} />
                       <Route path="*" element={<EmptyState title="Nothing here" />} />
                     </Routes>
                   </AppShell>

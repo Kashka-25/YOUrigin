@@ -235,11 +235,11 @@ html[data-focus] .chrome { display: none !important; }
 
 /* Project identity colours are deliberately small accents, not large fills.
    Each element gets both theme shades (projectColourStyle); this picks the one for the theme. */
-.project-card, .project-colour-dot, .project-colour-swatch, .project-cover {
+.project-card, .project-colour-dot, .project-colour-swatch, .project-cover, .post-world, .post-tile {
   --project-colour: var(--pc-light, var(--gold));
   --project-on: var(--pc-on-light, #fff);
 }
-.dark :is(.project-card, .project-colour-dot, .project-colour-swatch, .project-cover) {
+.dark :is(.project-card, .project-colour-dot, .project-colour-swatch, .project-cover, .post-world, .post-tile) {
   --project-colour: var(--pc-dark, var(--gold));
   --project-on: var(--pc-on-dark, #1a1420);
 }
@@ -326,4 +326,16 @@ html[data-focus] .chrome { display: none !important; }
 }
 @media (prefers-reduced-motion: reduce) {
   .project-colour-swatch { transition: none; }
+}
+
+/* Posts: a world's colour as a soft wash on calendar chips and feed tiles. */
+.post-world {
+  border-left: 3px solid var(--project-colour, var(--gold));
+  background: color-mix(in srgb, var(--project-colour, var(--gold)) 10%, var(--card));
+}
+.post-tile {
+  border: 0;
+  background:
+    radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--project-colour, var(--gold)) 38%, transparent), transparent 70%),
+    color-mix(in srgb, var(--project-colour, var(--gold)) 22%, var(--paper-2));
 }

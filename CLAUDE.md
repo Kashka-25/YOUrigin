@@ -25,13 +25,14 @@ Vite + React 19 + TypeScript + Dexie (IndexedDB) + Tailwind 4, vite-plugin-pwa, 
 ## Architecture pointers
 
 - `src/App.tsx` — routes (HashRouter). Quirk: the Projects list is `/initiatives` and a Project home is `/initiative/:id`, while `/projects/:id` is the Work editor (`src/pages/BookBuilder.tsx`).
-- `src/db/db.ts` — Dexie schema. Change it only via a new `this.version(n)`; v4 runs `migrateLegacyWorksToProjects` (Works live inside Projects, PRs #7, #10, #11). v5 adds `portfolios`.
+- `src/db/db.ts` — Dexie schema. Change it only via a new `this.version(n)`; v4 runs `migrateLegacyWorksToProjects` (Works live inside Projects, PRs #7, #10, #11). v5 adds `portfolios`, v6 adds `posts`.
 - `src/db/` — data access (`content.ts`, `projectRecords.ts`, `books.ts`, `portfolios.ts`, `backup.ts`, ...).
 - `src/domain/` — pure logic: `types.ts` (item types incl. `song`; ProjectKind incl. `album`, `setlist`), `projects.ts`, `similarity.ts`, `graph.ts`.
 - `src/sync/` — E2E-encrypted sync: `crypto.ts` (AES-GCM, passphrase-derived key), `engine.ts`, `outbox.ts`, `supabase.ts`, `config.ts`. `buildNotes.ts` sends edit notes to Notion Build Notes via YOU's `send-build-note` function.
 - `src/ai/` — creative assistant (`local.ts` heuristics, `claude.ts` optional API key kept on the device).
 - `src/io/` — import/export, `shareInbox.ts` (phone share-in), `publish.ts`.
 - `src/portfolio/`, `src/components/portfolio/`, `src/pages/Portfolio*.tsx` — Portfolios (PRs #13–#24). `p/index.html` is the standalone public portfolio page.
+- `src/posts/`, `src/pages/Posts.tsx`, `src/pages/PostEditor.tsx`, `src/io/importPosts.ts` — Posts for Instagram (`docs/POSTS.md`): drafts import as Draft, approved posts export to a file; nothing publishes from the app.
 - `src/showcase/` — Showcase model/API (see issue #12).
 - `supabase/functions/yourigin-portfolio/` — Edge Function that serves published portfolio snapshots; `supabase/migrations/` holds the `yourigin_` schema.
 - `starters/` — personal starter portfolio packs. Gitignored on purpose: never commit them.
