@@ -208,3 +208,25 @@ export async function addIdeas(files: File[], savers: MediaSavers = defaultSaver
   }
   return added;
 }
+
+/**
+ * Stores a video on this device under a post's existing video id, so a post
+ * imported on another device plays here too. Nothing synced changes: the post
+ * keeps pointing at the same video, and each device keeps its own copy.
+ */
+export async function addClipOnThisDevice(clipId: string, file: File, probe: (f: File) => Promise<ClipProbe> = (f) => probeVideo(f, f.name)): Promise<void> {
+  const info = await probe(file);
+  const now = Date.now();
+  await db.clips.put({
+    id: clipId,
+    name: file.name,
+    mime: file.type || 'video/mp4',
+    blob: file,
+    bytes: file.size,
+    width: info.width,
+    height: info.height,
+    duration: info.duration,
+    createdAt: now,
+    updatedAt: now,
+  });
+}

@@ -38,7 +38,7 @@ The **Ideas** tab is a place for photos and videos you might post one day. **Add
 - Every post opens with a **preview** as followers will see it: swipe or use the arrows through a carousel's slides, or play the Reel, with the caption, call to action and hashtags underneath. It updates as you edit.
 - The Week, Month and Board views show each post's first picture; the Grid shows the profile with real pictures (a video's still frame).
 - **Pictures** are ordinary stored images: they sync to every device, end-to-end encrypted.
-- **Videos** are kept on the device they were added on (`clips` table, schema v7), because they are far larger than sync's ~3 MB requests; they are not synced or in backups. A still frame of each video is stored as a picture, so other devices show the post's picture and a note saying where the video is.
+- **Videos** are kept on the device they were added on (`clips` table, schema v7), because they are far larger than sync's ~3 MB requests; they are not synced or in backups. A still frame of each video is stored as a picture, so other devices show the post's picture and a note saying where the video is. That note has **Add … here**: pick the same video file and it's stored on this device under the same video, so the post plays here too (nothing synced changes).
 
 ## A post
 
