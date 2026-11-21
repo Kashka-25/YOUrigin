@@ -1,13 +1,36 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { ImagePlus } from 'lucide-react';
+import { useToast } from '../Toast';
+import { addToGallery } from '../../db/gallery';
+import { POST_MEDIA_ACCEPT } from '../../io/postMedia';
 import { Link } from 'react-router-dom';
 import { useLibrary } from '../../hooks/useLibrary';
 import { EmptyState } from '../ui';
 import { ArtGrid } from './ArtGrid';
 import { isArtwork } from './art';
 
-/** The Library's Gallery: every artwork as pictures, narrowed by collection, tag or project. */
-export function GalleryView() {
+/**
+ * The Gallery: every picture and video as tiles, narrowed by collection, tag or project.
+ * Lives in Posts (beside Ideas); `addable` adds a button for photos and videos from this device.
+ */
+export function GalleryView({ addable = false }: { addable?: boolean }) {
   const lib = useLibrary();
+  const toast = useToast();
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const add = async (files: File[]) => {
+    if (!files.length) return;
+    setBusy(true);
+    try {
+      const { images, videos } = await addToGallery(files);
+      const parts = [images ? `${images} ${images === 1 ? 'photo' : 'photos'}` : '', videos ? `${videos} ${videos === 1 ? 'video' : 'videos'}` : ''].filter(Boolean);
+      toast(parts.length ? `Added ${parts.join(' and ')}.` : 'Those files aren’t photos or videos.');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
   const [scope, setScope] = useState('');
   const [mine, setMine] = useState(true);
   if (!lib) return null;
@@ -77,6 +100,27 @@ export function GalleryView() {
           </select>
         )}
         <span className="ml-auto text-sm text-muted tabular-nums">{inScope.length}</span>
+        {addable && (
+          <>
+            <button type="button" className="btn" disabled={busy} onClick={() => input.current?.click()}>
+              <ImagePlus size={16} /> {busy ? 'Adding…' : 'Add photos & videos'}
+            </button>
+            <input
+              ref={input}
+              type="file"
+              accept={POST_MEDIA_ACCEPT}
+              multiple
+              className="sr-only"
+              tabIndex={-1}
+              aria-label="Photos and videos for the Gallery"
+              onChange={(e) => {
+                const files = [...(e.target.files ?? [])];
+                e.target.value = '';
+                void add(files);
+              }}
+            />
+          </>
+        )}
       </div>
       <ArtGrid
         items={inScope.sort((a, b) => b.createdAt - a.createdAt)}
@@ -84,12 +128,18 @@ export function GalleryView() {
           <EmptyState
             title={mine ? 'No art here yet' : 'No inspiration saved yet'}
             action={
-              <Link to="/?focus=1" className="btn-primary">
-                Add art
-              </Link>
+              addable ? (
+                <button type="button" className="btn-primary" onClick={() => input.current?.click()}>
+                  Add photos & videos
+                </button>
+              ) : (
+                <Link to="/?focus=1" className="btn-primary">
+                  Add art
+                </Link>
+              )
             }
           >
-            {mine ? 'Add pictures of your work from Gather.' : 'Mark an image as Inspiration on its page to keep it here, apart from your own work.'}
+            {mine ? 'Share photos and videos to YOUrigin from your phone’s gallery, or add them here.' : 'Mark an image as Inspiration on its page to keep it here, apart from your own work.'}
           </EmptyState>
         }
       />

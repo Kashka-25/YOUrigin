@@ -10,6 +10,7 @@ import { ImportPostDraftsDialog, readPostDraftsFiles, type DraftsReview } from '
 import { ExportPostsDialog } from '../components/posts/ExportPosts';
 import { FeedTileFace, PostChip, WorldDot, postTitle } from '../components/posts/PostBits';
 import { GalleryPicker } from '../components/posts/GalleryPicker';
+import { GalleryView } from '../components/art/GalleryView';
 import {
   STATUS_LABEL,
   STATUS_ORDER,
@@ -28,13 +29,14 @@ import {
   type PostStatus,
 } from '../posts/model';
 
-type View = 'week' | 'month' | 'grid' | 'board' | 'ideas';
+type View = 'week' | 'month' | 'grid' | 'board' | 'ideas' | 'gallery';
 const VIEWS: { id: View; label: string }[] = [
   { id: 'week', label: 'Week' },
   { id: 'month', label: 'Month' },
   { id: 'grid', label: 'Grid' },
   { id: 'board', label: 'Board' },
   { id: 'ideas', label: 'Ideas' },
+  { id: 'gallery', label: 'Gallery' },
 ];
 const VIEW_KEY = 'yourigin.posts.view';
 
@@ -637,7 +639,7 @@ export function Posts() {
         </div>
       </header>
 
-      <div className="mb-5 grid grid-cols-5 gap-1 rounded-xl border border-line p-1 sm:inline-grid" role="tablist" aria-label="View">
+      <div className="mb-5 grid grid-cols-3 gap-1 rounded-xl border border-line p-1 sm:inline-grid sm:grid-cols-6" role="tablist" aria-label="View">
         {VIEWS.map((v) => (
           <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={`rounded-lg px-2 py-2 text-sm font-medium sm:px-4 ${view === v.id ? 'bg-accent text-accent-ink' : 'text-ink-2 hover:text-ink'}`} onClick={() => setView(v.id)}>
             {v.label}
@@ -655,11 +657,13 @@ export function Posts() {
         <GridView posts={posts} />
       ) : view === 'ideas' ? (
         <IdeasView posts={posts} />
+      ) : view === 'gallery' ? (
+        <GalleryView addable />
       ) : (
         <BoardView posts={posts} />
       )}
 
-      {posts && !posts.length && view !== 'grid' && view !== 'ideas' && (
+      {posts && !posts.length && view !== 'grid' && view !== 'ideas' && view !== 'gallery' && (
         <p className="mt-6 text-center text-sm text-muted">
           No posts yet. Tap a day to start one, or{' '}
           <button type="button" className="underline" onClick={() => fileInput.current?.click()}>
