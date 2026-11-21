@@ -7,7 +7,7 @@ import { newId } from '../domain/text';
 import { assetInUse } from './assetUse';
 import type { Asset } from '../domain/types';
 
-export const IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp,image/gif,image/heic,image/heif,image/svg+xml';
+export const IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp,image/gif,image/heic,image/heif,image/svg+xml,.heic,.heif';
 
 /** Shrinks and stores an image. Returns the stored asset plus size savings. */
 export async function saveImage(file: File): Promise<{ asset: Asset; shrunk: ShrunkImage }> {
@@ -15,7 +15,7 @@ export async function saveImage(file: File): Promise<{ asset: Asset; shrunk: Shr
   const now = Date.now();
   const asset: Asset = {
     id: newId(),
-    name: file.name,
+    name: shrunk.name || file.name,
     mime: shrunk.mime,
     dataUrl: shrunk.dataUrl,
     width: shrunk.width,
