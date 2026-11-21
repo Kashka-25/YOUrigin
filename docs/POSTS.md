@@ -35,7 +35,7 @@ Laid out like Instagram's "New post" so it feels familiar:
 
 The **Ideas** tab is a place for photos and videos you might post one day. **Jot a post idea…** keeps an idea in words alone. **From Gallery** turns pieces in the Gallery into ideas that point at the same picture or video (nothing is copied); photos and videos shared to YOUrigin from the phone's gallery land in the Gallery, ready for this.
 
-The **Gallery** tab (beside Ideas) shows every picture and video in YOUrigin; **Add photos & videos** adds more from the device. **Add ideas** (or drop files on it) turns each into its own undated Idea, shown like a camera roll. Tap one to open it, or **Select** several and **Combine into one post** to make a carousel in the order you tapped them; the others are set aside.
+The **Gallery** tab (beside Ideas) shows every picture and video in YOUrigin; **Add photos & videos** adds more from the device. Tap **Select** (or long-press a picture) and tap pictures in slide order: with one chosen, **Make an idea**; with several, **Make a carousel** appears and opens the new post, slides in that order (or **Make separate ideas**). **Add ideas** (or drop files on it) turns each into its own undated Idea, shown like a camera roll. Tap one to open it, or **Select** several and **Combine into one post** to make a carousel in the order you tapped them; the others are set aside.
 
 ## Seeing what you're making
 

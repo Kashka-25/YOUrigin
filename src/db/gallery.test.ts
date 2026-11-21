@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db, ensureBuiltIns } from './db';
-import { addToGallery, galleryMedia, ideasFromGallery } from './gallery';
+import { addToGallery, carouselFromGallery, galleryMedia, ideasFromGallery } from './gallery';
 import { createMany } from './content';
 import { isArtwork } from '../components/art/art';
 import type { MediaSavers } from './postMedia';
@@ -44,5 +44,17 @@ describe('Gallery for shared photos and videos', () => {
 
   it('makes no media from a piece with neither picture nor video', () => {
     expect(galleryMedia({ title: 'x' })).toBeNull();
+  });
+
+  it('makes one carousel from several pieces, slides in the order chosen', async () => {
+    const ids = await createMany(['One', 'Two', 'Three'].map((title) => ({ title, body: '', type: 'image' as const, status: 'polished' as const, source: { kind: 'import' as const } })));
+    for (const [i, id] of ids.entries()) await db.content.update(id, { assetId: `pic-${i + 1}` });
+    const postId = await carouselFromGallery([ids[2], ids[0], ids[1]]);
+    const post = (await db.posts.get(postId!))!;
+    expect(post.format).toBe('carousel');
+    expect(post.status).toBe('idea');
+    expect(post.media).toEqual([{ kind: 'asset', assetId: 'pic-3' }, { kind: 'asset', assetId: 'pic-1' }, { kind: 'asset', assetId: 'pic-2' }]);
+    expect(post.pieceIds).toEqual([ids[2], ids[0], ids[1]]);
+    expect(await db.posts.count()).toBe(1);
   });
 });

@@ -1,7 +1,9 @@
 import { useRef, useState } from 'react';
 import { ImagePlus } from 'lucide-react';
 import { useToast } from '../Toast';
-import { addToGallery } from '../../db/gallery';
+import { addToGallery, carouselFromGallery, ideasFromGallery } from '../../db/gallery';
+import { useNavigate } from 'react-router-dom';
+import { DEMO } from '../../demo/mode';
 import { POST_MEDIA_ACCEPT } from '../../io/postMedia';
 import { Link } from 'react-router-dom';
 import { useLibrary } from '../../hooks/useLibrary';
@@ -18,6 +20,25 @@ export function GalleryView({ addable = false }: { addable?: boolean }) {
   const toast = useToast();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const navigate = useNavigate();
+  // Select mode (Posts only): pictures tapped in order become a carousel, or separate ideas.
+  const [selecting, setSelecting] = useState(false);
+  const [chosen, setChosen] = useState<string[]>([]);
+  const toggle = (id: string) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
+  const stopSelecting = () => {
+    setSelecting(false);
+    setChosen([]);
+  };
+  const makeCarousel = async () => {
+    const id = await carouselFromGallery(chosen);
+    stopSelecting();
+    if (id) navigate(`/posts/${id}`);
+  };
+  const makeIdeas = async () => {
+    const n = await ideasFromGallery(chosen);
+    stopSelecting();
+    toast(n ? `${n} idea${n === 1 ? '' : 's'} added. They’re in Ideas.` : 'Nothing was added.');
+  };
   const add = async (files: File[]) => {
     if (!files.length) return;
     setBusy(true);
@@ -102,6 +123,9 @@ export function GalleryView({ addable = false }: { addable?: boolean }) {
         <span className="ml-auto text-sm text-muted tabular-nums">{inScope.length}</span>
         {addable && (
           <>
+            <button type="button" className={selecting ? 'btn-primary' : 'btn'} aria-pressed={selecting} onClick={() => (selecting ? stopSelecting() : setSelecting(true))}>
+              {selecting ? 'Done' : 'Select'}
+            </button>
             <button type="button" className="btn" disabled={busy} onClick={() => input.current?.click()}>
               <ImagePlus size={16} /> {busy ? 'Adding…' : 'Add photos & videos'}
             </button>
@@ -122,7 +146,14 @@ export function GalleryView({ addable = false }: { addable?: boolean }) {
           </>
         )}
       </div>
+      {selecting && <p className="mb-3 text-sm text-ink-2">{chosen.length ? `${chosen.length} selected, in the order you tapped them.` : 'Tap pictures in the order you want them.'}</p>}
       <ArtGrid
+        chosen={selecting ? chosen : undefined}
+        onToggle={toggle}
+        onLongPress={addable ? (id) => {
+          setSelecting(true);
+          setChosen((c) => (c.includes(id) ? c : [...c, id]));
+        } : undefined}
         items={inScope.sort((a, b) => b.createdAt - a.createdAt)}
         empty={
           <EmptyState
@@ -143,6 +174,18 @@ export function GalleryView({ addable = false }: { addable?: boolean }) {
           </EmptyState>
         }
       />
+      {selecting && chosen.length > 0 && (
+        <div className={`sticky ${DEMO ? 'bottom-[calc(124px+env(safe-area-inset-bottom))]' : 'bottom-[calc(64px+env(safe-area-inset-bottom))]'} z-20 mt-4 flex flex-wrap items-center justify-end gap-2 rounded-xl border border-line bg-card/95 p-3 backdrop-blur md:bottom-0`}>
+          <button type="button" className={chosen.length > 1 ? 'btn' : 'btn-primary'} onClick={() => void makeIdeas()}>
+            {chosen.length > 1 ? 'Make separate ideas' : 'Make an idea'}
+          </button>
+          {chosen.length > 1 && (
+            <button type="button" className="btn-primary" onClick={() => void makeCarousel()}>
+              Make a carousel ({chosen.length})
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
