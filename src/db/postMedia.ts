@@ -5,7 +5,7 @@ import { removeAssetIfUnused, saveImage } from './assets';
 import { newId } from '../domain/text';
 import { findMedia, isImageFile, isVideoFile, mediaKey } from '../io/postMedia';
 import type { Clip } from '../domain/types';
-import type { Post, PostMedia } from '../posts/model';
+import { formatForMedia, newPost, type Post, type PostMedia } from '../posts/model';
 
 // Pictures for posts are ordinary assets (synced, end-to-end encrypted).
 // Videos are clips: kept on the device they were added on, because they are far
@@ -190,4 +190,21 @@ export function useClipUrl(clipId: string | undefined): { url: string | null; mi
     return () => URL.revokeObjectURL(u);
   }, [clip]);
   return { url, missing: clip === null };
+}
+
+/**
+ * Photos and videos kept as ideas: each becomes its own Idea post with no date,
+ * to sort through later. Returns how many ideas were added.
+ */
+export async function addIdeas(files: File[], savers: MediaSavers = defaultSavers): Promise<number> {
+  let added = 0;
+  const now = Date.now();
+  for (const [i, f] of files.entries()) {
+    const m = await mediaFromFile(f, savers);
+    if (!m) continue;
+    // Newest first in the Ideas view, but files picked together keep their order.
+    await db.posts.add(newPost({ status: 'idea', media: [m], format: formatForMedia([m], 'single-image') }, now + files.length - i));
+    added++;
+  }
+  return added;
 }

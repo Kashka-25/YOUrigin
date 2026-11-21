@@ -92,6 +92,18 @@ export const WEEK_PLAN: Record<number, { world: PostWorld | null; label: string;
   0: { world: null, label: 'Stories', time: '12:00' },
 };
 
+/**
+ * The format the media suggests, the way Instagram decides: a video makes a
+ * Reel, several pictures a carousel, one picture a single image. Quote cards,
+ * Stories and a Reel made of pictures are left as chosen.
+ */
+export function formatForMedia(media: PostMedia[], current: PostFormat): PostFormat {
+  if (!media.length || current === 'story' || current === 'quote-card') return current;
+  if (media.some((m) => m.kind === 'clip')) return 'reel';
+  if (current === 'reel') return current;
+  return media.length > 1 ? 'carousel' : 'single-image';
+}
+
 export const CAPTION_LIMIT = 2200;
 export const HASHTAG_LIMIT = 30;
 

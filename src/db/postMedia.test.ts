@@ -141,3 +141,43 @@ describe('videos', () => {
     await Dexie.delete(name);
   });
 });
+
+describe('ideas and the format media suggests', () => {
+  it('a video makes a Reel, several pictures a carousel, one picture a single image; quote cards and Stories stay', async () => {
+    const { formatForMedia } = await import('../posts/model');
+    const pic: PostMedia = { kind: 'asset', assetId: 'p' };
+    const vid: PostMedia = { kind: 'clip', clipId: 'v', name: 'v.mp4' };
+    expect(formatForMedia([pic], 'single-image')).toBe('single-image');
+    expect(formatForMedia([pic, pic], 'single-image')).toBe('carousel');
+    expect(formatForMedia([pic], 'carousel')).toBe('single-image');
+    expect(formatForMedia([vid], 'carousel')).toBe('reel');
+    expect(formatForMedia([pic, pic], 'reel')).toBe('reel');
+    expect(formatForMedia([pic, pic], 'quote-card')).toBe('quote-card');
+    expect(formatForMedia([vid], 'story')).toBe('story');
+    expect(formatForMedia([], 'carousel')).toBe('carousel');
+  });
+
+  it('each photo or video kept as an idea becomes its own undated Idea, newest first, in the order picked', async () => {
+    const { addIdeas } = await import('./postMedia');
+    const n = await addIdeas([jpg('one.jpg'), mp4('two.mp4'), new File(['x'], 'notes.txt')], fakeSavers().savers);
+    expect(n).toBe(2);
+    const ideas = (await db.posts.toArray()).sort((a, b) => b.createdAt - a.createdAt);
+    expect(ideas.map((p) => [p.status, p.scheduledAt, p.format, p.media[0].kind])).toEqual([
+      ['idea', null, 'single-image', 'asset'],
+      ['idea', null, 'reel', 'clip'],
+    ]);
+  });
+
+  it('combining ideas puts their media in one post, in the order chosen, and sets the others aside', async () => {
+    const { combinePosts } = await import('./posts');
+    const a = await createPost({ media: [{ kind: 'asset', assetId: 'a' }], notes: 'first' });
+    const b = await createPost({ media: [{ kind: 'asset', assetId: 'b' }], caption: 'Invented words', hashtags: ['#one'] });
+    const c = await createPost({ media: [{ kind: 'asset', assetId: 'c' }], hashtags: ['#one', '#two'], notes: 'third' });
+    expect(await combinePosts([c, a, b])).toBe(c);
+    const combined = await db.posts.get(c);
+    expect(combined?.media.map((m) => (m.kind === 'asset' ? m.assetId : ''))).toEqual(['c', 'a', 'b']);
+    expect(combined).toMatchObject({ format: 'carousel', caption: 'Invented words', hashtags: ['#one', '#two'], notes: 'third\n\nfirst', deletedAt: null });
+    expect((await db.posts.get(a))?.deletedAt).toBeTypeOf('number');
+    expect((await db.posts.get(b))?.deletedAt).toBeTypeOf('number');
+  });
+});

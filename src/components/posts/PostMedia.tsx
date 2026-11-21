@@ -50,14 +50,14 @@ function ClipPlayer({ media, tall }: { media: Extract<PostMedia, { kind: 'clip' 
   );
 }
 
-function Slide({ media, alt, tall }: { media: PostMedia; alt: string; tall: boolean }) {
+export function Slide({ media, alt, tall }: { media: PostMedia; alt: string; tall: boolean }) {
   if (media.kind === 'clip') return <ClipPlayer media={media} tall={tall} />;
   if (media.kind === 'asset') return <AssetImage id={media.assetId} alt={alt} className="h-full w-full object-cover" />;
   return (
     <span className="flex h-full w-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-ink-2">
       <FileImage size={22} aria-hidden />
       <span className="break-all">{media.name}</span>
-      <span className="text-xs text-muted">Not added yet. Use “Add images or videos” below, or “Add media” on the Posts page.</span>
+      <span className="text-xs text-muted">Not added yet. Tap + to add it, or use “Add media” on the Posts page.</span>
     </span>
   );
 }

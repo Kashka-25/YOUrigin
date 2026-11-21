@@ -21,6 +21,18 @@ Plan, write, review and approve social media posts (Instagram) inside YOUrigin. 
 
 Posted times are placeholders until real insights are in (`WEEK_PLAN` in `src/posts/model.ts`).
 
+## Making a post
+
+Laid out like Instagram's "New post" so it feels familiar:
+
+- **Photos and videos first**, at the very top: add them, see the selected one large (swipe or use the arrows), and arrange them in the strip below by dragging. **+** adds more; the bin removes the one shown. Dropping files on it works on the laptop. Adding media sets the format the way Instagram does: a video makes a Reel, several pictures a carousel, one picture a single image (quote cards and Stories stay as chosen).
+- **Caption** next, then everything else in rows you tap open: Schedule, Format and world, On-image hook, Call to action, Hashtags, Alt text, Linked pieces, Files in Drive, Notes to self and Status. Each row shows a short summary while closed.
+- **Preview** (top right) shows the post with its caption as followers will see it.
+
+## Ideas
+
+The **Ideas** tab is a place for photos and videos you might post one day. **Add ideas** (or drop files on it) turns each into its own undated Idea, shown like a camera roll. Tap one to open it, or **Select** several and **Combine into one post** to make a carousel in the order you tapped them; the others are set aside.
+
 ## Seeing what you're making
 
 - Every post opens with a **preview** as followers will see it: swipe or use the arrows through a carousel's slides, or play the Reel, with the caption, call to action and hashtags underneath. It updates as you edit.

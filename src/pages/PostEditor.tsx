@@ -1,18 +1,19 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, ExternalLink, ImagePlus, Link2, Plus, Quote, Search, Sparkles, Trash2, Undo2, X } from 'lucide-react';
+import { Accessibility, AlertTriangle, ArrowLeft, CalendarClock, Check, ChevronDown, ExternalLink, Eye, FolderOpen, Hash, Link2, ListChecks, Megaphone, Plus, Quote, Search, Shapes, Sparkles, StickyNote, Trash2, Type, Undo2, X } from 'lucide-react';
 import { EmptyState, SaveIndicator, Spinner } from '../components/ui';
 import { Modal, useConfirm } from '../components/Modal';
 import { useToast } from '../components/Toast';
 import { AutoTextarea } from '../components/AutoTextarea';
-import { MediaThumb, PostPreview } from '../components/posts/PostMedia';
+import { PostPreview } from '../components/posts/PostMedia';
+import { MediaComposer } from '../components/posts/MediaComposer';
 import { FORMAT_ICON, PostStatusPill, WorldDot } from '../components/posts/PostBits';
 import { useAutosave } from '../hooks/useAutosave';
 import { DEMO } from '../demo/mode';
 import { useLibrary } from '../hooks/useLibrary';
 import { deletePost, linkPiece, restorePost, setPostStatus, unlinkPiece, updatePost, usePost, type PostPatch } from '../db/posts';
 import { mediaFromFile, removeMediaIfUnused } from '../db/postMedia';
-import { POST_MEDIA_ACCEPT, collectImportFiles } from '../io/postMedia';
+import { collectImportFiles } from '../io/postMedia';
 import { TYPE_LABEL } from '../domain/constants';
 import { displayTitle, excerpt } from '../domain/text';
 import type { ContentItem } from '../domain/types';
@@ -27,6 +28,7 @@ import {
   WORLD_LABEL,
   WORLD_ORDER,
   dateKey,
+  formatForMedia,
   fromDateTime,
   hookInPieces,
   nextStatus,
@@ -163,6 +165,26 @@ function LinkedPiece({ piece, onUnlink, onUseLine }: { piece: ContentItem | unde
   );
 }
 
+/** One tap-to-open row, like Instagram's settings rows under the caption. */
+function Row({ icon: Icon, label, summary, open, children }: { icon: typeof Eye; label: string; summary?: string; open?: boolean; children: ReactNode }) {
+  return (
+    <details className="group border-b border-line last:border-b-0" open={open}>
+      <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 py-3 [&::-webkit-details-marker]:hidden">
+        <Icon size={18} className="shrink-0 text-ink-2" aria-hidden />
+        <span className="shrink-0 whitespace-nowrap font-medium text-ink">{label}</span>
+        {summary && <span className="ml-auto min-w-0 flex-1 truncate text-right text-sm text-muted">{summary}</span>}
+        <ChevronDown size={16} className={`shrink-0 text-muted transition-transform group-open:rotate-180 ${summary ? '' : 'ml-auto'}`} aria-hidden />
+      </summary>
+      <div className="pb-4">{children}</div>
+    </details>
+  );
+}
+
+const short = (s: string, n = 34) => {
+  const t = s.trim().replace(/\s+/g, ' ');
+  return t.length > n ? `${t.slice(0, n - 1)}…` : t;
+};
+
 function Editor({ post }: { post: Post }) {
   const navigate = useNavigate();
   const toast = useToast();
@@ -170,8 +192,8 @@ function Editor({ post }: { post: Post }) {
   const lib = useLibrary();
   const [fields, setFields] = useState<Fields>(() => fieldsOf(post));
   const [picking, setPicking] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   const [fileName, setFileName] = useState('');
-  const imageInput = useRef<HTMLInputElement>(null);
   const { state, schedule, flush } = useAutosave<Fields>((f) => updatePost(post.id, patchOf(f)));
 
   const set = (patch: Partial<Fields>) => {
@@ -179,6 +201,8 @@ function Editor({ post }: { post: Post }) {
     setFields(next);
     schedule(next);
   };
+  /** New media also sets the format the way Instagram would (video → Reel, several → carousel). */
+  const setMedia = (media: PostMedia[]) => set({ media, format: formatForMedia(media, fields.format) });
 
   const pieces = post.pieceIds.map((id) => ({ id, piece: lib?.contentById.get(id) }));
   const tags = normaliseHashtags(fields.hashtags);
@@ -203,7 +227,7 @@ function Editor({ post }: { post: Post }) {
         if (m) added.push(m);
       }
       if (!added.length) toast('Those files aren’t images or videos.');
-      set({ media: [...fields.media, ...added] });
+      else setMedia([...fields.media, ...added]);
     } catch (e) {
       toast(e instanceof Error ? e.message : String(e));
     } finally {
@@ -213,17 +237,9 @@ function Editor({ post }: { post: Post }) {
 
   const removeMedia = async (index: number) => {
     const m = fields.media[index];
-    set({ media: fields.media.filter((_, i) => i !== index) });
+    setMedia(fields.media.filter((_, i) => i !== index));
     await flush();
     await removeMediaIfUnused(m);
-  };
-
-  const moveMedia = (index: number, by: -1 | 1) => {
-    const to = index + by;
-    if (to < 0 || to >= fields.media.length) return;
-    const media = [...fields.media];
-    [media[index], media[to]] = [media[to], media[index]];
-    set({ media });
   };
 
   const remove = async () => {
@@ -238,6 +254,8 @@ function Editor({ post }: { post: Post }) {
   const next = nextStatus(post.status);
   const back = previousStatus(post.status);
   const nextLabel = next === 'draft' ? 'Make it a draft' : next === 'approved' ? 'Approve' : next === 'posted' ? 'Mark posted' : '';
+  const when = fields.date ? new Date(`${fields.date}T${fields.time || '12:00'}`) : null;
+  const driveNames = fields.media.filter((m) => m.kind === 'file');
 
   return (
     <div className="page-frame pb-8">
@@ -245,8 +263,11 @@ function Editor({ post }: { post: Post }) {
         <Link to="/posts" className="btn-ghost -ml-3">
           <ArrowLeft size={16} /> Posts
         </Link>
-        <span className="ml-auto">
+        <span className="ml-auto flex items-center gap-2">
           <SaveIndicator state={state} />
+          <button type="button" className="btn min-h-9 px-3" onClick={() => setPreviewing(true)}>
+            <Eye size={16} /> Preview
+          </button>
         </span>
       </div>
 
@@ -259,205 +280,38 @@ function Editor({ post }: { post: Post }) {
         </div>
       )}
 
-      <ol className="mb-5 grid grid-cols-4 gap-1 rounded-xl border border-line p-1" aria-label="Status">
-        {STATUS_ORDER.map((s) => (
-          <li key={s}>
-            <button
-              type="button"
-              aria-current={post.status === s ? 'step' : undefined}
-              className={`w-full rounded-lg px-1 py-2 text-xs font-semibold ${post.status === s ? 'bg-accent text-accent-ink' : STATUS_ORDER.indexOf(s) < STATUS_ORDER.indexOf(post.status) ? 'text-ink' : 'text-muted'}`}
-              onClick={() => void move(s)}
-            >
-              {STATUS_ORDER.indexOf(s) < STATUS_ORDER.indexOf(post.status) && <Check size={12} className="mr-0.5 inline" aria-hidden />}
-              {STATUS_LABEL[s]}
-            </button>
-          </li>
-        ))}
-      </ol>
+      <div className="mx-auto max-w-2xl space-y-4">
+        <MediaComposer
+          media={fields.media}
+          format={fields.format}
+          altText={fields.altText}
+          busy={adding}
+          onAdd={(f) => void addMedia(f)}
+          onRemove={(i) => void removeMedia(i)}
+          onReorder={(media) => set({ media })}
+        />
 
-      {post.origin.kind === 'claude' && (
-        <p className="mb-4 flex items-start gap-2 rounded-xl border border-gold/40 p-3 text-sm text-ink-2">
-          <Sparkles size={16} className="mt-0.5 shrink-0 text-gold" aria-hidden />
-          Drafted by Claude ({post.origin.fileName}, {new Date(post.origin.importedAt).toLocaleDateString()}). It’s a suggestion: change anything, then approve it when it feels like yours.
-        </p>
-      )}
-
-      <div className="mx-auto max-w-2xl space-y-5">
-        <section aria-label="Preview">
-          <PostPreview post={{ ...fields, hashtags: tags }} />
-          <p className="mt-2 text-center text-xs text-muted">How it will look. It updates as you edit.</p>
-        </section>
-
-        <section className="grid grid-cols-2 gap-3">
-          <label>
-            <span className="label">Date</span>
-            <input type="date" className="input" value={fields.date} onChange={(e) => set({ date: e.target.value })} />
-          </label>
-          <label>
-            <span className="label">Time</span>
-            <input type="time" className="input" value={fields.time} onChange={(e) => set({ time: e.target.value })} disabled={!fields.date} />
-          </label>
-          {fields.date && (
-            <p className="col-span-2 -mt-1 text-xs text-muted">
-              {WEEK_PLAN[new Date(`${fields.date}T12:00`).getDay()].label} day.{' '}
-              <button type="button" className="underline" onClick={() => set({ date: '', time: '' })}>
-                Clear the date
-              </button>
-            </p>
-          )}
-        </section>
-
-        <fieldset>
-          <legend className="label">Format</legend>
-          <div className="flex flex-wrap gap-2">
-            {FORMAT_ORDER.map((f) => {
-              const Icon = FORMAT_ICON[f];
-              return (
-                <button key={f} type="button" aria-pressed={fields.format === f} className={`btn min-h-10 ${fields.format === f ? 'border-accent bg-accent/10 text-ink' : ''}`} onClick={() => set({ format: f })}>
-                  <Icon size={15} aria-hidden /> {FORMAT_LABEL[f]}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend className="label">Content world</legend>
-          <div className="flex flex-wrap gap-2">
-            {WORLD_ORDER.map((w) => (
-              <button key={w} type="button" aria-pressed={fields.world === w} className={`btn min-h-10 ${fields.world === w ? 'border-accent bg-accent/10 text-ink' : ''}`} onClick={() => set({ world: w })}>
-                <WorldDot world={w} /> {WORLD_LABEL[w]}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
-        <section>
-          <div className="mb-1.5 flex items-center justify-between">
-            <span className="label mb-0">Linked pieces</span>
-            <button type="button" className="btn-ghost min-h-9 px-2" onClick={() => setPicking(true)}>
-              <Link2 size={15} /> Link a piece
-            </button>
-          </div>
-          {pieces.length ? (
-            <ul className="space-y-2">
-              {pieces.map(({ id, piece }) => (
-                <LinkedPiece key={id} id={id} piece={piece} onUnlink={() => void unlinkPiece(post.id, id)} onUseLine={(line) => set({ hook: line })} />
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted">Link the poem, fragment or lyric this post draws on. It stays in your library; the post only points to it.</p>
-          )}
-        </section>
-
-        <label className="block">
-          <span className="label">On-image hook</span>
-          <AutoTextarea id="post-hook" minHeight={56} className="input font-serif text-lg" value={fields.hook} onChange={(hook) => set({ hook })} />
-          {quoteDrifted && <span className="mt-1 block text-xs text-muted">This line is no longer word for word in the linked piece.</span>}
-        </label>
-
-        <label className="block">
-          <span className="label flex justify-between">
-            Caption
-            <span className={`font-normal normal-case tracking-normal ${fields.caption.length > CAPTION_LIMIT ? 'text-seed' : ''}`}>
-              {fields.caption.length.toLocaleString()} / {CAPTION_LIMIT.toLocaleString()}
-            </span>
-          </span>
-          <AutoTextarea id="post-caption" minHeight={160} className="input writing text-[15px] leading-relaxed" value={fields.caption} onChange={(caption) => set({ caption })} />
-        </label>
-
-        <label className="block">
-          <span className="label">Call to action</span>
-          <input className="input" value={fields.cta} onChange={(e) => set({ cta: e.target.value })} placeholder="Save this for a hard day 💛" />
-        </label>
-
-        <label className="block">
-          <span className="label flex justify-between">
-            Hashtags
-            <span className={`font-normal normal-case tracking-normal ${tags.length > HASHTAG_LIMIT ? 'text-seed' : ''}`}>
-              {tags.length} / {HASHTAG_LIMIT}
-            </span>
-          </span>
-          <AutoTextarea id="post-hashtags" minHeight={48} className="input" value={fields.hashtags} onChange={(hashtags) => set({ hashtags })} onBlur={() => setFields((f) => ({ ...f, hashtags: normaliseHashtags(f.hashtags).join(' ') }))} />
-        </label>
-
-        <label className="block">
-          <span className="label">Alt text</span>
-          <AutoTextarea id="post-alt" minHeight={72} className="input" value={fields.altText} onChange={(altText) => set({ altText })} />
-        </label>
-
-        <section>
-          <span className="label flex justify-between">
-            Images and videos
-            <span className="font-normal normal-case tracking-normal">{fields.media.length ? `${fields.media.length} in order` : ''}</span>
-          </span>
-          {fields.media.length > 0 && (
-            <ul className="mb-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {fields.media.map((m, i) => (
-                <li key={m.kind === 'asset' ? `${m.assetId}-${i}` : m.kind === 'clip' ? `${m.clipId}-${i}` : `${m.name}-${i}`} className="relative">
-                  <MediaThumb media={m} className="aspect-[4/5] w-full rounded-lg" />
-                  <span className="absolute left-1 top-1 rounded-full bg-black/60 px-1.5 text-[11px] font-semibold text-white tabular-nums">{i + 1}</span>
-                  <button type="button" className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white" onClick={() => void removeMedia(i)} aria-label={`Remove ${m.kind === 'asset' ? 'image' : m.name} (${i + 1})`}>
-                    <X size={14} />
-                  </button>
-                  <span className="absolute inset-x-1 bottom-1 flex justify-between">
-                    <button type="button" className="rounded-full bg-black/60 p-1 text-white disabled:opacity-0" disabled={i === 0} onClick={() => moveMedia(i, -1)} aria-label={`Move ${i + 1} earlier`}>
-                      <ArrowLeft size={14} />
-                    </button>
-                    <button type="button" className="rounded-full bg-black/60 p-1 text-white disabled:opacity-0" disabled={i === fields.media.length - 1} onClick={() => moveMedia(i, 1)} aria-label={`Move ${i + 1} later`}>
-                      <ArrowRight size={14} />
-                    </button>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn" disabled={adding} onClick={() => imageInput.current?.click()}>
-              <ImagePlus size={16} /> {adding ? 'Adding…' : 'Add images or videos'}
-            </button>
-            <form
-              className="flex min-w-0 flex-1 gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!fileName.trim()) return;
-                set({ media: [...fields.media, { kind: 'file', name: fileName.trim() }] });
-                setFileName('');
-              }}
-            >
-              <input className="input min-w-0" value={fileName} onChange={(e) => setFileName(e.target.value)} placeholder="Or a file name in Drive" aria-label="File name in Drive" />
-              <button type="submit" className="btn shrink-0" disabled={!fileName.trim()} aria-label="Add file name">
-                <Plus size={16} />
-              </button>
-            </form>
-          </div>
-          <p className="mt-1.5 text-xs text-muted">Pictures sync to all your devices. Videos stay on the device you add them on; the others show a still frame.</p>
-          <input
-            ref={imageInput}
-            type="file"
-            accept={POST_MEDIA_ACCEPT}
-            multiple
-            className="sr-only"
-            tabIndex={-1}
-            aria-label="Images and videos for this post"
-            onChange={(e) => {
-              const files = [...(e.target.files ?? [])];
-              e.target.value = '';
-              if (files.length) void addMedia(files);
-            }}
-          />
-        </section>
-
-        {post.status === 'posted' && (
-          <label className="block">
-            <span className="label">Link to the live post</span>
-            <input className="input" type="url" value={fields.postedUrl} onChange={(e) => set({ postedUrl: e.target.value })} placeholder="https://www.instagram.com/p/…" />
-          </label>
+        {post.origin.kind === 'claude' && (
+          <p className="flex items-center gap-2 text-xs text-ink-2">
+            <Sparkles size={14} className="shrink-0 text-gold" aria-hidden />
+            Drafted by Claude. Change anything, then approve it when it feels like yours.
+          </p>
         )}
 
         <label className="block">
-          <span className="label">Notes to self</span>
-          <AutoTextarea id="post-notes" minHeight={72} className="input" value={fields.notes} onChange={(notes) => set({ notes })} />
+          <span className="sr-only">Caption</span>
+          <AutoTextarea
+            id="post-caption"
+            minHeight={120}
+            className="input writing text-[15px] leading-relaxed"
+            placeholder="Write a caption…"
+            ariaLabel="Caption"
+            value={fields.caption}
+            onChange={(caption) => set({ caption })}
+          />
+          <span className={`mt-1 block text-right text-xs ${fields.caption.length > CAPTION_LIMIT ? 'text-seed' : 'text-muted'}`}>
+            {fields.caption.length.toLocaleString()} / {CAPTION_LIMIT.toLocaleString()}
+          </span>
         </label>
 
         {checks.length > 0 && (
@@ -470,12 +324,155 @@ function Editor({ post }: { post: Post }) {
           </ul>
         )}
 
+        <div className="rounded-2xl border border-line bg-card px-4">
+          <Row icon={CalendarClock} label="Schedule" summary={when ? `${when.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })} · ${fields.time || '—'}` : 'Not placed yet'}>
+            <div className="grid grid-cols-2 gap-3">
+              <label>
+                <span className="label">Date</span>
+                <input type="date" className="input" value={fields.date} onChange={(e) => set({ date: e.target.value })} />
+              </label>
+              <label>
+                <span className="label">Time</span>
+                <input type="time" className="input" value={fields.time} onChange={(e) => set({ time: e.target.value })} disabled={!fields.date} />
+              </label>
+            </div>
+            {fields.date && (
+              <p className="mt-2 text-xs text-muted">
+                {WEEK_PLAN[new Date(`${fields.date}T12:00`).getDay()].label} day.{' '}
+                <button type="button" className="underline" onClick={() => set({ date: '', time: '' })}>
+                  Clear the date
+                </button>
+              </p>
+            )}
+          </Row>
+
+          <Row icon={Shapes} label="Format and world" summary={`${FORMAT_LABEL[fields.format]} · ${WORLD_LABEL[fields.world]}`}>
+            <fieldset>
+              <legend className="label">Format</legend>
+              <div className="flex flex-wrap gap-2">
+                {FORMAT_ORDER.map((f) => {
+                  const Icon = FORMAT_ICON[f];
+                  return (
+                    <button key={f} type="button" aria-pressed={fields.format === f} className={`btn min-h-10 ${fields.format === f ? 'border-accent bg-accent/10 text-ink' : ''}`} onClick={() => set({ format: f })}>
+                      <Icon size={15} aria-hidden /> {FORMAT_LABEL[f]}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+            <fieldset className="mt-4">
+              <legend className="label">Content world</legend>
+              <div className="flex flex-wrap gap-2">
+                {WORLD_ORDER.map((w) => (
+                  <button key={w} type="button" aria-pressed={fields.world === w} className={`btn min-h-10 ${fields.world === w ? 'border-accent bg-accent/10 text-ink' : ''}`} onClick={() => set({ world: w })}>
+                    <WorldDot world={w} /> {WORLD_LABEL[w]}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          </Row>
+
+          <Row icon={Type} label="On-image hook" summary={short(fields.hook) || 'None'}>
+            <AutoTextarea id="post-hook" minHeight={56} className="input font-serif text-lg" ariaLabel="On-image hook" value={fields.hook} onChange={(hook) => set({ hook })} />
+            {quoteDrifted && <span className="mt-1 block text-xs text-muted">This line is no longer word for word in the linked piece.</span>}
+          </Row>
+
+          <Row icon={Megaphone} label="Call to action" summary={short(fields.cta) || 'None'}>
+            <input className="input" aria-label="Call to action" value={fields.cta} onChange={(e) => set({ cta: e.target.value })} placeholder="Save this for a hard day 💛" />
+          </Row>
+
+          <Row icon={Hash} label="Hashtags" summary={`${tags.length} / ${HASHTAG_LIMIT}`}>
+            <AutoTextarea
+              id="post-hashtags"
+              minHeight={48}
+              className="input"
+              ariaLabel="Hashtags"
+              value={fields.hashtags}
+              onChange={(hashtags) => set({ hashtags })}
+              onBlur={() => setFields((f) => ({ ...f, hashtags: normaliseHashtags(f.hashtags).join(' ') }))}
+            />
+          </Row>
+
+          <Row icon={Accessibility} label="Alt text" summary={fields.altText.trim() ? 'Written' : 'Missing'}>
+            <AutoTextarea id="post-alt" minHeight={72} className="input" ariaLabel="Alt text" value={fields.altText} onChange={(altText) => set({ altText })} />
+            <p className="mt-1 text-xs text-muted">Describes the pictures for people who use screen readers.</p>
+          </Row>
+
+          <Row icon={Link2} label="Linked pieces" summary={post.pieceIds.length ? `${post.pieceIds.length} linked` : 'None'}>
+            {pieces.length ? (
+              <ul className="mb-2 space-y-2">
+                {pieces.map(({ id, piece }) => (
+                  <LinkedPiece key={id} id={id} piece={piece} onUnlink={() => void unlinkPiece(post.id, id)} onUseLine={(line) => set({ hook: line })} />
+                ))}
+              </ul>
+            ) : (
+              <p className="mb-2 text-sm text-muted">Link the poem, fragment or lyric this post draws on. It stays in your library; the post only points to it.</p>
+            )}
+            <button type="button" className="btn" onClick={() => setPicking(true)}>
+              <Link2 size={15} /> Link a piece
+            </button>
+          </Row>
+
+          <Row icon={FolderOpen} label="Files in Drive" summary={driveNames.length ? `${driveNames.length} not added yet` : 'None'}>
+            <p className="mb-2 text-sm text-muted">Name a file that’s still in Google Drive. Add the file itself later with + above, or with “Add media” on the Posts page.</p>
+            <form
+              className="flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!fileName.trim()) return;
+                set({ media: [...fields.media, { kind: 'file', name: fileName.trim() }] });
+                setFileName('');
+              }}
+            >
+              <input className="input min-w-0" value={fileName} onChange={(e) => setFileName(e.target.value)} placeholder="slide-01.jpg" aria-label="File name in Drive" />
+              <button type="submit" className="btn shrink-0" disabled={!fileName.trim()} aria-label="Add file name">
+                <Plus size={16} />
+              </button>
+            </form>
+          </Row>
+
+          {post.status === 'posted' && (
+            <Row icon={ExternalLink} label="Live post" summary={fields.postedUrl ? 'Linked' : 'Add the link'} open={!fields.postedUrl}>
+              <input className="input" type="url" aria-label="Link to the live post" value={fields.postedUrl} onChange={(e) => set({ postedUrl: e.target.value })} placeholder="https://www.instagram.com/p/…" />
+            </Row>
+          )}
+
+          <Row icon={StickyNote} label="Notes to self" summary={short(fields.notes) || 'None'}>
+            <AutoTextarea id="post-notes" minHeight={72} className="input" ariaLabel="Notes to self" value={fields.notes} onChange={(notes) => set({ notes })} />
+          </Row>
+
+          <Row icon={ListChecks} label="Status" summary={STATUS_LABEL[post.status]}>
+            <ol className="grid grid-cols-4 gap-1 rounded-xl border border-line p-1" aria-label="Status">
+              {STATUS_ORDER.map((s) => (
+                <li key={s}>
+                  <button
+                    type="button"
+                    aria-current={post.status === s ? 'step' : undefined}
+                    className={`w-full rounded-lg px-1 py-2 text-xs font-semibold ${post.status === s ? 'bg-accent text-accent-ink' : STATUS_ORDER.indexOf(s) < STATUS_ORDER.indexOf(post.status) ? 'text-ink' : 'text-muted'}`}
+                    onClick={() => void move(s)}
+                  >
+                    {STATUS_ORDER.indexOf(s) < STATUS_ORDER.indexOf(post.status) && <Check size={12} className="mr-0.5 inline" aria-hidden />}
+                    {STATUS_LABEL[s]}
+                  </button>
+                </li>
+              ))}
+            </ol>
+            {post.origin.kind === 'claude' && (
+              <p className="mt-2 text-xs text-muted">
+                Drafted by Claude from {post.origin.fileName}, {new Date(post.origin.importedAt).toLocaleDateString()}.
+              </p>
+            )}
+          </Row>
+        </div>
+
         <button type="button" className="btn-ghost text-seed" onClick={() => void remove()}>
           <Trash2 size={16} /> Set this post aside
         </button>
       </div>
 
-      <div className={`no-print sticky ${DEMO ? 'bottom-[calc(124px+env(safe-area-inset-bottom))] md:bottom-0' : 'bottom-[calc(64px+env(safe-area-inset-bottom))] md:bottom-0'} z-20 -mx-4 mt-6 flex items-center gap-2 border-t border-line bg-card/95 px-4 py-3 backdrop-blur md:mx-0 md:rounded-xl md:border`}>
+      <div
+        className={`no-print sticky ${DEMO ? 'bottom-[calc(124px+env(safe-area-inset-bottom))] md:bottom-0' : 'bottom-[calc(64px+env(safe-area-inset-bottom))] md:bottom-0'} z-20 mt-6 flex items-center gap-2 border-t border-line bg-card/95 px-4 py-3 backdrop-blur md:rounded-xl md:border`}
+      >
         <PostStatusPill status={post.status} />
         {back && (
           <button type="button" className="btn-ghost ml-auto min-h-10 px-3" onClick={() => void move(back)}>
@@ -488,6 +485,11 @@ function Editor({ post }: { post: Post }) {
           </button>
         )}
       </div>
+
+      <Modal open={previewing} onClose={() => setPreviewing(false)} title="Preview">
+        <PostPreview post={{ ...fields, hashtags: tags }} />
+        <p className="mt-2 text-center text-xs text-muted">How it will look on Instagram.</p>
+      </Modal>
 
       <PiecePicker
         open={picking}

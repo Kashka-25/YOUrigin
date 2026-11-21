@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './db';
-import { moveInFeed, moveStatus, newPost, type Post, type PostStatus } from '../posts/model';
+import { formatForMedia, moveInFeed, moveStatus, newPost, type Post, type PostStatus } from '../posts/model';
 
 // Posts live on this device and sync end-to-end encrypted like everything else.
 // These are the only functions that write them.
@@ -86,5 +86,37 @@ export async function savePostDrafts(posts: Post[]): Promise<number> {
     const fresh = posts.filter((p) => p.origin.kind !== 'claude' || !keys.has(p.origin.draftKey));
     await db.posts.bulkAdd(fresh.map((p) => ({ ...p, status: 'draft' as const, approvedAt: null, postedAt: null })));
     return fresh.length;
+  });
+}
+
+/**
+ * Combines posts (usually ideas) into the first one, in the order given: its
+ * media gains the others' media, the format follows the media (several pictures
+ * make a carousel), empty words are filled from the others, and the others are
+ * set aside so they can be brought back. Returns the combined post's id.
+ */
+export async function combinePosts(ids: string[]): Promise<string | null> {
+  if (ids.length < 2) return ids[0] ?? null;
+  return db.transaction('rw', db.posts, async () => {
+    const posts = (await db.posts.bulkGet(ids)).filter((p): p is Post => !!p && !p.deletedAt);
+    if (posts.length < 2) return posts[0]?.id ?? null;
+    const [first, ...rest] = posts;
+    const pick = (k: 'hook' | 'caption' | 'cta' | 'altText') => first[k].trim() || rest.find((p) => p[k].trim())?.[k] || '';
+    const media = posts.flatMap((p) => p.media);
+    const now = Date.now();
+    await db.posts.update(first.id, {
+      media,
+      format: formatForMedia(media, first.format),
+      hook: pick('hook'),
+      caption: pick('caption'),
+      cta: pick('cta'),
+      altText: pick('altText'),
+      hashtags: [...new Set(posts.flatMap((p) => p.hashtags))],
+      pieceIds: [...new Set(posts.flatMap((p) => p.pieceIds))],
+      notes: posts.map((p) => p.notes.trim()).filter(Boolean).join('\n\n'),
+      updatedAt: now,
+    });
+    for (const p of rest) await db.posts.update(p.id, { deletedAt: now, updatedAt: now });
+    return first.id;
   });
 }
