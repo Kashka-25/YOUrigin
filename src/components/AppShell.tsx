@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  BriefcaseBusiness, Feather, FolderKanban, FolderOpen, Hash, Images, Library, Menu,
+  BriefcaseBusiness, Feather, FolderKanban, FolderOpen, Hash, Library, Menu,
   Search, MoreHorizontal, ChevronDown, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit, Waypoints, Megaphone,
 } from 'lucide-react';
 import { Logo } from './Logo';
@@ -22,7 +22,6 @@ const ROOMS: NavDef[] = [
 /** Everything else waits quietly behind More. Nothing here is gone, just out of the way. */
 const MORE: NavDef[] = [
   { to: '/library', label: 'All notes', icon: Library },
-  { to: '/library?view=gallery', label: 'Gallery', icon: Images },
   { to: '/universe', label: 'My Universe', icon: Orbit },
   { to: '/atlas', label: 'Creation Atlas', icon: Waypoints },
   { to: '/collections', label: 'Collections', icon: FolderOpen },

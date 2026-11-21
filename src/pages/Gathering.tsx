@@ -144,7 +144,7 @@ export function Gathering() {
           const parts = [images ? `${images} ${images === 1 ? 'photo' : 'photos'}` : '', v ? `${v} ${v === 1 ? 'video' : 'videos'}` : ''].filter(Boolean);
           toast(`Added ${parts.join(' and ')} to your Gallery`);
           if (!inbox.text) {
-            navigate('/library?view=gallery');
+            navigate('/posts?view=gallery');
             return;
           }
         } catch (e) {
