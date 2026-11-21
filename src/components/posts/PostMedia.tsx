@@ -1,6 +1,7 @@
 import { useRef, useState, type Ref } from 'react';
 import { ChevronLeft, ChevronRight, FileImage, Film, Link2, Play, Upload } from 'lucide-react';
 import { AssetImage } from '../AssetImage';
+import { useAsset } from '../../db/assets';
 import { addClipOnThisDevice, useClipUrl } from '../../db/postMedia';
 import { VIDEO_ACCEPT } from '../../io/postMedia';
 import { linkLabel, type Post, type PostMedia } from '../../posts/model';
@@ -35,11 +36,13 @@ export function firstPicture(media: PostMedia[]): PostMedia | undefined {
 
 function ClipPlayer({ media, tall, videoRef }: { media: Extract<PostMedia, { kind: 'clip' }>; tall: boolean; videoRef?: Ref<HTMLVideoElement> }) {
   const { url, missing } = useClipUrl(media.clipId);
+  // the chosen cover shows until it plays, as on Instagram
+  const poster = useAsset(media.posterAssetId);
   const input = useRef<HTMLInputElement>(null);
   const [adding, setAdding] = useState(false);
   const [problem, setProblem] = useState('');
   if (url) {
-    return <video ref={videoRef} src={url} className="h-full w-full bg-black object-contain" controls playsInline loop preload="metadata" aria-label={media.name} />;
+    return <video ref={videoRef} src={url} poster={poster?.dataUrl} className="h-full w-full bg-black object-contain" controls playsInline loop preload="metadata" aria-label={media.name} />;
   }
   const add = async (file: File | undefined) => {
     if (!file) return;
