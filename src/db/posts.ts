@@ -69,13 +69,17 @@ export async function restorePost(id: string): Promise<void> {
   await updatePost(id, { deletedAt: null });
 }
 
-/** Draft keys already brought in, so the same file never adds a post twice. */
+/**
+ * Draft keys already here, so the same file never adds a post twice. A post
+ * set aside doesn't count: setting a draft aside and importing it again brings
+ * back a fresh copy (the set-aside one stays set aside).
+ */
 export async function importedDraftKeys(): Promise<Set<string>> {
   const all = await db.posts.toArray();
-  return new Set(all.flatMap((p) => (p.origin.kind === 'claude' ? [p.origin.draftKey] : [])));
+  return new Set(all.flatMap((p) => (p.origin.kind === 'claude' && !p.deletedAt ? [p.origin.draftKey] : [])));
 }
 
-/** Saves reviewed drafts. Skips any whose key is already here (even set aside), so nothing edited is overwritten. */
+/** Saves reviewed drafts. Skips any whose key is already here and not set aside, so nothing edited is overwritten. */
 export async function savePostDrafts(posts: Post[]): Promise<number> {
   return db.transaction('rw', db.posts, async () => {
     const keys = await importedDraftKeys();

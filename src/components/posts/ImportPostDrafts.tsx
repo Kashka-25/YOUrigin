@@ -132,7 +132,7 @@ export function ImportPostDraftsDialog({ review, onClose }: { review: DraftsRevi
                     </span>
                   </span>
                 )}
-                {d.duplicate && <span className="mt-1 block text-xs text-muted">Already imported, so it’s left as you have it.</span>}
+                {d.duplicate && <span className="mt-1 block text-xs text-muted">Already in your Posts, so it’s left as you have it. To bring in a fresh copy, set that post aside first.</span>}
                 {d.warnings.map((w) => (
                   <span key={w} className="mt-1 flex items-start gap-1 text-xs text-seed">
                     <AlertTriangle size={12} className="mt-0.5 shrink-0" aria-hidden /> {w}

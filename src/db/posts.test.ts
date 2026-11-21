@@ -126,6 +126,25 @@ describe('importing drafts', () => {
     expect((await db.posts.get(post.id))?.caption).toBe('My own words now');
   });
 
+  it('a draft set aside can be imported again; the set-aside copy stays aside', async () => {
+    const text = JSON.stringify({ kind: 'post-drafts', posts: [{ key: 'again', caption: 'Invented words' }] });
+    await savePostDrafts(draftsToPosts(resolvePostDrafts(parsePostDrafts(text), [], await importedDraftKeys())));
+    const [old] = await db.posts.toArray();
+    await deletePost(old.id);
+
+    const again = resolvePostDrafts(parsePostDrafts(text), [], await importedDraftKeys());
+    expect(again.drafts[0]).toMatchObject({ duplicate: false, include: true });
+    expect(await savePostDrafts(draftsToPosts(again))).toBe(1);
+    const live = (await db.posts.toArray()).filter((p) => !p.deletedAt);
+    expect(live).toHaveLength(1);
+    expect(live[0].id).not.toBe(old.id);
+    expect((await db.posts.get(old.id))?.deletedAt).toBeTypeOf('number');
+
+    // and once it's back, the same file adds nothing more
+    const third = resolvePostDrafts(parsePostDrafts(text), [], await importedDraftKeys());
+    expect(third.drafts[0]).toMatchObject({ duplicate: true, include: false });
+  });
+
   it('never creates pieces, and says which titles it couldn’t find', async () => {
     const text = JSON.stringify({ kind: 'post-drafts', posts: [{ key: 'x', caption: 'c', pieces: [{ title: 'Not in the library' }] }] });
     const file = resolvePostDrafts(parsePostDrafts(text), [], new Set());
