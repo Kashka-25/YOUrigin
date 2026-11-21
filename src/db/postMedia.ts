@@ -252,3 +252,29 @@ export function withCover(media: PostMedia[], index: number, posterAssetId: stri
   const next = media.map((x, i) => (i === index ? { ...m, posterAssetId } : x));
   return { media: next, ...(m.posterAssetId && m.posterAssetId !== posterAssetId ? { replaced: m.posterAssetId } : {}) };
 }
+
+/**
+ * Replaces a post's pictures and videos with a redrawn set (named in a drafts
+ * file and picked alongside it), keeping every word Cassidy has written. Old
+ * media that nothing uses any more is removed. Returns false when none of the
+ * named files were picked, so nothing changes.
+ */
+export async function updatePictures(
+  postId: string,
+  names: { name: string; note?: string }[],
+  files: Map<string, File>,
+  savers: MediaSavers = defaultSavers,
+): Promise<boolean> {
+  const post = await db.posts.get(postId);
+  if (!post || !names.some((n) => findMedia(files, n.name))) return false;
+  const named: PostMedia[] = names.map((n) => ({ kind: 'file', name: n.name, ...(n.note ? { note: n.note } : {}) }));
+  const { media } = await fillMedia(named, files, savers);
+  const old = post.media;
+  await db.posts.update(postId, { media, format: formatForMedia(media, post.format), updatedAt: Date.now() });
+  const kept = new Set(media.map((m) => (m.kind === 'asset' ? `a:${m.assetId}` : m.kind === 'clip' ? `c:${m.clipId}` : '')));
+  for (const m of old) {
+    const k = m.kind === 'asset' ? `a:${m.assetId}` : m.kind === 'clip' ? `c:${m.clipId}` : '';
+    if (k && !kept.has(k)) await removeMediaIfUnused(m);
+  }
+  return true;
+}

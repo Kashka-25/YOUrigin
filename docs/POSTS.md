@@ -8,6 +8,7 @@ Plan, write, review and approve social media posts (Instagram) inside YOUrigin. 
 2. Claude drafts the week and saves a **drafts file** (format below), usually with its slides and videos beside it and as one **.zip**.
 3. In **Posts → Import drafts**, pick the drafts file **together with its images and videos**, or the **.zip** (easiest on the phone), or use **Import a folder** on the laptop. The review shows each draft with the media found for it. Every post kept arrives as a **Draft**, whatever the file says. Re-importing the same file adds nothing and never overwrites edits, except for drafts you've set aside: those come in again as fresh copies.
    - Posts imported without their media keep the file names; **Add media** on the Posts page fills them in later, matching by file name.
+   - **Redrawn slides:** importing a drafts file again with new pictures offers **Update pictures** on posts already here. It swaps in the new pictures and keeps your words, date and status; old pictures nothing uses are removed. This is how edits round-trip: change the hook or write in **Notes to self**, Claude redraws the slides under the same draft key, and you import the update.
 4. Edit each draft, then **Approve** it.
 5. **Export approved** saves the approved posts in a date range as `.json` (for scheduling in Metricool, later) and `.md` (readable). Exporting changes nothing and sends nothing.
 6. Once a post is live, **Mark posted** and paste its link.

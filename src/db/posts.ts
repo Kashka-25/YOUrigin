@@ -120,3 +120,9 @@ export async function combinePosts(ids: string[]): Promise<string | null> {
     return first.id;
   });
 }
+
+/** The live (not set aside) post each imported draft key belongs to. */
+export async function postsByDraftKey(): Promise<Map<string, string>> {
+  const all = await db.posts.toArray();
+  return new Map(all.flatMap((p) => (p.origin.kind === 'claude' && !p.deletedAt ? [[p.origin.draftKey, p.id] as const] : [])));
+}
