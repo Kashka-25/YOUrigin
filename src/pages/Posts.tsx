@@ -1,11 +1,11 @@
 import { useRef, useState, type DragEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Download, FolderOpen, ImagePlus, Move, Plus, Upload } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Download, FolderOpen, ImagePlus, Lightbulb, Move, Plus, Upload } from 'lucide-react';
 import { EmptyState, Spinner } from '../components/ui';
 import { useToast } from '../components/Toast';
-import { createPost, movePostInFeed, setPostStatus, usePosts } from '../db/posts';
+import { combinePosts, createPost, deletePost, movePostInFeed, setPostStatus, usePosts } from '../db/posts';
 import { POST_IMPORT_ACCEPT, POST_MEDIA_ACCEPT, collectImportFiles } from '../io/postMedia';
-import { attachMediaToPosts } from '../db/postMedia';
+import { addIdeas, attachMediaToPosts } from '../db/postMedia';
 import { ImportPostDraftsDialog, readPostDraftsFiles, type DraftsReview } from '../components/posts/ImportPostDrafts';
 import { ExportPostsDialog } from '../components/posts/ExportPosts';
 import { FeedTileFace, PostChip, WorldDot, postTitle } from '../components/posts/PostBits';
@@ -27,12 +27,13 @@ import {
   type PostStatus,
 } from '../posts/model';
 
-type View = 'week' | 'month' | 'grid' | 'board';
+type View = 'week' | 'month' | 'grid' | 'board' | 'ideas';
 const VIEWS: { id: View; label: string }[] = [
   { id: 'week', label: 'Week' },
   { id: 'month', label: 'Month' },
   { id: 'grid', label: 'Grid' },
   { id: 'board', label: 'Board' },
+  { id: 'ideas', label: 'Ideas' },
 ];
 const VIEW_KEY = 'yourigin.posts.view';
 
@@ -381,6 +382,150 @@ function BoardView({ posts }: { posts: Post[] }) {
   );
 }
 
+/**
+ * Ideas: photos and videos kept to sort through later, like a camera roll.
+ * Tap one to open it; select several to combine them into one post (a carousel).
+ */
+function IdeasView({ posts }: { posts: Post[] }) {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const input = useRef<HTMLInputElement>(null);
+  const [selecting, setSelecting] = useState(false);
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [over, setOver] = useState(false);
+  const ideas = posts.filter((p) => p.status === 'idea').sort((a, b) => b.createdAt - a.createdAt);
+
+  const add = async (files: File[]) => {
+    if (!files.length) return;
+    setBusy(true);
+    try {
+      const { media } = await collectImportFiles(files);
+      const n = await addIdeas([...media.values()]);
+      toast(n ? `${n} idea${n === 1 ? '' : 's'} added.` : 'Those files aren’t images or videos.');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggle = (id: string) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
+  const finish = () => {
+    setSelecting(false);
+    setChosen([]);
+  };
+  const combine = async () => {
+    const id = await combinePosts(chosen);
+    finish();
+    if (id) {
+      toast(`Combined ${chosen.length} ideas into one post.`);
+      navigate(`/posts/${id}`);
+    }
+  };
+  const setAside = async () => {
+    for (const id of chosen) await deletePost(id);
+    toast(`${chosen.length} idea${chosen.length === 1 ? '' : 's'} set aside.`);
+    finish();
+  };
+
+  return (
+    <section
+      aria-label="Ideas"
+      onDragOver={(e: DragEvent) => {
+        if ([...e.dataTransfer.types].includes('Files')) {
+          e.preventDefault();
+          setOver(true);
+        }
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e: DragEvent) => {
+        if (!e.dataTransfer.files.length) return;
+        e.preventDefault();
+        setOver(false);
+        void add([...e.dataTransfer.files]);
+      }}
+    >
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <p className="min-w-0 flex-1 text-sm text-ink-2">
+          {selecting ? (chosen.length ? `${chosen.length} selected, in the order you tapped them.` : 'Tap ideas to select them.') : 'Photos and videos you might post. Sort through them when you’re ready.'}
+        </p>
+        {ideas.length > 0 && (
+          <button type="button" className={selecting ? 'btn-primary' : 'btn'} aria-pressed={selecting} onClick={() => (selecting ? finish() : setSelecting(true))}>
+            {selecting ? 'Done' : 'Select'}
+          </button>
+        )}
+        <button type="button" className="btn" disabled={busy} onClick={() => input.current?.click()}>
+          <ImagePlus size={16} /> {busy ? 'Adding…' : 'Add ideas'}
+        </button>
+      </div>
+
+      {ideas.length ? (
+        <ol className={`mx-auto grid max-w-xl grid-cols-3 gap-0.5 overflow-hidden rounded-lg bg-line ${over ? 'outline outline-2 outline-accent' : ''}`} aria-label="Ideas">
+          {ideas.map((p) => {
+            const n = chosen.indexOf(p.id);
+            return (
+              <li key={p.id} className="relative">
+                <button
+                  type="button"
+                  className={`block w-full ${n >= 0 ? 'opacity-80' : ''}`}
+                  aria-pressed={selecting ? n >= 0 : undefined}
+                  aria-label={selecting ? `Select ${postTitle(p)}` : `Open ${postTitle(p)}`}
+                  onClick={() => (selecting ? toggle(p.id) : navigate(`/posts/${p.id}`))}
+                >
+                  <FeedTileFace post={p} />
+                </button>
+                {selecting && (
+                  <span className={`pointer-events-none absolute left-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full border-2 text-xs font-bold ${n >= 0 ? 'border-white bg-accent text-accent-ink' : 'border-white/90 bg-black/30'}`} aria-hidden>
+                    {n >= 0 ? n + 1 : ''}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      ) : (
+        <button
+          type="button"
+          onClick={() => input.current?.click()}
+          disabled={busy}
+          className={`mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-10 text-center ${over ? 'border-accent bg-accent/10' : 'border-line'}`}
+        >
+          <Lightbulb size={36} className="text-ink-2" aria-hidden />
+          <span className="font-serif text-xl text-ink">{busy ? 'Adding…' : 'Keep photos and videos here'}</span>
+          <span className="max-w-sm text-sm text-ink-2">Anything you might post one day. Each becomes an idea; combine a few into a carousel when you’re ready.</span>
+        </button>
+      )}
+
+      {selecting && chosen.length > 0 && (
+        <div className="sticky bottom-[calc(64px+env(safe-area-inset-bottom))] z-20 mt-4 flex flex-wrap items-center justify-end gap-2 rounded-xl border border-line bg-card/95 p-3 backdrop-blur md:bottom-0">
+          <button type="button" className="btn-ghost text-seed" onClick={() => void setAside()}>
+            Set aside
+          </button>
+          <button type="button" className="btn-primary" disabled={chosen.length < 2} onClick={() => void combine()}>
+            Combine into one post ({chosen.length})
+          </button>
+        </div>
+      )}
+
+      <input
+        ref={input}
+        type="file"
+        accept={POST_MEDIA_ACCEPT}
+        multiple
+        className="sr-only"
+        tabIndex={-1}
+        aria-label="Photos and videos to keep as ideas"
+        onChange={(e) => {
+          const files = [...(e.target.files ?? [])];
+          e.target.value = '';
+          void add(files);
+        }}
+      />
+    </section>
+  );
+}
+
 /** Social media posts: planned on a calendar or profile grid, written, reviewed and approved here. */
 export function Posts() {
   const posts = usePosts();
@@ -462,9 +607,9 @@ export function Posts() {
         </div>
       </header>
 
-      <div className="mb-5 grid grid-cols-4 gap-1 rounded-xl border border-line p-1 sm:inline-grid" role="tablist" aria-label="View">
+      <div className="mb-5 grid grid-cols-5 gap-1 rounded-xl border border-line p-1 sm:inline-grid" role="tablist" aria-label="View">
         {VIEWS.map((v) => (
-          <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={`rounded-lg px-4 py-2 text-sm font-medium ${view === v.id ? 'bg-accent text-accent-ink' : 'text-ink-2 hover:text-ink'}`} onClick={() => setView(v.id)}>
+          <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={`rounded-lg px-2 py-2 text-sm font-medium sm:px-4 ${view === v.id ? 'bg-accent text-accent-ink' : 'text-ink-2 hover:text-ink'}`} onClick={() => setView(v.id)}>
             {v.label}
           </button>
         ))}
@@ -478,11 +623,13 @@ export function Posts() {
         <MonthView key={`${at.getFullYear()}-${at.getMonth()}`} posts={posts} at={at} setAt={setAt} />
       ) : view === 'grid' ? (
         <GridView posts={posts} />
+      ) : view === 'ideas' ? (
+        <IdeasView posts={posts} />
       ) : (
         <BoardView posts={posts} />
       )}
 
-      {posts && !posts.length && view !== 'grid' && (
+      {posts && !posts.length && view !== 'grid' && view !== 'ideas' && (
         <p className="mt-6 text-center text-sm text-muted">
           No posts yet. Tap a day to start one, or{' '}
           <button type="button" className="underline" onClick={() => fileInput.current?.click()}>

@@ -6,7 +6,7 @@ Plan, write, review and approve social media posts (Instagram) inside YOUrigin. 
 
 1. Media goes into the Google Drive "To post" folder.
 2. Claude drafts the week and saves a **drafts file** (format below), usually with its slides and videos beside it and as one **.zip**.
-3. In **Posts → Import drafts**, pick the drafts file **together with its images and videos**, or the **.zip** (easiest on the phone), or use **Import a folder** on the laptop. The review shows each draft with the media found for it. Every post kept arrives as a **Draft**, whatever the file says. Re-importing the same file adds nothing and never overwrites edits.
+3. In **Posts → Import drafts**, pick the drafts file **together with its images and videos**, or the **.zip** (easiest on the phone), or use **Import a folder** on the laptop. The review shows each draft with the media found for it. Every post kept arrives as a **Draft**, whatever the file says. Re-importing the same file adds nothing and never overwrites edits, except for drafts you've set aside: those come in again as fresh copies.
    - Posts imported without their media keep the file names; **Add media** on the Posts page fills them in later, matching by file name.
 4. Edit each draft, then **Approve** it.
 5. **Export approved** saves the approved posts in a date range as `.json` (for scheduling in Metricool, later) and `.md` (readable). Exporting changes nothing and sends nothing.
@@ -20,6 +20,18 @@ Plan, write, review and approve social media posts (Instagram) inside YOUrigin. 
 - **Board**: Idea, Draft, Approved, Posted. On the phone, one column at a time.
 
 Posted times are placeholders until real insights are in (`WEEK_PLAN` in `src/posts/model.ts`).
+
+## Making a post
+
+Laid out like Instagram's "New post" so it feels familiar:
+
+- **Photos and videos first**, at the very top: add them, see the selected one large (swipe or use the arrows), and arrange them in the strip below by dragging. **+** adds more; the bin removes the one shown. Dropping files on it works on the laptop. Adding media sets the format the way Instagram does: a video makes a Reel, several pictures a carousel, one picture a single image (quote cards and Stories stay as chosen).
+- **Caption** next, then everything else in rows you tap open: Schedule, Format and world, On-image hook, Call to action, Hashtags, Alt text, Linked pieces, Files in Drive, Notes to self and Status. Each row shows a short summary while closed.
+- **Preview** (top right) shows the post with its caption as followers will see it.
+
+## Ideas
+
+The **Ideas** tab is a place for photos and videos you might post one day. **Add ideas** (or drop files on it) turns each into its own undated Idea, shown like a camera roll. Tap one to open it, or **Select** several and **Combine into one post** to make a carousel in the order you tapped them; the others are set aside.
 
 ## Seeing what you're making
 

@@ -10,6 +10,8 @@ export function AutoTextarea({
   onBlur,
   inputRef,
   minHeight = 300,
+  placeholder,
+  ariaLabel,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -19,6 +21,8 @@ export function AutoTextarea({
   inputRef?: (el: HTMLTextAreaElement | null) => void;
   /** Smallest height in pixels; short fields pass less. */
   minHeight?: number;
+  placeholder?: string;
+  ariaLabel?: string;
 }) {
   const [el, setEl] = useState<HTMLTextAreaElement | null>(null);
   useAutoGrow(el, value, minHeight);
@@ -29,5 +33,5 @@ export function AutoTextarea({
     },
     [inputRef],
   );
-  return <textarea id={id} ref={ref} value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} className={className} spellCheck />;
+  return <textarea id={id} ref={ref} value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} className={className} placeholder={placeholder} aria-label={ariaLabel} spellCheck />;
 }
