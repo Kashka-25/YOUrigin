@@ -1,6 +1,6 @@
 import { useRef, useState, type DragEvent, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Download, FolderOpen, ImagePlus, Lightbulb, Move, Plus, Upload } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Download, FolderOpen, ImagePlus, Images, Lightbulb, Move, Plus, Upload } from 'lucide-react';
 import { EmptyState, Spinner } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { combinePosts, createPost, deletePost, movePostInFeed, setPostStatus, usePosts } from '../db/posts';
@@ -9,6 +9,7 @@ import { addIdeas, attachMediaToPosts } from '../db/postMedia';
 import { ImportPostDraftsDialog, readPostDraftsFiles, type DraftsReview } from '../components/posts/ImportPostDrafts';
 import { ExportPostsDialog } from '../components/posts/ExportPosts';
 import { FeedTileFace, PostChip, WorldDot, postTitle } from '../components/posts/PostBits';
+import { GalleryPicker } from '../components/posts/GalleryPicker';
 import {
   STATUS_LABEL,
   STATUS_ORDER,
@@ -410,6 +411,7 @@ function IdeasView({ posts }: { posts: Post[] }) {
     }
   };
 
+  const [fromGallery, setFromGallery] = useState(false);
   // A post idea in words alone: kept as its own idea (a quote card until media is added).
   const [jot, setJot] = useState('');
   const keepJot = async (e: FormEvent) => {
@@ -480,10 +482,14 @@ function IdeasView({ posts }: { posts: Post[] }) {
             {selecting ? 'Done' : 'Select'}
           </button>
         )}
+        <button type="button" className="btn" onClick={() => setFromGallery(true)}>
+          <Images size={16} /> From Gallery
+        </button>
         <button type="button" className="btn" disabled={busy} onClick={() => input.current?.click()}>
           <ImagePlus size={16} /> {busy ? 'Adding…' : 'Add ideas'}
         </button>
       </div>
+      <GalleryPicker open={fromGallery} onClose={() => setFromGallery(false)} onAdded={(n) => toast(n ? `${n} idea${n === 1 ? '' : 's'} added from your Gallery.` : 'Nothing was added.')} />
 
       {ideas.length ? (
         <ol className={`mx-auto grid max-w-xl grid-cols-3 gap-0.5 overflow-hidden rounded-lg bg-line ${over ? 'outline outline-2 outline-accent' : ''}`} aria-label="Ideas">

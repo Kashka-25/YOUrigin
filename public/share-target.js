@@ -1,4 +1,4 @@
-// Share to YOUrigin: Android's Share menu POSTs text, links and images to ./share-target.
+// Share to YOUrigin: Android's Share menu POSTs text, links, photos and videos to ./share-target.
 // The service worker keeps them in a small cache "inbox" and opens Gathering, which
 // takes them out (src/io/shareInbox.ts). Imported into the generated worker by Workbox.
 const SHARE_INBOX = 'yourigin-share-inbox';

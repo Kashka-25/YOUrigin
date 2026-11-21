@@ -88,7 +88,7 @@ export default defineConfig(({ mode }) => ({
           action: './share-target',
           method: 'POST',
           enctype: 'multipart/form-data',
-          params: { title: 'title', text: 'text', url: 'url', files: [{ name: 'files', accept: ['image/*'] }] },
+          params: { title: 'title', text: 'text', url: 'url', files: [{ name: 'files', accept: ['image/*', 'video/*'] }] },
         },
         // Long-press the app icon.
         shortcuts: [
