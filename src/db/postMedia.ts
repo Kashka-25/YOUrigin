@@ -230,3 +230,25 @@ export async function addClipOnThisDevice(clipId: string, file: File, probe: (f:
     updatedAt: now,
   });
 }
+
+/** The frame a video is showing right now, as a JPEG picture (null if it can't be read yet). */
+export async function frameFromVideo(video: HTMLVideoElement, name: string): Promise<File | null> {
+  if (!video.videoWidth || !video.videoHeight) return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', 0.88));
+  return blob ? new File([blob], `${name.replace(/\.[^.]+$/, '')}-cover.jpg`, { type: 'image/jpeg' }) : null;
+}
+
+/**
+ * Gives a video in a post a new cover (the picture shown in the grid and before
+ * it plays). The old cover is removed if nothing else uses it.
+ */
+export function withCover(media: PostMedia[], index: number, posterAssetId: string): { media: PostMedia[]; replaced?: string } {
+  const m = media[index];
+  if (!m || m.kind !== 'clip') return { media };
+  const next = media.map((x, i) => (i === index ? { ...m, posterAssetId } : x));
+  return { media: next, ...(m.posterAssetId && m.posterAssetId !== posterAssetId ? { replaced: m.posterAssetId } : {}) };
+}

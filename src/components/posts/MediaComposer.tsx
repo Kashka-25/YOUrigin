@@ -1,9 +1,11 @@
-import { useRef, useState, type DragEvent, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type DragEvent, type PointerEvent, type RefObject } from 'react';
 import { DndContext, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, horizontalListSortingStrategy, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ChevronLeft, ChevronRight, ImagePlus, Images, Plus, Trash2 } from 'lucide-react';
+import { Camera, ChevronLeft, ChevronRight, ImagePlus, Images, Plus, Trash2, Upload } from 'lucide-react';
 import { MediaThumb, Slide } from './PostMedia';
+import { AssetImage } from '../AssetImage';
+import { frameFromVideo } from '../../db/postMedia';
 import { POST_MEDIA_ACCEPT } from '../../io/postMedia';
 import type { PostFormat, PostMedia } from '../../posts/model';
 
@@ -42,6 +44,97 @@ function Thumb({ id, media, index, selected, onSelect }: { id: string; media: Po
   );
 }
 
+
+/** Small frames from across a video, for the cover filmstrip. */
+function useFilmstrip(src: string | null, count = 8): string[] {
+  const [frames, setFrames] = useState<string[]>([]);
+  useEffect(() => {
+    if (!src) return;
+    let cancelled = false;
+    const v = document.createElement('video');
+    v.muted = true;
+    v.preload = 'auto';
+    v.src = src;
+    const seek = (t: number) =>
+      new Promise<void>((resolve) => {
+        v.addEventListener('seeked', () => resolve(), { once: true });
+        v.currentTime = t;
+      });
+    void (async () => {
+      await new Promise<void>((r) => v.addEventListener('loadedmetadata', () => r(), { once: true }));
+      const out: string[] = [];
+      const canvas = document.createElement('canvas');
+      canvas.width = 72;
+      canvas.height = Math.round((72 * (v.videoHeight || 16)) / (v.videoWidth || 9));
+      for (let i = 0; i < count && !cancelled; i++) {
+        await seek(((i + 0.5) / count) * (v.duration || 1));
+        canvas.getContext('2d')?.drawImage(v, 0, 0, canvas.width, canvas.height);
+        out.push(canvas.toDataURL('image/jpeg', 0.7));
+        if (!cancelled) setFrames([...out]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      v.removeAttribute('src');
+      v.load();
+    };
+  }, [src, count]);
+  return src ? frames : [];
+}
+
+function CoverChooser({ video, onPick, onCancel }: { video: RefObject<HTMLVideoElement | null>; onPick: () => void; onCancel: () => void }) {
+  const v = video.current;
+  const [t, setT] = useState(() => v?.currentTime ?? 0);
+  const duration = v?.duration && Number.isFinite(v.duration) ? v.duration : 0;
+  const frames = useFilmstrip(v?.currentSrc ?? null);
+  useEffect(() => {
+    video.current?.pause();
+  }, [video]);
+  return (
+    <div className="mt-2 rounded-xl border border-accent/50 bg-card p-3" role="group" aria-label="Choose a cover">
+      <p className="mb-2 text-sm font-medium text-ink">Choose a cover</p>
+      <div className="relative">
+        <div className="flex h-16 overflow-hidden rounded-lg bg-paper-2" aria-hidden>
+          {frames.map((f, i) => (
+            <img key={i} src={f} alt="" className="h-full min-w-0 flex-1 object-cover" />
+          ))}
+        </div>
+        {duration > 0 && (
+          <span
+            className="pointer-events-none absolute -top-1 bottom-[-4px] w-[14%] rounded-md border-[3px] border-white shadow-[0_0_0_1px_rgba(0,0,0,.4)]"
+            style={{ left: `calc(${(t / duration) * 86}%)` }}
+            aria-hidden
+          />
+        )}
+        <input
+          type="range"
+          min={0}
+          max={duration || 0}
+          step={0.04}
+          value={t}
+          disabled={!duration}
+          aria-label="Cover frame"
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          onChange={(e) => {
+            const next = Number(e.target.value);
+            setT(next);
+            if (video.current) video.current.currentTime = next;
+          }}
+        />
+      </div>
+      <p className="mt-2 text-xs text-muted">Slide along the strip; the frame shows large above.</p>
+      <div className="mt-3 flex justify-end gap-2">
+        <button type="button" className="btn-ghost" onClick={onCancel}>
+          Cancel
+        </button>
+        <button type="button" className="btn-primary" onClick={onPick}>
+          Use this frame
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /**
  * The top of the post editor, laid out like Instagram's "New post": add photos
  * and videos, see the selected one large, and arrange the slides in a strip.
@@ -54,6 +147,7 @@ export function MediaComposer({
   onAdd,
   onRemove,
   onReorder,
+  onCover,
 }: {
   media: PostMedia[];
   format: PostFormat;
@@ -62,8 +156,14 @@ export function MediaComposer({
   onAdd: (files: File[]) => void;
   onRemove: (index: number) => void;
   onReorder: (media: PostMedia[]) => void;
+  /** A new cover picture for the video at this place. */
+  onCover?: (index: number, picture: File) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const coverInput = useRef<HTMLInputElement>(null);
+  const video = useRef<HTMLVideoElement>(null);
+  const [coverNote, setCoverNote] = useState('');
+  const [choosing, setChoosing] = useState(false);
   const [selected, setSelected] = useState(0);
   const [over, setOver] = useState(false);
   const swipe = useRef<number | null>(null);
@@ -155,7 +255,7 @@ export function MediaComposer({
           if (Math.abs(dx) > 40) go(at + (dx < 0 ? 1 : -1));
         }}
       >
-        <Slide media={current} alt={at === 0 ? altText : ''} tall={tall} />
+        <Slide media={current} alt={at === 0 ? altText : ''} tall={tall} videoRef={video} />
         {media.length > 1 && (
           <>
             <span className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-white tabular-nums">
@@ -185,6 +285,71 @@ export function MediaComposer({
           <Trash2 size={16} />
         </button>
       </div>
+
+      {current?.kind === 'clip' && onCover && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-card p-2">
+          {current.posterAssetId ? (
+            <AssetImage id={current.posterAssetId} alt="Current cover" className="aspect-[9/16] w-9 shrink-0 rounded object-cover" />
+          ) : (
+            <span className="aspect-[9/16] w-9 shrink-0 rounded bg-paper-2" aria-hidden />
+          )}
+          <span className="mr-auto text-sm">
+            <span className="block font-medium text-ink">Cover</span>
+            <span className="block text-xs text-muted">{coverNote || 'Shown in the grid and before it plays.'}</span>
+          </span>
+          <button
+            type="button"
+            className="btn min-h-9 px-3"
+            onClick={() => {
+              if (!video.current) {
+                setCoverNote('Add the video on this device first, or upload a picture.');
+                return;
+              }
+              setCoverNote('');
+              setChoosing(true);
+            }}
+          >
+            <Camera size={15} /> Choose from video
+          </button>
+          <button type="button" className="btn min-h-9 px-3" onClick={() => coverInput.current?.click()}>
+            <Upload size={15} /> Upload a picture
+          </button>
+          <input
+            ref={coverInput}
+            type="file"
+            accept="image/*,.heic,.heif"
+            className="sr-only"
+            tabIndex={-1}
+            aria-label="Cover picture for this video"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = '';
+              if (f) {
+                setCoverNote('Cover set from your picture.');
+                onCover(at, f);
+              }
+            }}
+          />
+        </div>
+      )}
+
+      {choosing && current?.kind === 'clip' && onCover && (
+        <CoverChooser
+          video={video}
+          onCancel={() => setChoosing(false)}
+          onPick={async () => {
+            const v = video.current;
+            const frame = v ? await frameFromVideo(v, current.name) : null;
+            setChoosing(false);
+            if (!frame) {
+              setCoverNote('That frame couldn’t be read. Try another, or upload a picture.');
+              return;
+            }
+            setCoverNote('Cover set from the video.');
+            onCover(at, frame);
+          }}
+        />
+      )}
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={ids} strategy={horizontalListSortingStrategy}>

@@ -12,7 +12,8 @@ import { useAutosave } from '../hooks/useAutosave';
 import { DEMO } from '../demo/mode';
 import { useLibrary } from '../hooks/useLibrary';
 import { deletePost, linkPiece, restorePost, setPostStatus, unlinkPiece, updatePost, usePost, type PostPatch } from '../db/posts';
-import { mediaFromFile, removeMediaIfUnused } from '../db/postMedia';
+import { mediaFromFile, removeMediaIfUnused, withCover } from '../db/postMedia';
+import { removeAssetIfUnused, saveImage } from '../db/assets';
 import { collectImportFiles } from '../io/postMedia';
 import { TYPE_LABEL } from '../domain/constants';
 import { displayTitle, excerpt } from '../domain/text';
@@ -242,6 +243,19 @@ function Editor({ post }: { post: Post }) {
     await removeMediaIfUnused(m);
   };
 
+  const setCover = async (index: number, picture: File) => {
+    try {
+      const { asset } = await saveImage(picture);
+      const { media, replaced } = withCover(fields.media, index, asset.id);
+      set({ media });
+      await flush();
+      if (replaced) await removeAssetIfUnused(replaced);
+      toast('Cover updated.');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const remove = async () => {
     const ok = await confirm({ title: 'Set this post aside?', message: 'It leaves the calendar, grid and board. Linked pieces are not touched.', confirmLabel: 'Set aside', danger: true });
     if (!ok) return;
@@ -289,6 +303,7 @@ function Editor({ post }: { post: Post }) {
           onAdd={(f) => void addMedia(f)}
           onRemove={(i) => void removeMedia(i)}
           onReorder={(media) => set({ media })}
+          onCover={(i, f) => void setCover(i, f)}
         />
 
         {post.origin.kind === 'claude' && (
