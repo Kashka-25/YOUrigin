@@ -7,4 +7,4 @@ export function artCaption(item: Pick<ContentItem, 'art' | 'inspiration'>): stri
   return parts.join(' · ');
 }
 
-export const isArtwork = (i: ContentItem) => i.type === 'image' && !!i.assetId && !i.deletedAt;
+export const isArtwork = (i: ContentItem) => i.type === 'image' && (!!i.assetId || !!i.clipId) && !i.deletedAt;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Camera, ImagePlus, Mic, Square, Upload, X } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { setSetting, useSettings } from '../db/settings';
@@ -20,6 +20,8 @@ import { useToast } from '../components/Toast';
 import { suggestFor, suggestProjectsFor } from '../components/Suggestions';
 import { ImportDialog } from '../components/ImportDialog';
 import { takeSharedInbox } from '../io/shareInbox';
+import { isImageFile, isVideoFile } from '../io/postMedia';
+import { addToGallery } from '../db/gallery';
 import { dictationSupported, useDictation } from '../hooks/useDictation';
 import { useOnline } from '../hooks/useOnline';
 
@@ -34,6 +36,7 @@ export function Gathering() {
   const settings = useSettings();
   const toast = useToast();
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const ref = useRef<HTMLTextAreaElement | null>(null);
   const [area, setArea] = useState<HTMLTextAreaElement | null>(null);
   const [text, setText] = useState<string | null>(null);
@@ -128,9 +131,26 @@ export function Gathering() {
       toast('That share didn’t come through — try sharing it again');
       return;
     }
-    void takeSharedInbox().then((inbox) => {
+    void takeSharedInbox().then(async (inbox) => {
       sharing.current = false;
       if (!inbox || (!inbox.text && !inbox.files.length)) return;
+      // Photos and videos shared on their own (from the phone's gallery) go straight to the
+      // Gallery, ready to pull into post ideas. Videos always do: notes hold pictures only.
+      const videos = inbox.files.filter((f) => isVideoFile(f));
+      const toGallery = inbox.text ? videos : inbox.files.filter((f) => isVideoFile(f) || isImageFile(f));
+      if (toGallery.length) {
+        try {
+          const { images, videos: v } = await addToGallery(toGallery);
+          const parts = [images ? `${images} ${images === 1 ? 'photo' : 'photos'}` : '', v ? `${v} ${v === 1 ? 'video' : 'videos'}` : ''].filter(Boolean);
+          toast(`Added ${parts.join(' and ')} to your Gallery`);
+          if (!inbox.text) {
+            navigate('/library?view=gallery');
+            return;
+          }
+        } catch (e) {
+          toast(e instanceof Error ? e.message : 'Those files couldn’t be saved');
+        }
+      }
       if (inbox.text) {
         const v = valueRef.current.trimEnd();
         const next = v ? `${v}\n\n${inbox.text}` : inbox.text;
@@ -138,8 +158,8 @@ export function Gathering() {
         change(next);
         fromShare.current = true;
       }
-      addArt(inbox.files);
-      toast('Shared to Gathering — add tags if you like, then Capture');
+      addArt(inbox.files.filter((f) => !isVideoFile(f)));
+      toast('Shared to Capture — add tags if you like, then Capture');
     });
     // Runs once per share; the helpers it calls read the latest state through refs/setters.
     // eslint-disable-next-line react-hooks/exhaustive-deps

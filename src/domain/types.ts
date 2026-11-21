@@ -99,6 +99,11 @@ export interface ContentItem extends Syncable {
   deletedAt: number | null;
   /** For type 'image': the stored picture. The body holds an optional caption. */
   assetId?: string;
+  /**
+   * For type 'image': this Gallery piece is a video, kept on the device it was added on
+   * (the `clips` table; too large to sync). `assetId` is then its still frame, which syncs.
+   */
+  clipId?: string;
   /** For type 'image': how it sits on the page in print. */
   imageLayout?: ImageLayout;
   /** For type 'image': details about the artwork (all optional). */
