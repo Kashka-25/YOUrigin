@@ -64,7 +64,7 @@ function ClipPlayer({ media, tall }: { media: Extract<PostMedia, { kind: 'clip' 
           </span>
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-ink disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#1a1410] disabled:opacity-60"
             disabled={adding}
             onClick={(e) => {
               e.stopPropagation();
