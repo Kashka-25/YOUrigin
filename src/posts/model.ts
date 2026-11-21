@@ -44,6 +44,12 @@ export interface Post extends Syncable {
   postedAt: number | null;
   /** Link to the live post, once it is up. */
   postedUrl: string;
+  /**
+   * Where the post sends people (a website, a demo, a course). Instagram doesn't make
+   * links in captions clickable, so it goes on a Story link sticker or in the bio.
+   * Optional: posts made before links existed don't have one.
+   */
+  link?: string;
   /** Soft delete: the post sits aside until it is removed for good. */
   deletedAt: number | null;
 }
@@ -128,6 +134,7 @@ export function newPost(patch: Partial<Post> = {}, now = Date.now()): Post {
     approvedAt: null,
     postedAt: null,
     postedUrl: '',
+    link: '',
     deletedAt: null,
     ...patch,
   };
@@ -313,4 +320,21 @@ export function moveInFeed(feed: Post[], postId: string, toIndex: number): { id:
     if (p.scheduledAt !== slots[i]) changes.push({ id: p.id, scheduledAt: slots[i] });
   });
   return changes;
+}
+
+/** A link as people would type it: adds https:// when it's missing; empty stays empty. */
+export function normaliseLink(input: string): string {
+  const t = input.trim();
+  if (!t) return '';
+  return /^[a-z][a-z0-9+.-]*:/i.test(t) ? t : `https://${t.replace(/^\/+/, '')}`;
+}
+
+/** The short form shown on a link sticker ("yourownuniverse.life"), or the link itself if it isn't a web address. */
+export function linkLabel(link: string): string {
+  try {
+    const u = new URL(normaliseLink(link));
+    return `${u.hostname.replace(/^www\./, '')}${u.pathname.length > 1 ? u.pathname.replace(/\/$/, '') : ''}`;
+  } catch {
+    return link.trim();
+  }
 }

@@ -1,9 +1,9 @@
 import { useRef, useState, type Ref } from 'react';
-import { ChevronLeft, ChevronRight, FileImage, Film, Play, Upload } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileImage, Film, Link2, Play, Upload } from 'lucide-react';
 import { AssetImage } from '../AssetImage';
 import { addClipOnThisDevice, useClipUrl } from '../../db/postMedia';
 import { VIDEO_ACCEPT } from '../../io/postMedia';
-import type { Post, PostMedia } from '../../posts/model';
+import { linkLabel, type Post, type PostMedia } from '../../posts/model';
 
 /** A small square-ish picture of one piece of media: the image, a video's still frame, or its file name. */
 export function MediaThumb({ media, className = '', alt = '' }: { media: PostMedia; className?: string; alt?: string }) {
@@ -109,7 +109,7 @@ export function Slide({ media, alt, tall, videoRef }: { media: PostMedia; alt: s
  * The post as followers will see it: swipe through the slides (or play the
  * video), with the caption, call to action and hashtags underneath.
  */
-export function PostPreview({ post }: { post: Pick<Post, 'format' | 'media' | 'hook' | 'caption' | 'cta' | 'hashtags' | 'altText' | 'world'> }) {
+export function PostPreview({ post }: { post: Pick<Post, 'format' | 'media' | 'hook' | 'caption' | 'cta' | 'hashtags' | 'altText' | 'world' | 'link'> }) {
   const strip = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
   const [more, setMore] = useState(false);
@@ -191,6 +191,11 @@ export function PostPreview({ post }: { post: Pick<Post, 'format' | 'media' | 'h
         )}
         {(more || !long) && post.cta.trim() && <span className="mt-2 block">{post.cta.trim()}</span>}
         {(more || !long) && tags && <span className="mt-2 block break-words text-[13px] text-accent">{tags}</span>}
+        {post.link && (
+          <a href={post.link} target="_blank" rel="noreferrer" className="mt-3 inline-flex max-w-full items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-[13px] font-semibold text-[#2f6fd6] shadow-sm" title="As a Story link sticker">
+            <Link2 size={14} aria-hidden /> <span className="truncate">{linkLabel(post.link)}</span>
+          </a>
+        )}
       </figcaption>
     </figure>
   );

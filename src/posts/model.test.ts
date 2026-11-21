@@ -95,3 +95,31 @@ describe('export for scheduling', () => {
     expect(fullCaption({ caption: '', cta: '', hashtags: [] })).toBe('');
   });
 });
+
+describe('a post link', () => {
+  it('is tidied the way people type it, and shown short on the sticker', async () => {
+    const { normaliseLink, linkLabel } = await import('./model');
+    expect(normaliseLink('yourownuniverse.life')).toBe('https://yourownuniverse.life');
+    expect(normaliseLink('  https://kronk.info/booth ')).toBe('https://kronk.info/booth');
+    expect(normaliseLink('mailto:hello@example.com')).toBe('mailto:hello@example.com');
+    expect(normaliseLink('   ')).toBe('');
+    expect(linkLabel('https://www.yourownuniverse.life/')).toBe('yourownuniverse.life');
+    expect(linkLabel('https://kronk.info/booth/')).toBe('kronk.info/booth');
+  });
+
+  it('comes in from a drafts file and goes out with an approved post', async () => {
+    const { parsePostDrafts, draftsToPosts } = await import('../io/importPosts');
+    const file = parsePostDrafts(JSON.stringify({ kind: 'post-drafts', posts: [{ key: 'l', caption: 'Invented', date: '2026-11-24', time: '19:00', link: 'yourownuniverse.life' }, { key: 'n', caption: 'No link' }] }));
+    const [withLink, without] = draftsToPosts(file);
+    expect(withLink.link).toBe('https://yourownuniverse.life');
+    expect(without.link).toBe('');
+    const approved = { ...withLink, status: 'approved' as const };
+    const s = buildSchedule([approved], new Date(2026, 10, 23), new Date(2026, 10, 29), { pieces: new Map(), assets: new Map() });
+    expect(s.posts[0].link).toBe('https://yourownuniverse.life');
+    expect(scheduleToMarkdown(s)).toContain('**Link:** https://yourownuniverse.life');
+    // a post made before links existed exports with no link
+    const old = { ...approved } as Partial<typeof approved>;
+    delete old.link;
+    expect(buildSchedule([old as typeof approved], new Date(2026, 10, 23), new Date(2026, 10, 29), { pieces: new Map(), assets: new Map() }).posts[0].link).toBe('');
+  });
+});
