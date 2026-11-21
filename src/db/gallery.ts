@@ -48,3 +48,16 @@ export async function ideasFromGallery(itemIds: string[]): Promise<number> {
   }
   return n;
 }
+
+/**
+ * One post made of several Gallery pieces, as slides in the order they were chosen (a carousel
+ * for pictures; Instagram's rule decides when a video is among them). Points at the same media.
+ * Returns the new post's id, or null when none of them has a picture or video.
+ */
+export async function carouselFromGallery(itemIds: string[]): Promise<string | null> {
+  const byId = new Map((await db.content.bulkGet(itemIds)).filter((i): i is ContentItem => !!i && !i.deletedAt).map((i) => [i.id, i]));
+  const chosen = itemIds.map((id) => byId.get(id)).filter((i): i is ContentItem => !!i);
+  const media = chosen.map((i) => galleryMedia(i)).filter((m): m is PostMedia => !!m);
+  if (!media.length) return null;
+  return createPost({ status: 'idea', media, format: formatForMedia(media, 'carousel'), pieceIds: chosen.map((i) => i.id) });
+}
