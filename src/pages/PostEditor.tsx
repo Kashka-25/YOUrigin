@@ -8,6 +8,7 @@ import { AutoTextarea } from '../components/AutoTextarea';
 import { AssetImage } from '../components/AssetImage';
 import { FORMAT_ICON, PostStatusPill, WorldDot } from '../components/posts/PostBits';
 import { useAutosave } from '../hooks/useAutosave';
+import { DEMO } from '../demo/mode';
 import { useLibrary } from '../hooks/useLibrary';
 import { deletePost, linkPiece, restorePost, setPostStatus, unlinkPiece, updatePost, usePost, type PostPatch } from '../db/posts';
 import { IMAGE_ACCEPT, removeAssetIfUnused, saveImage } from '../db/assets';
@@ -330,7 +331,7 @@ function Editor({ post }: { post: Post }) {
 
         <label className="block">
           <span className="label">On-image hook</span>
-          <AutoTextarea id="post-hook" className="input font-serif text-lg" value={fields.hook} onChange={(hook) => set({ hook })} />
+          <AutoTextarea id="post-hook" minHeight={56} className="input font-serif text-lg" value={fields.hook} onChange={(hook) => set({ hook })} />
           {quoteDrifted && <span className="mt-1 block text-xs text-muted">This line is no longer word for word in the linked piece.</span>}
         </label>
 
@@ -341,7 +342,7 @@ function Editor({ post }: { post: Post }) {
               {fields.caption.length.toLocaleString()} / {CAPTION_LIMIT.toLocaleString()}
             </span>
           </span>
-          <AutoTextarea id="post-caption" className="input writing min-h-40 text-[15px] leading-relaxed" value={fields.caption} onChange={(caption) => set({ caption })} />
+          <AutoTextarea id="post-caption" minHeight={160} className="input writing text-[15px] leading-relaxed" value={fields.caption} onChange={(caption) => set({ caption })} />
         </label>
 
         <label className="block">
@@ -356,12 +357,12 @@ function Editor({ post }: { post: Post }) {
               {tags.length} / {HASHTAG_LIMIT}
             </span>
           </span>
-          <AutoTextarea id="post-hashtags" className="input" value={fields.hashtags} onChange={(hashtags) => set({ hashtags })} onBlur={() => setFields((f) => ({ ...f, hashtags: normaliseHashtags(f.hashtags).join(' ') }))} />
+          <AutoTextarea id="post-hashtags" minHeight={48} className="input" value={fields.hashtags} onChange={(hashtags) => set({ hashtags })} onBlur={() => setFields((f) => ({ ...f, hashtags: normaliseHashtags(f.hashtags).join(' ') }))} />
         </label>
 
         <label className="block">
           <span className="label">Alt text</span>
-          <AutoTextarea id="post-alt" className="input" value={fields.altText} onChange={(altText) => set({ altText })} />
+          <AutoTextarea id="post-alt" minHeight={72} className="input" value={fields.altText} onChange={(altText) => set({ altText })} />
         </label>
 
         <section>
@@ -429,7 +430,7 @@ function Editor({ post }: { post: Post }) {
 
         <label className="block">
           <span className="label">Notes to self</span>
-          <AutoTextarea id="post-notes" className="input" value={fields.notes} onChange={(notes) => set({ notes })} />
+          <AutoTextarea id="post-notes" minHeight={72} className="input" value={fields.notes} onChange={(notes) => set({ notes })} />
         </label>
 
         {checks.length > 0 && (
@@ -447,7 +448,7 @@ function Editor({ post }: { post: Post }) {
         </button>
       </div>
 
-      <div className="no-print sticky bottom-[calc(64px+env(safe-area-inset-bottom))] z-20 -mx-4 mt-6 flex items-center gap-2 border-t border-line bg-card/95 px-4 py-3 backdrop-blur md:bottom-0 md:mx-0 md:rounded-xl md:border">
+      <div className={`no-print sticky ${DEMO ? 'bottom-[calc(124px+env(safe-area-inset-bottom))] md:bottom-0' : 'bottom-[calc(64px+env(safe-area-inset-bottom))] md:bottom-0'} z-20 -mx-4 mt-6 flex items-center gap-2 border-t border-line bg-card/95 px-4 py-3 backdrop-blur md:mx-0 md:rounded-xl md:border`}>
         <PostStatusPill status={post.status} />
         {back && (
           <button type="button" className="btn-ghost ml-auto min-h-10 px-3" onClick={() => void move(back)}>

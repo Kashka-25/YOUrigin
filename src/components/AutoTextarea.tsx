@@ -9,6 +9,7 @@ export function AutoTextarea({
   id,
   onBlur,
   inputRef,
+  minHeight = 300,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -16,9 +17,11 @@ export function AutoTextarea({
   id: string;
   onBlur?: () => void;
   inputRef?: (el: HTMLTextAreaElement | null) => void;
+  /** Smallest height in pixels; short fields pass less. */
+  minHeight?: number;
 }) {
   const [el, setEl] = useState<HTMLTextAreaElement | null>(null);
-  useAutoGrow(el, value, 300);
+  useAutoGrow(el, value, minHeight);
   const ref = useCallback(
     (x: HTMLTextAreaElement | null) => {
       setEl(x);
