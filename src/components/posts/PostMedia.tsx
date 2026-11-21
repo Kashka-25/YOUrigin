@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, FileImage, Film, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileImage, Film, Play, Upload } from 'lucide-react';
 import { AssetImage } from '../AssetImage';
-import { useClipUrl } from '../../db/postMedia';
+import { addClipOnThisDevice, useClipUrl } from '../../db/postMedia';
+import { VIDEO_ACCEPT } from '../../io/postMedia';
 import type { Post, PostMedia } from '../../posts/model';
 
 /** A small square-ish picture of one piece of media: the image, a video's still frame, or its file name. */
@@ -34,16 +35,58 @@ export function firstPicture(media: PostMedia[]): PostMedia | undefined {
 
 function ClipPlayer({ media, tall }: { media: Extract<PostMedia, { kind: 'clip' }>; tall: boolean }) {
   const { url, missing } = useClipUrl(media.clipId);
+  const input = useRef<HTMLInputElement>(null);
+  const [adding, setAdding] = useState(false);
+  const [problem, setProblem] = useState('');
   if (url) {
-    return <video src={url} className={`h-full w-full bg-black object-contain`} controls playsInline loop preload="metadata" aria-label={media.name} />;
+    return <video src={url} className="h-full w-full bg-black object-contain" controls playsInline loop preload="metadata" aria-label={media.name} />;
   }
+  const add = async (file: File | undefined) => {
+    if (!file) return;
+    setAdding(true);
+    setProblem('');
+    try {
+      await addClipOnThisDevice(media.clipId, file);
+    } catch (e) {
+      setProblem(e instanceof Error ? e.message : String(e));
+    } finally {
+      setAdding(false);
+    }
+  };
   return (
     <span className="relative block h-full w-full bg-ink">
       {media.posterAssetId && <AssetImage id={media.posterAssetId} alt="" className="absolute inset-0 h-full w-full object-cover opacity-80" />}
       {missing && (
-        <span className={`absolute inset-x-3 ${tall ? 'bottom-6' : 'bottom-3'} rounded-xl bg-black/65 p-3 text-center text-xs text-white`}>
-          <Film size={14} className="mr-1 inline" aria-hidden />
-          This video is on the device it was added on ({media.name}).
+        <span className={`absolute inset-x-3 ${tall ? 'bottom-6' : 'bottom-3'} flex flex-col items-center gap-2 rounded-xl bg-black/70 p-3 text-center text-xs text-white`}>
+          <span>
+            <Film size={14} className="mr-1 inline" aria-hidden />
+            This video is on the device it was added on. To play it here, add the same file on this device too.
+          </span>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-ink disabled:opacity-60"
+            disabled={adding}
+            onClick={(e) => {
+              e.stopPropagation();
+              input.current?.click();
+            }}
+          >
+            <Upload size={13} aria-hidden /> {adding ? 'Adding…' : `Add ${media.name} here`}
+          </button>
+          {problem && <span className="text-[11px] text-white/80">{problem}</span>}
+          <input
+            ref={input}
+            type="file"
+            accept={VIDEO_ACCEPT}
+            className="sr-only"
+            tabIndex={-1}
+            aria-label={`Add ${media.name} on this device`}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = '';
+              void add(f);
+            }}
+          />
         </span>
       )}
     </span>

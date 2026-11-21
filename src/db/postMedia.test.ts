@@ -181,3 +181,15 @@ describe('ideas and the format media suggests', () => {
     expect((await db.posts.get(b))?.deletedAt).toBeTypeOf('number');
   });
 });
+
+describe('a video imported on another device', () => {
+  it('can be added on this device under the same id, so the post plays here and nothing synced changes', async () => {
+    const { addClipOnThisDevice } = await import('./postMedia');
+    const id = await createPost({ media: [{ kind: 'clip', clipId: 'from-phone', name: 'reel.mp4', posterAssetId: 'still' }] });
+    const before = await db.posts.get(id);
+    expect(await db.clips.get('from-phone')).toBeUndefined();
+    await addClipOnThisDevice('from-phone', mp4('reel.mp4'), async () => ({ width: 1080, height: 1920, duration: 56, poster: null }));
+    expect(await db.clips.get('from-phone')).toMatchObject({ name: 'reel.mp4', duration: 56 });
+    expect(await db.posts.get(id)).toEqual(before);
+  });
+});
