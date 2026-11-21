@@ -13,16 +13,18 @@ import { SyncBadge } from './SyncBadge';
 import { useOnline } from '../hooks/useOnline';
 
 type NavDef = { to: string; label: string; icon: typeof Feather; end?: boolean };
-const PRIMARY: NavDef[] = [
-  { to: '/', label: 'Gather', icon: Feather, end: true },
-  { to: '/library', label: 'Library', icon: Library },
-  { to: '/initiatives', label: 'Projects', icon: FolderKanban },
-  { to: '/universe', label: 'My Universe', icon: Orbit },
-];
-const SECONDARY: NavDef[] = [
-  { to: '/atlas', label: 'Creation Atlas', icon: Waypoints },
+/** The three rooms: everything YOUrigin is for. */
+const ROOMS: NavDef[] = [
+  { to: '/', label: 'Capture', icon: Feather, end: true },
+  { to: '/initiatives', label: 'Creations', icon: FolderKanban },
   { to: '/posts', label: 'Posts', icon: Megaphone },
+];
+/** Everything else waits quietly behind More. Nothing here is gone, just out of the way. */
+const MORE: NavDef[] = [
+  { to: '/library', label: 'All notes', icon: Library },
   { to: '/library?view=gallery', label: 'Gallery', icon: Images },
+  { to: '/universe', label: 'My Universe', icon: Orbit },
+  { to: '/atlas', label: 'Creation Atlas', icon: Waypoints },
   { to: '/collections', label: 'Collections', icon: FolderOpen },
   { to: '/tags', label: 'Tags', icon: Hash },
   { to: '/orphans', label: 'Unsorted', icon: Sprout },
@@ -32,11 +34,6 @@ const SECONDARY: NavDef[] = [
   { to: '/settings', label: 'Settings & backup', icon: Settings },
   { to: '/trash', label: 'Trash', icon: Trash2 },
 ];
-/** Studio tools always shown in the desktop sidebar; the rest sit behind More. */
-const SIDEBAR_KEEP = ['/atlas', '/posts', '/collections'];
-
-const MOBILE_PRIMARY: NavDef[] = PRIMARY.filter((item) => item.to !== '/universe');
-const MOBILE_MORE: NavDef[] = [{ to: '/universe', label: 'My Universe', icon: Orbit }, ...SECONDARY];
 function isTyping(el: EventTarget | null) {
   const t = el as HTMLElement | null;
   return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
@@ -63,7 +60,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [nav]);
   useEffect(() => setMoreOpen(false), [loc.pathname]);
   const orphanCount = lib ? lib.items.filter((i) => !i.deletedAt && !i.archived && !i.keepUnassigned && isOrphan(i, lib.ctx)).length : 0;
-  const recent = lib ? [...lib.projects].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 5) : [];
   const navItem = (item: NavDef, badge?: number) => (
     <NavLink key={item.to} to={item.to} end={item.end} className={({isActive}) =>
       `nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm ${activeFor(item.to,isActive) ? 'font-semibold' : ''}`}>
@@ -84,21 +80,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         <button type="button" onClick={() => setSearchOpen(true)} className="mt-6 flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[.045] px-3 text-sm text-[var(--chrome-text)] hover:border-[#bda276]/40">
           <Search size={16} /><span className="flex-1 text-left">Search your codex</span><kbd className="rounded border border-white/10 px-1.5 py-0.5 text-[10px]">⌘ K</kbd>
         </button>
-        <p className="eyebrow mb-2 mt-8 px-3">Your space</p>
-        <nav aria-label="Main" className="space-y-1">{PRIMARY.map((i) => navItem(i))}</nav>
-        {recent.length > 0 && <div className="mt-8">
-          <p className="eyebrow px-3">Recently opened</p>
-          <ul className="mt-2 space-y-1">{recent.slice(0, 3).map((b) => <li key={b.id}><NavLink to={`/initiative/${b.id}`} className={({isActive}) => `block truncate rounded-lg px-3 py-2 font-serif text-[15px] transition-colors ${isActive ? 'bg-white/10 text-[var(--chrome-strong)]' : 'text-[var(--chrome-text)] hover:bg-white/[.05] hover:text-[var(--chrome-strong)]'}`}>{b.title}</NavLink></li>)}</ul>
-        </div>}
+        <nav aria-label="Main" className="mt-8 space-y-1">{ROOMS.map((i) => navItem(i))}</nav>
         <div className="mt-auto border-t border-white/10 pt-4">
-          {/* The essentials stay in view; everything else waits behind More. */}
-          <nav aria-label="Studio" className="space-y-0.5">{SECONDARY.filter((i) => SIDEBAR_KEEP.includes(i.to)).map((i) => navItem(i))}</nav>
-          <details className="group mt-1">
+          {/* Three rooms in view; everything else waits behind More. */}
+          <details className="group">
             <summary className="nav-link flex cursor-pointer list-none items-center gap-3 rounded-xl px-3 py-2 text-sm [&::-webkit-details-marker]:hidden">
               <MoreHorizontal size={18} strokeWidth={1.7} aria-hidden /> <span className="flex-1">More</span>
               <ChevronDown size={15} className="transition-transform group-open:rotate-180" aria-hidden />
             </summary>
-            <nav aria-label="More" className="mt-0.5 space-y-0.5">{SECONDARY.filter((i) => !SIDEBAR_KEEP.includes(i.to)).map((i) => navItem(i, i.to === '/orphans' ? orphanCount : undefined))}</nav>
+            <nav aria-label="More" className="mt-0.5 space-y-0.5">{MORE.map((i) => navItem(i, i.to === '/orphans' ? orphanCount : undefined))}</nav>
           </details>
           <div className="mt-4 flex items-center justify-between px-3"><SyncBadge /><span className="sidebar-muted text-[11px]">{online ? 'Local-first · Online' : 'Offline · Ready'}</span></div>
           {!online && <p className="sidebar-muted mt-2 flex items-center gap-2 px-3 text-xs"><WifiOff size={13}/> Everything still works offline</p>}
@@ -116,10 +106,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main id="main" className="min-w-0 pb-24 md:pb-8">{children}</main>
       </div>
       <nav aria-label="Main" className="mobile-dock no-print chrome fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t pb-[env(safe-area-inset-bottom)] md:hidden">
-        {MOBILE_PRIMARY.map((item) => <NavLink key={item.to} to={item.to} end={item.end} className={({isActive}) => `relative flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] ${activeFor(item.to,isActive) ? 'font-semibold' : 'text-[var(--chrome-text)]'}`}><item.icon size={19} strokeWidth={1.7}/>{item.label}</NavLink>)}
+        {ROOMS.map((item) => <NavLink key={item.to} to={item.to} end={item.end} className={({isActive}) => `relative flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] ${activeFor(item.to,isActive) ? 'font-semibold' : 'text-[var(--chrome-text)]'}`}><item.icon size={19} strokeWidth={1.7}/>{item.label}</NavLink>)}
         <button type="button" onClick={() => setMoreOpen(true)} className="flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] text-[var(--chrome-text)]"><Menu size={19}/>More</button>
       </nav>
-      <Modal open={moreOpen} onClose={() => setMoreOpen(false)} title="More"><nav className="space-y-1" aria-label="More">{MOBILE_MORE.map((i) => navItem(i, i.to === '/orphans' ? orphanCount : undefined))}</nav></Modal>
+      <Modal open={moreOpen} onClose={() => setMoreOpen(false)} title="More"><nav className="space-y-1" aria-label="More">{MORE.map((i) => navItem(i, i.to === '/orphans' ? orphanCount : undefined))}</nav></Modal>
       <SearchPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );

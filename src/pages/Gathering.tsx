@@ -260,7 +260,7 @@ export function Gathering() {
 
   return (
     <div className="page-gather mx-auto">
-      <h1 className="sr-only">Gather</h1>
+      <h1 className="sr-only">Capture</h1>
 
       <form
         onSubmit={(e) => {

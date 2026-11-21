@@ -27,7 +27,7 @@ export function FoldersMenu() {
       <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium text-ink hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
         <FolderOpen size={16} className="text-gold" aria-hidden /> Folders
         <span className="font-normal text-muted">
-          · {projects.length} {projects.length === 1 ? 'Project' : 'Projects'}, {collections.length} {collections.length === 1 ? 'collection' : 'collections'}
+          · {projects.length} {projects.length === 1 ? 'creation' : 'creations'}, {collections.length} {collections.length === 1 ? 'collection' : 'collections'}
         </span>
         <ChevronDown size={16} className="ml-auto text-muted transition-transform group-open:rotate-180" aria-hidden />
       </summary>
