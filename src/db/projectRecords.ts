@@ -3,6 +3,7 @@ import type { ChangeNote, Project, ProjectColour, ProjectStatus, UniverseLink } 
 import { slugify } from '../domain/universe';
 import { DEFAULT_PROJECT_COLOUR } from '../domain/constants';
 import { newId } from '../domain/text';
+import { canMoveInto } from '../domain/creations';
 
 export interface NewProject {
   /** Optional stable id when a Project shares the identity of an existing creative workspace. */
@@ -12,6 +13,8 @@ export interface NewProject {
   category?: string;
   colour?: ProjectColour;
   status?: ProjectStatus;
+  /** Make it a branch inside this Creation. */
+  parentId?: string;
 }
 
 export type ProjectPatch = Partial<Pick<Project, 'title' | 'description' | 'category' | 'colour' | 'status' | 'coverAssetId'>>;
@@ -26,6 +29,7 @@ export async function createProject(input: NewProject): Promise<string> {
     category: input.category?.trim() ?? '',
     colour: input.colour ?? DEFAULT_PROJECT_COLOUR,
     status: input.status ?? 'idea',
+    ...(input.parentId ? { parentId: input.parentId } : {}),
     createdAt: now,
     updatedAt: now,
   });
@@ -37,6 +41,30 @@ export async function updateProject(id: string, patch: ProjectPatch): Promise<vo
   if (clean.title !== undefined) clean.title = clean.title.trim() || 'Untitled project';
   if (clean.category !== undefined) clean.category = clean.category.trim();
   await db.projects.update(id, { ...clean, updatedAt: Date.now() });
+}
+
+/** Move a Creation inside another (or to the top level with null). Refuses loops. */
+export async function setCreationParent(id: string, parentId: string | null): Promise<void> {
+  await db.transaction('rw', db.projects, async () => {
+    const all = await db.projects.toArray();
+    if (!all.some((p) => p.id === id)) throw new Error('Creation not found');
+    if (!canMoveInto(all, id, parentId)) throw new Error('A Creation can’t sit inside itself or its own branches');
+    await db.projects.update(id, { parentId: parentId ?? undefined, updatedAt: Date.now() });
+  });
+}
+
+/** Move a note from one Creation to another, so it still exists exactly once. */
+export async function moveItemToProject(contentId: string, fromId: string, toId: string): Promise<void> {
+  if (fromId === toId) return;
+  await db.transaction('rw', db.projects, db.content, async () => {
+    const item = await db.content.get(contentId);
+    if (!item) throw new Error('Note not found');
+    if (!(await db.projects.get(toId))) throw new Error('Creation not found');
+    const ids = (item.projectIds ?? []).filter((x) => x !== fromId && x !== toId);
+    const now = Date.now();
+    await db.content.update(contentId, { projectIds: [...ids, toId], updatedAt: now });
+    await db.projects.where('id').anyOf([fromId, toId]).modify({ updatedAt: now });
+  });
 }
 
 // ---- Creative Universe ------------------------------------------------------------
@@ -115,10 +143,16 @@ export async function removeWorkFromProject(projectId: string, workId: string): 
   });
 }
 
-/** Remove the project relationship only. Notes and Works remain untouched. */
+/**
+ * Remove the project relationship only. Notes and Works remain untouched, and any branches
+ * inside it move up one level (to its own parent), so nothing nested is lost.
+ */
 export async function deleteProject(id: string): Promise<void> {
   await db.transaction('rw', db.projects, db.content, db.books, async () => {
     const now = Date.now();
+    const me = await db.projects.get(id);
+    const branches = (await db.projects.toArray()).filter((p) => p.parentId === id);
+    for (const b of branches) await db.projects.update(b.id, { parentId: me?.parentId, updatedAt: now });
     const [items, works] = await Promise.all([
       db.content.where('projectIds').equals(id).toArray(),
       db.books.where('projectIds').equals(id).toArray(),

@@ -49,6 +49,7 @@ import { fitWord, isWordPack, wordsDb } from '../words/store';
 import { wordAt, type Ending, type Range } from '../words/morph';
 import { DEMO } from '../demo/mode';
 import { selectAndReveal } from '../words/caret';
+import { pathLabel } from '../domain/creations';
 
 export function ItemPage() {
   const { id } = useParams();
@@ -67,7 +68,7 @@ export function ItemPage() {
 function livesIn(works: number, projects: number, collections: number): string {
   const parts = [
     works ? `${works} ${works === 1 ? 'Work' : 'Works'}` : '',
-    projects ? `${projects} ${projects === 1 ? 'Project' : 'Projects'}` : '',
+    projects ? `${projects} ${projects === 1 ? 'creation' : 'creations'}` : '',
     collections ? `${collections} ${collections === 1 ? 'collection' : 'collections'}` : '',
   ].filter(Boolean);
   return parts.length ? parts.join(' · ') : 'not placed yet';
@@ -409,19 +410,19 @@ function Editor({ item }: { item: ContentItem }) {
 
           <section>
             <div className="flex items-center justify-between">
-              <h2 className="label">Projects</h2>
+              <h2 className="label">Creations</h2>
               <button type="button" className="btn-ghost -mr-2 text-xs" onClick={() => setAssignProject(true)}>
                 <FolderKanban size={14} /> Add
               </button>
             </div>
             {projects.length === 0 ? (
-              <p className="text-sm text-muted">Not linked to a Project yet.</p>
+              <p className="text-sm text-muted">Not in a creation yet.</p>
             ) : (
               <ul className="space-y-1">
                 {projects.map((project) => (
                   <li key={project.id} className="flex items-center justify-between gap-2 text-sm">
-                    <Link to={'/initiative/' + project.id} className="min-w-0 truncate font-serif text-base hover:underline">{project.title}</Link>
-                    <button type="button" className="btn-ghost p-1" aria-label="Remove from Project" onClick={() => void removeItemFromProject(project.id, item.id)}>
+                    <Link to={'/initiative/' + project.id} className="min-w-0 truncate font-serif text-base hover:underline">{pathLabel(lib.projects, project.id)}</Link>
+                    <button type="button" className="btn-ghost p-1" aria-label="Take out of this creation" onClick={() => void removeItemFromProject(project.id, item.id)}>
                       <X size={14} />
                     </button>
                   </li>

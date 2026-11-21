@@ -7,9 +7,10 @@ import { bodyAfterTitle, displayTitle, excerpt } from '../../domain/text';
 import { useLibrary } from '../../hooks/useLibrary';
 import { projectColourStyle } from '../ProjectColourPicker';
 import { AssetImage } from '../AssetImage';
+import { treeOrder } from '../../domain/creations';
 import { PendingSuggestions } from '../Suggestions';
 
-/** Projects and collections, tucked into one dropdown that starts closed. */
+/** Creations (as a tree) and collections, tucked into one dropdown that starts closed. */
 export function FoldersMenu() {
   const lib = useLibrary();
   const counts = useMemo(() => {
@@ -18,7 +19,7 @@ export function FoldersMenu() {
     return m;
   }, [lib]);
   if (!lib) return null;
-  const projects = [...lib.projects].sort((a, b) => b.updatedAt - a.updatedAt);
+  const projects = treeOrder(lib.projects);
   const collections = [...lib.collections].sort((a, b) => a.name.localeCompare(b.name));
   if (!projects.length && !collections.length) return null;
   const row = 'flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-ink-2 hover:bg-paper-2 hover:text-ink';
@@ -33,9 +34,9 @@ export function FoldersMenu() {
       </summary>
       <div className="grid gap-x-4 px-2 pb-3 sm:grid-cols-2">
         <div>
-          <p className="eyebrow px-3 pt-1 pb-1">Projects</p>
-          {projects.map((p) => (
-            <Link key={p.id} to={`/initiative/${p.id}`} className={row}>
+          <p className="eyebrow px-3 pt-1 pb-1">Creations</p>
+          {projects.map(({ project: p, depth }) => (
+            <Link key={p.id} to={`/initiative/${p.id}`} className={row} style={{ paddingLeft: `${0.75 + depth * 1.1}rem` }}>
               <span className="project-colour-dot h-2.5 w-2.5 shrink-0" style={projectColourStyle(p.colour)} aria-hidden />
               <span className="min-w-0 flex-1 truncate">{p.title}</span>
               <span className="text-xs text-muted tabular-nums">{counts.get(p.id) ?? 0}</span>

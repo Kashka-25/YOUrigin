@@ -3,12 +3,13 @@ import { FolderKanban, FolderOpen, FolderPlus, Plus, X } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { destinationKey, type Destination } from '../db/destinations';
 import { projectColourStyle } from './ProjectColourPicker';
+import { pathLabel } from '../domain/creations';
 
 const norm = (s: string) => s.normalize('NFKC').replace(/\s+/g, ' ').trim().toLocaleLowerCase();
 
 /**
- * "Add to…" for a note being captured: any Project or collection, or a new one named
- * right here. Chosen places show as chips; new ones are made when the note is captured.
+ * "Add to…" for a note being captured: any Creation (shown with its full path, e.g.
+ * Lyrics & Music › Songs › Ideas) or collection, or a new one named right here. Chosen places show as chips; new ones are made when the note is captured.
  */
 export function DestinationPicker({ value, onChange }: { value: Destination[]; onChange: (next: Destination[]) => void }) {
   const lib = useLibrary();
@@ -30,9 +31,9 @@ export function DestinationPicker({ value, onChange }: { value: Destination[]; o
   const projects = useMemo(
     () =>
       (lib?.projects ?? [])
-        .filter((p) => !chosen.has(`project:${p.id}`) && (!needle || norm(p.title).includes(needle)))
+        .filter((p) => !chosen.has(`project:${p.id}`) && (!needle || norm(pathLabel(lib?.projects ?? [], p.id)).includes(needle)))
         .sort((a, b) => b.updatedAt - a.updatedAt)
-        .slice(0, 6),
+        .slice(0, 8),
     [lib, chosen, needle],
   );
   const collections = useMemo(
@@ -66,8 +67,8 @@ export function DestinationPicker({ value, onChange }: { value: Destination[]; o
               <FolderOpen size={12} aria-hidden />
             )}
             <span className="truncate">
-              {d.name}
-              {!d.id && <span className="text-muted"> · new {d.kind === 'project' ? 'Project' : 'collection'}</span>}
+              {p ? pathLabel(lib?.projects ?? [], p.id) : d.name}
+              {!d.id && <span className="text-muted"> · new {d.kind === 'project' ? 'creation' : 'collection'}</span>}
             </span>
             <button type="button" aria-label={`Don’t add to ${d.name}`} onClick={() => onChange(value.filter((x) => destinationKey(x) !== destinationKey(d)))} className="rounded-full hover:text-ink">
               <X size={12} />
@@ -88,7 +89,7 @@ export function DestinationPicker({ value, onChange }: { value: Destination[]; o
         <div
           className="absolute top-full left-0 z-30 mt-2 w-[min(22rem,100%)] rounded-2xl border border-line bg-card p-2 shadow-xl"
           role="dialog"
-          aria-label="Add this note to a Project or collection"
+          aria-label="Add this note to a creation or collection"
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
               e.stopPropagation();
@@ -110,16 +111,16 @@ export function DestinationPicker({ value, onChange }: { value: Destination[]; o
               else if (collections[0]) add({ kind: 'collection', id: collections[0].id, name: collections[0].name });
               else if (name) add({ kind: 'project', name });
             }}
-            aria-label="Find or name a Project or collection"
+            aria-label="Find or name a creation or collection"
           />
           <div className="mt-2 max-h-72 overflow-y-auto">
             {projects.length > 0 && (
               <>
-                <p className="px-2 pt-1 pb-1 text-[11px] font-semibold tracking-wide text-muted uppercase">Projects</p>
+                <p className="px-2 pt-1 pb-1 text-[11px] font-semibold tracking-wide text-muted uppercase">Creations</p>
                 {projects.map((p) => (
                   <button key={p.id} type="button" onClick={() => add({ kind: 'project', id: p.id, name: p.title })} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm hover:bg-paper-2">
                     <span className="project-colour-dot h-2.5 w-2.5 shrink-0" style={projectColourStyle(p.colour)} aria-hidden />
-                    <span className="truncate">{p.title}</span>
+                    <span className="truncate">{pathLabel(lib?.projects ?? [], p.id)}</span>
                   </button>
                 ))}
               </>
@@ -135,12 +136,12 @@ export function DestinationPicker({ value, onChange }: { value: Destination[]; o
                 ))}
               </>
             )}
-            {!projects.length && !collections.length && !name && <p className="px-2 py-3 text-sm text-muted">Type a name to start a new Project or collection.</p>}
+            {!projects.length && !collections.length && !name && <p className="px-2 py-3 text-sm text-muted">Type a name to start a new creation or collection.</p>}
             {name && (!exactProject || !exactCollection) && (
               <div className="mt-1 border-t border-line pt-1">
                 {!exactProject && (
                   <button type="button" onClick={() => add({ kind: 'project', name })} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm hover:bg-paper-2">
-                    <Plus size={14} className="shrink-0 text-gold" aria-hidden /> <span className="truncate">New Project “{name}”</span>
+                    <Plus size={14} className="shrink-0 text-gold" aria-hidden /> <span className="truncate">New creation “{name}”</span>
                   </button>
                 )}
                 {!exactCollection && (

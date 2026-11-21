@@ -464,7 +464,8 @@ export async function seedExampleCreator(now = Date.now()): Promise<void> {
 
   const gig = await createBook({ title: 'Friday at the Harbour Hall', description: 'Two sets and an encore.', templateId: null, kind: 'setlist', shelf: 'Music', projectIds: [project.get('lamplighters')!] });
   workTimes.push({ id: gig, createdAt: at(18), updatedAt: at(12) });
-  await createProject({ id: gig, title: 'Friday at the Harbour Hall', description: 'The Lamplighters’ gig at the Harbour Hall: two sets and an encore, with rehearsal notes.', category: 'Music', colour: 'coral', status: 'building' });
+  // The gig is a branch inside the band, to show Creations nesting.
+  await createProject({ id: gig, title: 'Friday at the Harbour Hall', description: 'The Lamplighters’ gig at the Harbour Hall: two sets and an encore, with rehearsal notes.', category: 'Music', colour: 'coral', status: 'building', parentId: project.get('lamplighters')! });
   await db.projects.update(gig, { coverAssetId: await picture(demoPicture('harbour', '#4a2a22', '#1d0f0b', '#f6c08a'), 'Harbour Hall cover', 18), createdAt: at(18) });
   await addItemsToProject(gig, ['kitchen-song', 'ferry-song', 'rope-song', 'last-bus', 'harbour-song', 'hymn', 'rehearsal'].map((k) => piece.get(k)!));
   gigProject = gig;
