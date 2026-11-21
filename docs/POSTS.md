@@ -1,0 +1,105 @@
+# Posts
+
+Plan, write, review and approve social media posts (Instagram) inside YOUrigin. Posts live on the device and sync end-to-end encrypted like everything else; nothing is published from the app.
+
+## The weekly flow
+
+1. Media goes into the Google Drive "To post" folder.
+2. Claude drafts the week and saves a **drafts file** (format below).
+3. In **Posts → Import drafts**, the file is shown for review. Every post kept arrives as a **Draft**, whatever the file says. Re-importing the same file adds nothing and never overwrites edits.
+4. Edit each draft, then **Approve** it.
+5. **Export approved** saves the approved posts in a date range as `.json` (for scheduling in Metricool, later) and `.md` (readable). Exporting changes nothing and sends nothing.
+6. Once a post is live, **Mark posted** and paste its link.
+
+## Views
+
+- **Week**: Monday to Sunday, each day labelled with its content world (Mon Healing, Tue Digital Homes, Wed Worlds & Stories, Thu Music & Sound, Sat Coco & the Making; Fri and Sun for Stories). Tap + on a day for a new post with that day's world and placeholder time.
+- **Month**: a calendar; tap a day to see and add its posts.
+- **Grid**: the profile as followers will see it, newest top-left, three across. Drag a post (laptop) or tap **Arrange**, tap a post, then tap where it should go (phone). Moving a post gives it that place's planned time, and the posts in between shift along, so the grid order is the schedule. Posted posts stay put. Stories aren't shown, as they don't appear in the profile grid.
+- **Board**: Idea, Draft, Approved, Posted. On the phone, one column at a time.
+
+Posted times are placeholders until real insights are in (`WEEK_PLAN` in `src/posts/model.ts`).
+
+## A post
+
+| Field | Notes |
+| --- | --- |
+| Date and time | Local time; empty while it is an unplaced idea |
+| Status | Idea → Draft → Approved → Posted (and back) |
+| Format | Reel, Carousel, Quote card, Single image, Story |
+| Content world | Healing, Digital Homes, Worlds & Stories, Music & Sound, Coco & the Making |
+| On-image hook | Can be picked from a line of a linked piece; a quote card notes when that line is no longer in the piece |
+| Caption, call to action, hashtags, alt text | Caption counter (2,200) and hashtag counter (30) |
+| Linked pieces | Links to poems, fragments, lyrics by id. Content exists once: the post never copies them |
+| Media | Images stored in YOUrigin, or a file name (for example in Drive) |
+| Notes to self | Never exported |
+
+Gentle checks (never blocking): a caption that touches on crisis without a helpline; cannabis words (Instagram restricts cannabis promotion); missing alt text; over the caption or hashtag limits.
+
+## Drafts file format (for Claude)
+
+A JSON file. A full example with invented text: [`samples/post-drafts.sample.json`](samples/post-drafts.sample.json).
+
+```json
+{
+  "app": "YOUrigin",
+  "kind": "post-drafts",
+  "version": 1,
+  "week": "2026-11-23",
+  "posts": [
+    {
+      "key": "2026-11-23-healing-quote",
+      "date": "2026-11-23",
+      "time": "19:00",
+      "format": "quote-card",
+      "world": "Healing",
+      "hook": "…",
+      "caption": "…",
+      "hashtags": ["#…"],
+      "altText": "…",
+      "cta": "…",
+      "pieces": [{ "title": "…" }],
+      "media": [{ "name": "file-in-drive.jpg", "note": "optional" }],
+      "notes": "optional, to Cassidy"
+    }
+  ]
+}
+```
+
+- `kind` must be `"post-drafts"`. `version` is 1.
+- `key`: a stable, unique name for the draft. It is how a re-import knows a draft is already in. Use `date-world-format`.
+- `date` (`YYYY-MM-DD`) and `time` (`HH:MM`, local) are optional; without a date the post is an unplaced idea.
+- `format`: `reel`, `carousel`, `quote-card`, `single-image`, `story` (labels such as "Quote card" work too).
+- `world`: `healing`, `digital-homes`, `worlds-stories`, `music-sound`, `coco-making` (labels such as "Worlds & Stories" work too).
+- `hashtags`: a list, or one string.
+- `pieces`: pieces already in YOUrigin, by `{ "id": "…" }` or `{ "title": "…" }` (or just the title as a string). A title links only when exactly one piece has it; otherwise the review shows it to link by hand. Import never creates pieces.
+- `media`: file names (or `{ "name", "note" }`).
+- `status` is ignored: every draft arrives as a Draft.
+
+Unknown formats, worlds or dates don't stop the import: the review shows a note and a safe default.
+
+## Export format (`kind: "post-schedule"`)
+
+```json
+{
+  "app": "YOUrigin", "kind": "post-schedule", "version": 1,
+  "exportedAt": "…", "timeZone": "Europe/London", "from": "2026-11-23", "to": "2026-12-06",
+  "posts": [
+    {
+      "id": "…", "date": "2026-11-23", "time": "19:00", "scheduledAt": "2026-11-23T19:00:00+00:00",
+      "format": "Quote card", "world": "Healing",
+      "hook": "…", "caption": "…", "hashtags": ["#…"],
+      "fullCaption": "caption, call to action and hashtags, ready to paste",
+      "altText": "…", "cta": "…",
+      "media": [{ "name": "…", "storedInYOUrigin": false }],
+      "pieces": ["titles of linked pieces"]
+    }
+  ]
+}
+```
+
+Only Approved posts with a time in the range are included. Notes to self are never exported.
+
+## Not built: publishing straight from the app
+
+Publishing from the device would need Instagram's API (a Business or Creator account linked to a Facebook Page, a Meta app and access tokens kept on the device) or Metricool's API (a paid plan). For now the export file is handed to Metricool. Worth revisiting once Metricool is connected.

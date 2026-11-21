@@ -45,5 +45,6 @@ See `CLAUDE.md` for context and ground rules.
 - [x] **Phone-note sorting** (#27): Project suggestions for notes shared in from the phone
 - [ ] **Creative Universe link**: YOUrigin side done (#36: realm, address and change notes on each Project; "Export for Creative Universe" saves a portfolio as the starter pack Creative Universe imports). Still to do: Creative Universe reading `realm`, `slug` and `changes`; optionally publishing the pack online so Creative Universe fetches it at build time
 - [x] **Demo mode** (#38): `?demo`, with an example person (a lived-in example codex with a guided journey) or a blank start, a separate local database, no network writes, Reset, and a way back to Creative Universe. Entry key: none. Cassidy decided on 9 Nov 2026 that the demo is open to anyone
+- [x] **Posts** (21 Nov 2026): plan, write and approve Instagram posts for @_freethedream_. Week, Month, Grid (profile preview, drag or tap to rearrange) and Board views; phone editor; posts link to pieces; Claude's drafts import as Drafts; approved posts export as JSON/Markdown. See `docs/POSTS.md`. Still to do: Metricool scheduling from the export, Google Drive media
 - [ ] **Issue #12**: integrated Showcase portfolio across YOUrigin and YOU
 - [ ] Optional: rename the `/initiatives` route so Projects live at a clearer path (the Work editor currently owns `/projects/:id`)

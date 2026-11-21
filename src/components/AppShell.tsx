@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   BriefcaseBusiness, Feather, FolderKanban, FolderOpen, Hash, Images, Library, Menu,
-  Search, MoreHorizontal, ChevronDown, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit, Waypoints,
+  Search, MoreHorizontal, ChevronDown, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit, Waypoints, Megaphone,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { SearchPalette } from './SearchPalette';
@@ -21,6 +21,7 @@ const PRIMARY: NavDef[] = [
 ];
 const SECONDARY: NavDef[] = [
   { to: '/atlas', label: 'Creation Atlas', icon: Waypoints },
+  { to: '/posts', label: 'Posts', icon: Megaphone },
   { to: '/library?view=gallery', label: 'Gallery', icon: Images },
   { to: '/collections', label: 'Collections', icon: FolderOpen },
   { to: '/tags', label: 'Tags', icon: Hash },
@@ -32,7 +33,7 @@ const SECONDARY: NavDef[] = [
   { to: '/trash', label: 'Trash', icon: Trash2 },
 ];
 /** Studio tools always shown in the desktop sidebar; the rest sit behind More. */
-const SIDEBAR_KEEP = ['/atlas', '/collections'];
+const SIDEBAR_KEEP = ['/atlas', '/posts', '/collections'];
 
 const MOBILE_PRIMARY: NavDef[] = PRIMARY.filter((item) => item.to !== '/universe');
 const MOBILE_MORE: NavDef[] = [{ to: '/universe', label: 'My Universe', icon: Orbit }, ...SECONDARY];
