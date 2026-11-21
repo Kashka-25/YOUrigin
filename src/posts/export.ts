@@ -20,6 +20,8 @@ export interface ScheduledPostOut {
   fullCaption: string;
   altText: string;
   cta: string;
+  /** Where the post sends people: for a Story link sticker or the bio. Empty when none. */
+  link: string;
   media: { name: string; storedInYOUrigin: boolean; note?: string }[];
   pieces: string[];
 }
@@ -85,6 +87,7 @@ export function buildSchedule(
         fullCaption: fullCaption(p),
         altText: p.altText,
         cta: p.cta,
+        link: p.link ?? '',
         media: p.media.map((m) =>
           m.kind === 'asset'
             ? { name: lookup.assets.get(m.assetId)?.name ?? 'image stored in YOUrigin', storedInYOUrigin: true }
@@ -108,6 +111,7 @@ export function scheduleToMarkdown(s: PostSchedule): string {
     lines.push('', '---', '', `## ${day}, ${p.time} · ${p.format} · ${p.world}`);
     if (p.hook.trim()) lines.push('', `**On the image:** ${p.hook.trim()}`);
     lines.push('', '**Caption**', '', p.fullCaption || '(no caption)');
+    if (p.link) lines.push('', `**Link:** ${p.link} (for a Story link sticker or your bio)`);
     if (p.altText.trim()) lines.push('', `**Alt text:** ${p.altText.trim()}`);
     if (p.media.length) lines.push('', `**Media:** ${p.media.map((m) => (m.storedInYOUrigin ? `${m.name} (in YOUrigin)` : m.name)).join(', ')}`);
   }

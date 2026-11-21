@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Accessibility, AlertTriangle, ArrowLeft, CalendarClock, Check, ChevronDown, ExternalLink, Eye, FolderOpen, Hash, Link2, ListChecks, Megaphone, Plus, Quote, Search, Shapes, Sparkles, StickyNote, Trash2, Type, Undo2, X } from 'lucide-react';
+import { Accessibility, AlertTriangle, ArrowLeft, CalendarClock, Check, ChevronDown, Copy, ExternalLink, Eye, FolderOpen, Globe, Hash, Link2, ListChecks, Megaphone, Plus, Quote, Search, Shapes, Sparkles, StickyNote, Trash2, Type, Undo2, X } from 'lucide-react';
 import { EmptyState, SaveIndicator, Spinner } from '../components/ui';
 import { Modal, useConfirm } from '../components/Modal';
 import { useToast } from '../components/Toast';
@@ -34,6 +34,8 @@ import {
   hookInPieces,
   nextStatus,
   normaliseHashtags,
+  normaliseLink,
+  linkLabel,
   postChecks,
   previousStatus,
   timeKey,
@@ -55,6 +57,7 @@ interface Fields {
   media: PostMedia[];
   notes: string;
   postedUrl: string;
+  link: string;
 }
 
 function fieldsOf(p: Post): Fields {
@@ -72,6 +75,7 @@ function fieldsOf(p: Post): Fields {
     media: p.media,
     notes: p.notes,
     postedUrl: p.postedUrl,
+    link: p.link ?? '',
   };
 }
 
@@ -88,6 +92,7 @@ function patchOf(f: Fields): PostPatch {
     media: f.media,
     notes: f.notes,
     postedUrl: f.postedUrl,
+    link: normaliseLink(f.link),
   };
 }
 
@@ -396,6 +401,42 @@ function Editor({ post }: { post: Post }) {
             <input className="input" aria-label="Call to action" value={fields.cta} onChange={(e) => set({ cta: e.target.value })} placeholder="Save this for a hard day 💛" />
           </Row>
 
+          <Row icon={Globe} label="Link" summary={fields.link.trim() ? linkLabel(fields.link) : 'None'}>
+            <div className="flex gap-2">
+              <input
+                className="input min-w-0"
+                type="url"
+                inputMode="url"
+                aria-label="Link"
+                value={fields.link}
+                onChange={(e) => set({ link: e.target.value })}
+                onBlur={() => setFields((f) => ({ ...f, link: normaliseLink(f.link) }))}
+                placeholder="yourownuniverse.life"
+              />
+              {fields.link.trim() && (
+                <>
+                  <a className="btn shrink-0 px-3" href={normaliseLink(fields.link)} target="_blank" rel="noreferrer" aria-label="Open the link">
+                    <ExternalLink size={16} />
+                  </a>
+                  <button
+                    type="button"
+                    className="btn shrink-0 px-3"
+                    aria-label="Copy the link"
+                    onClick={() =>
+                      void navigator.clipboard?.writeText(normaliseLink(fields.link)).then(
+                        () => toast('Link copied.'),
+                        () => toast('Couldn’t copy. Press and hold the link to copy it.'),
+                      )
+                    }
+                  >
+                    <Copy size={16} />
+                  </button>
+                </>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-muted">Instagram doesn’t make links in captions clickable. Use this on a Story link sticker the day it posts, or as your bio link.</p>
+          </Row>
+
           <Row icon={Hash} label="Hashtags" summary={`${tags.length} / ${HASHTAG_LIMIT}`}>
             <AutoTextarea
               id="post-hashtags"
@@ -502,7 +543,7 @@ function Editor({ post }: { post: Post }) {
       </div>
 
       <Modal open={previewing} onClose={() => setPreviewing(false)} title="Preview">
-        <PostPreview post={{ ...fields, hashtags: tags }} />
+        <PostPreview post={{ ...fields, hashtags: tags, link: normaliseLink(fields.link) }} />
         <p className="mt-2 text-center text-xs text-muted">How it will look on Instagram.</p>
       </Modal>
 

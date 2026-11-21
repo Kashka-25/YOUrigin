@@ -51,6 +51,7 @@ The **Ideas** tab is a place for photos and videos you might post one day. **Add
 | Content world | Healing, Digital Homes, Worlds & Stories, Music & Sound, Coco & the Making |
 | On-image hook | Can be picked from a line of a linked piece; a quote card notes when that line is no longer in the piece |
 | Caption, call to action, hashtags, alt text | Caption counter (2,200) and hashtag counter (30) |
+| Link | Where the post sends people (a site, a demo, a course). Open and Copy buttons; shown as a link sticker in the preview. Instagram doesn't make caption links clickable, so it's for a Story link sticker or the bio. Exported with the post |
 | Linked pieces | Links to poems, fragments, lyrics by id. Content exists once: the post never copies them |
 | Media | Images stored in YOUrigin, videos, or a file name (for example in Drive). Shown in order, and reordered with the arrows |
 | Notes to self | Never exported |
@@ -79,6 +80,7 @@ A JSON file. A full example with invented text: [`samples/post-drafts.sample.jso
       "hashtags": ["#…"],
       "altText": "…",
       "cta": "…",
+      "link": "https://…",
       "pieces": [{ "title": "…" }],
       "media": [{ "name": "file-in-drive.jpg", "note": "optional" }],
       "notes": "optional, to Cassidy"

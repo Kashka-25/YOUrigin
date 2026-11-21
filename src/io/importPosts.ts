@@ -9,6 +9,7 @@ import {
   fromDateTime,
   newPost,
   normaliseHashtags,
+  normaliseLink,
   type Post,
   type PostFormat,
   type PostWorld,
@@ -40,6 +41,7 @@ export interface PostDraft {
   hashtags: string[];
   altText: string;
   cta: string;
+  link: string;
   pieces: { ref: PieceRef; pieceId: string | null }[];
   media: { name: string; note?: string }[];
   notes: string;
@@ -123,6 +125,7 @@ export function parsePostDrafts(text: string, fileName = 'drafts.json'): PostDra
       hashtags: normaliseHashtags(Array.isArray(r.hashtags) ? r.hashtags.map(str) : str(r.hashtags)),
       altText: str(r.altText),
       cta: str(r.cta),
+      link: normaliseLink(str(r.link)),
       pieces,
       media,
       notes: str(r.notes),
@@ -182,6 +185,7 @@ export function draftsToPosts(file: PostDraftsFile, now = Date.now()): Post[] {
           hashtags: d.hashtags,
           altText: d.altText,
           cta: d.cta,
+          link: d.link,
           pieceIds: [...new Set(d.pieces.map((p) => p.pieceId).filter((id): id is string => !!id))],
           media: d.media.map((m) => ({ kind: 'file' as const, name: m.name, ...(m.note ? { note: m.note } : {}) })),
           notes: d.notes,
