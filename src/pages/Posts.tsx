@@ -11,6 +11,7 @@ import { ExportPostsDialog } from '../components/posts/ExportPosts';
 import { FeedTileFace, PostChip, WorldDot, postTitle } from '../components/posts/PostBits';
 import { GalleryPicker } from '../components/posts/GalleryPicker';
 import { GalleryView } from '../components/art/GalleryView';
+import { DEMO } from '../demo/mode';
 import {
   STATUS_LABEL,
   STATUS_ORDER,
@@ -330,57 +331,166 @@ function GridView({ posts }: { posts: Post[] }) {
   );
 }
 
+const STAGE_KEY = 'yourigin.posts.stage';
+const STAGE_HINT: Record<PostStatus, string> = {
+  idea: 'Ideas waiting to be written.',
+  draft: 'Being written. Approve one when it’s ready.',
+  approved: 'Ready to go out.',
+  posted: 'Already on Instagram.',
+};
+
+function rememberedStage(): PostStatus {
+  try {
+    const v = localStorage.getItem(STAGE_KEY);
+    if (v && (STATUS_ORDER as string[]).includes(v)) return v as PostStatus;
+  } catch {
+    /* private mode */
+  }
+  return 'draft';
+}
+
+/**
+ * The board, as pictures: one stage at a time (Idea, Draft, Approved, Posted), laid out like
+ * the profile grid. Tap a post to open it. To move posts between stages, tap Select (or
+ * long-press a post), pick one or several, then choose the stage; on a laptop, a post can
+ * also be dragged onto a stage's tab.
+ */
 function BoardView({ posts }: { posts: Post[] }) {
-  const [column, setColumn] = useState<PostStatus>('draft');
-  const sorted = [...posts].sort((a, b) => (a.scheduledAt ?? Infinity) - (b.scheduledAt ?? Infinity));
-  const col = (s: PostStatus) => sorted.filter((p) => p.status === s);
+  const navigate = useNavigate();
+  const toast = useToast();
+  const [stage, setStageState] = useState<PostStatus>(rememberedStage);
+  const [selecting, setSelecting] = useState(false);
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [overStage, setOverStage] = useState<PostStatus | null>(null);
+
+  const setStage = (s: PostStatus) => {
+    setStageState(s);
+    try {
+      localStorage.setItem(STAGE_KEY, s);
+    } catch {
+      /* private mode */
+    }
+  };
+  // Dated posts first, soonest first; undated ones after, newest first.
+  const sorted = [...posts].sort((a, b) => (a.scheduledAt ?? Infinity) - (b.scheduledAt ?? Infinity) || b.createdAt - a.createdAt);
+  const inStage = (s: PostStatus) => sorted.filter((p) => p.status === s);
+  const shown = inStage(stage);
+
+  const stopSelecting = () => {
+    setSelecting(false);
+    setChosen([]);
+  };
+  const toggle = (id: string) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
+  const moveTo = async (ids: string[], to: PostStatus) => {
+    const moving = ids.filter((id) => posts.find((p) => p.id === id)?.status !== to);
+    for (const id of moving) await setPostStatus(id, to);
+    if (moving.length) toast(`${moving.length === 1 ? 'Moved' : `${moving.length} moved`} to ${STATUS_LABEL[to]}.`);
+  };
+
   return (
     <>
-      <div className="mb-3 grid grid-cols-4 gap-1 rounded-xl border border-line p-1 md:hidden" role="tablist" aria-label="Status">
+      <div className="mb-3 grid grid-cols-4 gap-1 rounded-xl border border-line p-1" role="tablist" aria-label="Stage">
         {STATUS_ORDER.map((s) => (
-          <button key={s} type="button" role="tab" aria-selected={column === s} className={`rounded-lg px-1 py-2 text-xs font-semibold ${column === s ? 'bg-accent text-accent-ink' : 'text-ink-2'}`} onClick={() => setColumn(s)}>
-            {STATUS_LABEL[s]} <span className="font-normal opacity-80">{col(s).length}</span>
+          <button
+            key={s}
+            type="button"
+            role="tab"
+            aria-selected={stage === s}
+            className={`rounded-lg px-1 py-2 text-xs font-semibold transition sm:text-sm ${stage === s ? 'bg-accent text-accent-ink' : 'text-ink-2'} ${overStage === s ? 'outline outline-2 outline-accent' : ''}`}
+            onClick={() => setStage(s)}
+            onDragOver={(e: DragEvent) => {
+              if (!dragging) return;
+              e.preventDefault();
+              setOverStage(s);
+            }}
+            onDragLeave={() => setOverStage((o) => (o === s ? null : o))}
+            onDrop={(e: DragEvent) => {
+              e.preventDefault();
+              if (dragging) void moveTo([dragging], s);
+              setDragging(null);
+              setOverStage(null);
+            }}
+          >
+            {STATUS_LABEL[s]} <span className="font-normal opacity-80">{inStage(s).length}</span>
           </button>
         ))}
       </div>
-      <div className="grid gap-3 md:grid-cols-4">
-        {STATUS_ORDER.map((s) => (
-          <section key={s} className={`${column === s ? '' : 'hidden'} md:block`} aria-labelledby={`col-${s}`}>
-            <h2 id={`col-${s}`} className="mb-2 hidden font-serif text-lg md:block">
-              {STATUS_LABEL[s]} <span className="text-sm text-muted">{col(s).length}</span>
-            </h2>
-            <ul className="space-y-2">
-              {col(s).map((p) => {
-                const back = previousStatus(p.status);
-                const next = nextStatus(p.status);
-                return (
-                  <li key={p.id} className="space-y-1">
-                    <PostChip post={p} showStatus={false} />
-                    {p.scheduledAt !== null && (
-                      <p className="px-1 text-[11px] text-muted">{new Date(p.scheduledAt).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
-                    )}
-                    <div className="flex justify-between gap-1">
-                      {back ? (
-                        <button type="button" className="btn-ghost min-h-9 px-2 text-xs" onClick={() => void setPostStatus(p.id, back)}>
-                          <ArrowLeft size={14} /> {STATUS_LABEL[back]}
-                        </button>
-                      ) : (
-                        <span />
-                      )}
-                      {next && (
-                        <button type="button" className="btn-ghost min-h-9 px-2 text-xs" onClick={() => void setPostStatus(p.id, next)}>
-                          {next === 'approved' ? 'Approve' : next === 'posted' ? 'Mark posted' : STATUS_LABEL[next]} <ArrowRight size={14} />
-                        </button>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-              {!col(s).length && <li className="rounded-xl border border-dashed border-line p-4 text-center text-sm text-muted">None</li>}
-            </ul>
-          </section>
-        ))}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <p className="min-w-0 flex-1 text-sm text-ink-2">
+          {selecting ? (chosen.length ? `${chosen.length} selected.` : 'Tap the posts to move.') : STAGE_HINT[stage]}
+        </p>
+        {shown.length > 0 && (
+          <button type="button" className={selecting ? 'btn-primary' : 'btn'} aria-pressed={selecting} onClick={() => (selecting ? stopSelecting() : setSelecting(true))}>
+            <Move size={16} /> {selecting ? 'Done' : 'Select'}
+          </button>
+        )}
       </div>
+      {shown.length ? (
+        <ol className="mx-auto grid max-w-3xl grid-cols-3 gap-0.5 overflow-hidden rounded-lg bg-line sm:grid-cols-4" aria-label={`${STATUS_LABEL[stage]} posts`}>
+          {shown.map((p) => {
+            const n = chosen.indexOf(p.id);
+            return (
+              <li key={p.id} className="relative">
+                <button
+                  type="button"
+                  draggable
+                  onDragStart={(e: DragEvent) => {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', p.id);
+                    setDragging(p.id);
+                  }}
+                  onDragEnd={() => {
+                    setDragging(null);
+                    setOverStage(null);
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setSelecting(true);
+                    setChosen((c) => (c.includes(p.id) ? c : [...c, p.id]));
+                  }}
+                  onClick={() => (selecting ? toggle(p.id) : navigate(`/posts/${p.id}`))}
+                  aria-pressed={selecting ? n >= 0 : undefined}
+                  aria-label={`${selecting ? (n >= 0 ? 'Unselect ' : 'Select ') : ''}${postTitle(p)}${p.scheduledAt ? `, ${new Date(p.scheduledAt).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : ', no date yet'}`}
+                  className={`relative block w-full transition ${n >= 0 ? 'z-10 scale-95 outline outline-3 outline-accent' : ''} ${dragging === p.id ? 'opacity-40' : ''}`}
+                >
+                  <FeedTileFace post={p} />
+                </button>
+                {selecting && (
+                  <span className={`pointer-events-none absolute left-1.5 top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border-2 text-xs font-bold ${n >= 0 ? 'border-white bg-accent text-accent-ink' : 'border-white/90 bg-black/30'}`} aria-hidden>
+                    {n >= 0 ? n + 1 : ''}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      ) : (
+        <p className="rounded-xl border border-dashed border-line p-6 text-center text-sm text-muted">Nothing in {STATUS_LABEL[stage]} right now.</p>
+      )}
+      {selecting && chosen.length > 0 && (
+        <div className={`sticky ${DEMO ? 'bottom-[calc(124px+env(safe-area-inset-bottom))]' : 'bottom-[calc(64px+env(safe-area-inset-bottom))]'} z-20 mt-4 rounded-xl border border-line bg-card/95 p-3 backdrop-blur md:bottom-0`}>
+          <p className="mb-2 text-sm text-ink-2">Move {chosen.length === 1 ? 'it' : `these ${chosen.length}`} to</p>
+          <div className="grid grid-cols-3 gap-2">
+            {STATUS_ORDER.filter((s) => s !== stage).map((s) => (
+              <button
+                key={s}
+                type="button"
+                className={s === nextStatus(stage) ? 'btn-primary' : 'btn'}
+                onClick={() => {
+                  const ids = chosen;
+                  stopSelecting();
+                  void moveTo(ids, s);
+                }}
+              >
+                {s === previousStatus(stage) && <ArrowLeft size={14} />}
+                {STATUS_LABEL[s]}
+                {s === nextStatus(stage) && <ArrowRight size={14} />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 }
