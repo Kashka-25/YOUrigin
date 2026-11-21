@@ -211,3 +211,36 @@ describe('a video cover', () => {
     expect(withCover([{ kind: 'clip', clipId: 'v', name: 'reel.mp4' }], 0, 'first')).toEqual({ media: [{ kind: 'clip', clipId: 'v', name: 'reel.mp4', posterAssetId: 'first' }] });
   });
 });
+
+describe('redrawn pictures', () => {
+  it('re-importing swaps in the new pictures, keeps every word, and tidies away old pictures', async () => {
+    const { updatePictures } = await import('./postMedia');
+    const { postsByDraftKey } = await import('./posts');
+    const { draftsToPosts, parsePostDrafts } = await import('../io/importPosts');
+    const text = JSON.stringify({ kind: 'post-drafts', posts: [{ key: 'realms', format: 'carousel', caption: 'Invented first words', date: '2026-11-25', time: '19:00', media: ['a-1.jpg', 'a-2.jpg'] }] });
+    const [post] = draftsToPosts(parsePostDrafts(text));
+    await db.posts.add({ ...post, media: [{ kind: 'asset', assetId: 'old-1' }, { kind: 'asset', assetId: 'old-2' }] });
+    await db.assets.bulkAdd(['old-1', 'old-2'].map((id) => ({ id, name: id, mime: 'image/jpeg', dataUrl: 'data:,', width: 1, height: 1, bytes: 1, createdAt: 1, updatedAt: 1 })));
+    // Cassidy edits the words and approves it
+    await db.posts.update(post.id, { caption: 'My own words', hook: 'My hook', status: 'approved' });
+
+    const id = (await postsByDraftKey()).get('realms');
+    expect(id).toBe(post.id);
+    const files = new Map([jpg('a-1.jpg'), jpg('a-2.jpg'), jpg('a-3.jpg')].map((f) => [mediaKey(f.name), f]));
+    const names = [{ name: 'a-1.jpg' }, { name: 'a-2.jpg' }, { name: 'a-3.jpg' }];
+    expect(await updatePictures(id!, names, files, fakeSavers().savers)).toBe(true);
+
+    const after = await db.posts.get(post.id);
+    expect(after?.media.map((m) => (m.kind === 'asset' ? m.assetId : ''))).toEqual(['asset-a-1.jpg', 'asset-a-2.jpg', 'asset-a-3.jpg']);
+    expect(after).toMatchObject({ caption: 'My own words', hook: 'My hook', status: 'approved', format: 'carousel', scheduledAt: post.scheduledAt });
+    expect(await db.assets.get('old-1')).toBeUndefined();
+    expect(await db.assets.get('old-2')).toBeUndefined();
+  });
+
+  it('changes nothing when none of the named pictures were picked', async () => {
+    const { updatePictures } = await import('./postMedia');
+    const id = await createPost({ media: [{ kind: 'asset', assetId: 'keep' }] });
+    expect(await updatePictures(id, [{ name: 'missing.jpg' }], new Map(), fakeSavers().savers)).toBe(false);
+    expect((await db.posts.get(id))?.media).toEqual([{ kind: 'asset', assetId: 'keep' }]);
+  });
+});

@@ -3,8 +3,8 @@ import { AlertTriangle, Film, ImageIcon, Link2, Sparkles } from 'lucide-react';
 import { Modal } from '../Modal';
 import { useToast } from '../Toast';
 import { db } from '../../db/db';
-import { importedDraftKeys, savePostDrafts } from '../../db/posts';
-import { withMediaFiles } from '../../db/postMedia';
+import { importedDraftKeys, postsByDraftKey, savePostDrafts } from '../../db/posts';
+import { updatePictures, withMediaFiles } from '../../db/postMedia';
 import { draftsToPosts, parsePostDrafts, resolvePostDrafts, type PostDraftsFile } from '../../io/importPosts';
 import { collectImportFiles, findMedia, isVideoFile } from '../../io/postMedia';
 import { FORMAT_LABEL, WORLD_LABEL, dateKey, timeKey } from '../../posts/model';
@@ -57,21 +57,32 @@ export function ImportPostDraftsDialog({ review, onClose }: { review: DraftsRevi
   const file = review?.file ?? null;
   const media = review?.media ?? new Map<string, File>();
   const toast = useToast();
-  const [edits, setEdits] = useState<{ source: PostDraftsFile | null; included: Record<string, boolean> }>({ source: null, included: {} });
+  const [edits, setEdits] = useState<{ source: PostDraftsFile | null; included: Record<string, boolean>; update: Record<string, boolean> }>({ source: null, included: {}, update: {} });
   const [saving, setSaving] = useState(false);
   // Ticks reset whenever a different file is opened.
   const included = edits.source === file ? edits.included : {};
+  const update = edits.source === file ? edits.update : {};
   if (!file) return null;
 
   const drafts = file.drafts.map((d) => ({ ...d, include: included[d.key] ?? d.include }));
   const count = drafts.filter((d) => d.include && !d.duplicate).length;
+  // A draft already in Posts can take its redrawn pictures, keeping every word written since.
+  const canUpdate = (d: (typeof drafts)[number]) => d.duplicate && d.media.some((m) => findMedia(media, m.name));
+  const updating = drafts.filter((d) => canUpdate(d) && (update[d.key] ?? true));
 
   const save = async () => {
     setSaving(true);
     try {
       const posts = await withMediaFiles(draftsToPosts({ ...file, drafts }), media);
       const saved = await savePostDrafts(posts);
-      toast(saved ? `${saved} draft${saved === 1 ? '' : 's'} added for your review.` : 'Nothing new to add.');
+      const ids = await postsByDraftKey();
+      let updated = 0;
+      for (const d of updating) {
+        const id = ids.get(d.key);
+        if (id && (await updatePictures(id, d.media, media))) updated++;
+      }
+      const parts = [saved ? `${saved} draft${saved === 1 ? '' : 's'} added` : '', updated ? `pictures updated on ${updated} post${updated === 1 ? '' : 's'}` : ''].filter(Boolean);
+      toast(parts.length ? `${parts.join(', ')}.` : 'Nothing new to add.');
       onClose();
     } catch (e) {
       toast(e instanceof Error ? e.message : String(e));
@@ -101,7 +112,7 @@ export function ImportPostDraftsDialog({ review, onClose }: { review: DraftsRevi
                 className="mt-1 h-5 w-5 shrink-0 accent-[var(--accent)]"
                 checked={d.include && !d.duplicate}
                 disabled={d.duplicate}
-                onChange={(e) => setEdits({ source: file, included: { ...included, [d.key]: e.target.checked } })}
+                onChange={(e) => setEdits({ source: file, included: { ...included, [d.key]: e.target.checked }, update })}
               />
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-2">
@@ -132,7 +143,20 @@ export function ImportPostDraftsDialog({ review, onClose }: { review: DraftsRevi
                     </span>
                   </span>
                 )}
-                {d.duplicate && <span className="mt-1 block text-xs text-muted">Already in your Posts, so it’s left as you have it. To bring in a fresh copy, set that post aside first.</span>}
+                {canUpdate(d) && (
+                  <label className="mt-2 flex items-start gap-2 rounded-lg border border-accent/40 p-2 text-sm text-ink" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]"
+                      checked={update[d.key] ?? true}
+                      onChange={(e) => setEdits({ source: file, included, update: { ...update, [d.key]: e.target.checked } })}
+                    />
+                    <span>
+                      <strong>Update pictures</strong> on the post already in your Posts. Your words, date and status stay as they are.
+                    </span>
+                  </label>
+                )}
+                {d.duplicate && !canUpdate(d) && <span className="mt-1 block text-xs text-muted">Already in your Posts, so it’s left as you have it. To bring in a fresh copy, set that post aside first.</span>}
                 {d.warnings.map((w) => (
                   <span key={w} className="mt-1 flex items-start gap-1 text-xs text-seed">
                     <AlertTriangle size={12} className="mt-0.5 shrink-0" aria-hidden /> {w}
@@ -147,8 +171,10 @@ export function ImportPostDraftsDialog({ review, onClose }: { review: DraftsRevi
         <button type="button" className="btn-ghost" onClick={onClose}>
           Cancel
         </button>
-        <button type="button" className="btn-primary" disabled={!count || saving} onClick={() => void save()}>
-          {saving ? 'Adding…' : `Add ${count} as draft${count === 1 ? '' : 's'}`}
+        <button type="button" className="btn-primary" disabled={(!count && !updating.length) || saving} onClick={() => void save()}>
+          {saving
+            ? 'Saving…'
+            : [count ? `Add ${count} as draft${count === 1 ? '' : 's'}` : '', updating.length ? `${count ? 'update' : 'Update'} ${updating.length}` : ''].filter(Boolean).join(', ')}
         </button>
       </div>
     </Modal>

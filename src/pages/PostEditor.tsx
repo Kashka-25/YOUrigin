@@ -395,6 +395,9 @@ function Editor({ post }: { post: Post }) {
           <Row icon={Type} label="On-image hook" summary={short(fields.hook) || 'None'}>
             <AutoTextarea id="post-hook" minHeight={56} className="input font-serif text-lg" ariaLabel="On-image hook" value={fields.hook} onChange={(hook) => set({ hook })} />
             {quoteDrifted && <span className="mt-1 block text-xs text-muted">This line is no longer word for word in the linked piece.</span>}
+            {fields.media.some((m) => m.kind !== 'file') && (
+              <p className="mt-1 text-xs text-muted">The slides are finished pictures, so editing the hook here doesn’t redraw them. Change it (or say what you want in Notes to self) and Claude redraws the slides; import the update and choose “Update pictures” to swap them in, keeping your words.</p>
+            )}
           </Row>
 
           <Row icon={Megaphone} label="Call to action" summary={short(fields.cta) || 'None'}>
