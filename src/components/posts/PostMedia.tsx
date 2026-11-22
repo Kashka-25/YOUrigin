@@ -1,8 +1,10 @@
-import { useRef, useState, type Ref } from 'react';
+import { useEffect, useRef, useState, type Ref } from 'react';
 import { ChevronLeft, ChevronRight, CloudDownload, FileImage, Film, Link2, Play, Upload } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import { downloadClipNow, useClipSyncStatus } from '../../sync/clipSync';
+import { uploadState } from '../../sync/clips';
+import type { ClipInfo } from '../../domain/types';
 import { formatBytes } from '../../io/images';
 import { AssetImage } from '../AssetImage';
 import { useAsset } from '../../db/assets';
@@ -30,6 +32,41 @@ export function MediaThumb({ media, className = '', alt = '' }: { media: PostMed
       <FileImage size={14} aria-hidden />
       <span className="line-clamp-3 break-all">{media.name}</span>
     </span>
+  );
+}
+
+/** The current time, refreshed every `ms`, so "paused" shows without anything else changing. */
+function useNow(ms: number): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), ms);
+    return () => clearInterval(t);
+  }, [ms]);
+  return now;
+}
+
+/** A video still uploading from the device it was added on: how far it has come, or that it has stopped. */
+export function UploadElsewhere({ info }: { info: ClipInfo }) {
+  const { done, total, paused } = uploadState(info, useNow(30_000));
+  const pct = Math.round((done / Math.max(1, total)) * 100);
+  return (
+    <>
+      <span>
+        <Film size={14} className="mr-1 inline" aria-hidden />
+        {paused
+          ? done
+            ? `Uploading from the device it was added on paused at ${done} of ${total} pieces. Open YOUrigin there and keep it on screen to finish.`
+            : 'Waiting for the device it was added on. Open YOUrigin there and keep it on screen to send it.'
+          : done
+            ? `Uploading from the device it was added on: ${done} of ${total} pieces.`
+            : 'On its way from the device it was added on.'}
+      </span>
+      {done > 0 && (
+        <span className="h-1 w-full overflow-hidden rounded-full bg-white/25" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Upload from the other device">
+          <span className={`block h-full transition-[width] ${paused ? 'bg-white/60' : 'bg-white'}`} style={{ width: `${pct}%` }} />
+        </span>
+      )}
+    </>
   );
 }
 
@@ -101,10 +138,7 @@ function ClipPlayer({ media, tall, videoRef }: { media: Extract<PostMedia, { kin
               )}
             </>
           ) : (
-            <span>
-              <Film size={14} className="mr-1 inline" aria-hidden />
-              On its way from the device it was added on. It can be played here once that device has been open with sync on.
-            </span>
+            record && <UploadElsewhere info={record} />
           )}
           {problem && <span className="text-[11px] text-white/80">{problem}</span>}
         </span>

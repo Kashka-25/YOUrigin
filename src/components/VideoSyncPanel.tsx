@@ -3,6 +3,7 @@ import { Film, Loader2 } from 'lucide-react';
 import { db } from '../db/db';
 import { formatBytes } from '../io/images';
 import { runClipSync, setClipSettings, useClipSyncStatus } from '../sync/clipSync';
+import { canKeepScreenAwake } from '../sync/wakeLock';
 
 const KEEP_OPTIONS = [3, 7, 14, 30, 90];
 
@@ -42,6 +43,11 @@ export function VideoSyncPanel() {
         <p className="flex items-center gap-2 text-sm text-ink-2" aria-live="polite">
           <Loader2 size={14} className="animate-spin" aria-hidden />
           {current.direction === 'up' ? 'Sending' : 'Bringing in'} {current.name}: {Math.round((current.done / Math.max(1, current.total)) * 100)}%
+        </p>
+      )}
+      {current && (
+        <p className="text-xs text-muted">
+          {canKeepScreenAwake() ? 'The screen stays on until it’s done. ' : ''}Keep YOUrigin open: it pauses if you switch away, and carries on when you come back.
         </p>
       )}
       {status.error && <p className="text-sm text-seed">{status.error}</p>}

@@ -5,6 +5,7 @@ import { DEMO } from '../demo/mode';
 import { clipPass, downloadClip, removeCloudCopy, type ClipStore } from './clips';
 import { getState, isSyncEnabled } from './runtime';
 import { getClient } from './supabase';
+import { keepScreenAwake } from './wakeLock';
 
 // Runs video sync next to record sync: after each successful sync, and when a
 // video is added or asked for. One pass at a time; errors never stop record sync.
@@ -137,6 +138,7 @@ export async function runClipSync(): Promise<void> {
   }
   if (typeof navigator !== 'undefined' && !navigator.onLine) return;
   running = (async () => {
+    let release: (() => void) | undefined;
     try {
       const ctx = await context();
       if (!ctx) return;
@@ -144,11 +146,16 @@ export async function runClipSync(): Promise<void> {
       const settings = getClipSettings();
       await clipPass(db, ctx.store, ctx.key, ctx.userId, {
         ...settings,
-        onProgress: (direction, name, done, total) => setStatus({ current: { direction, name, done, total } }),
+        onProgress: (direction, name, done, total) => {
+          // Only once something is actually moving: a pass with nothing to do leaves the screen alone.
+          release ??= keepScreenAwake();
+          setStatus({ current: { direction, name, done, total } });
+        },
       });
     } catch (e) {
       setStatus({ error: friendlyClipError(e) });
     } finally {
+      release?.();
       setStatus({ running: false, current: undefined });
       running = null;
     }
@@ -164,6 +171,7 @@ export async function runClipSync(): Promise<void> {
 export async function downloadClipNow(clipId: string): Promise<void> {
   const ctx = await context();
   if (!ctx) throw new Error('Turn on sync in Settings to bring videos from your other devices.');
+  const release = keepScreenAwake();
   try {
     await downloadClip(db, ctx.store, ctx.key, ctx.userId, clipId, (done, total) =>
       setStatus({ downloads: { ...status.downloads, [clipId]: { done, total } } }),
@@ -171,6 +179,7 @@ export async function downloadClipNow(clipId: string): Promise<void> {
   } catch (e) {
     throw new Error(friendlyClipError(e), { cause: e });
   } finally {
+    release();
     const rest = { ...status.downloads };
     delete rest[clipId];
     setStatus({ downloads: rest });
