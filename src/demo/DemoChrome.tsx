@@ -102,6 +102,7 @@ export function DemoBar() {
   };
   return (
     <div
+      data-screen-edge
       className="demo-bar no-print fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-1/2 z-[60] flex -translate-x-1/2 items-center md:top-[11px] md:right-8 md:bottom-auto md:left-auto md:translate-x-0 gap-1 rounded-full border border-[#d6ad6d]/50 bg-[#1b1426]/95 py-1 pr-1 pl-3 text-xs text-[#f0e8df] shadow-lg backdrop-blur"
       role="region"
       aria-label="Demo"
