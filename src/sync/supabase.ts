@@ -27,16 +27,92 @@ export class SupabaseTransport implements SyncTransport {
     if (error) throw new Error(error.message);
   }
 
+  /**
+   * Fetches the next records in two light steps, so no single query is heavy
+   * enough to hit the database's statement timeout (pictures make records large):
+   *  1. what changed, without the encrypted content;
+   *  2. the content, in small groups by revision (pictures in smaller ones),
+   *     halving a group that still times out.
+   * A page stops early once it holds about PULL_PAGE_CHARS of content, so a
+   * phone never holds hundreds of pictures at once; the engine asks again.
+   */
   async pull(afterRev: number, limit: number): Promise<RemoteRow[]> {
     const { data, error } = await this.client
       .from('yourigin_records')
-      .select('tbl,id,updated_at,deleted,payload,iv,rev')
+      .select('tbl,id,updated_at,deleted,iv,rev')
       .gt('rev', afterRev)
       .order('rev', { ascending: true })
       .limit(limit);
     if (error) throw new Error(error.message);
-    return (data ?? []).map((r) => ({ ...r, updated_at: Number(r.updated_at), rev: Number(r.rev) })) as RemoteRow[];
+    const meta = (data ?? []).map((r) => ({ ...r, updated_at: Number(r.updated_at), rev: Number(r.rev) })) as Omit<RemoteRow, 'payload'>[];
+
+    const out: RemoteRow[] = [];
+    let chars = 0;
+    let i = 0;
+    while (i < meta.length && chars < PULL_PAGE_CHARS) {
+      const group: typeof meta = [];
+      let weight = 0;
+      while (i < meta.length) {
+        const m = meta[i];
+        const w = m.deleted ? 0 : (HEAVY_TABLES.has(m.tbl) ? HEAVY_WEIGHT : 1);
+        if (group.length && weight + w > GROUP_WEIGHT) break;
+        group.push(m);
+        weight += w;
+        i++;
+      }
+      const live = group.filter((m) => !m.deleted);
+      const payloads = live.length ? await this.payloads(live.map((m) => m.rev)) : new Map<number, string>();
+      for (const m of group) {
+        if (m.deleted) {
+          out.push({ ...m, payload: null });
+          continue;
+        }
+        const payload = payloads.get(m.rev);
+        // Changed again between the two steps: its newer revision comes in a later page.
+        if (payload === undefined) continue;
+        out.push({ ...m, payload });
+        chars += payload.length;
+      }
+    }
+    return out;
   }
+
+  /** Content for these revisions (ascending), splitting the request if the database runs out of time. */
+  private async payloads(revs: number[]): Promise<Map<number, string>> {
+    const { data, error } = await this.client
+      .from('yourigin_records')
+      .select('rev,payload')
+      .gte('rev', revs[0])
+      .lte('rev', revs[revs.length - 1])
+      .order('rev', { ascending: true });
+    if (error) {
+      if (revs.length > 1 && isTimeout(error)) {
+        const mid = Math.ceil(revs.length / 2);
+        const [a, b] = [await this.payloads(revs.slice(0, mid)), await this.payloads(revs.slice(mid))];
+        return new Map([...a, ...b]);
+      }
+      throw new Error(error.message);
+    }
+    const wanted = new Set(revs);
+    const out = new Map<number, string>();
+    for (const r of (data ?? []) as { rev: number | string; payload: string | null }[]) {
+      const rev = Number(r.rev);
+      if (wanted.has(rev) && r.payload !== null) out.set(rev, r.payload);
+    }
+    return out;
+  }
+}
+
+/** Tables whose records carry pictures, so their content is fetched a few at a time. */
+const HEAVY_TABLES = new Set(['assets']);
+const HEAVY_WEIGHT = 8;
+/** About 40 ordinary records, or 5 pictures, per content request. */
+const GROUP_WEIGHT = 40;
+/** A page holds at most about this much encrypted content (characters of base64). */
+const PULL_PAGE_CHARS = 24_000_000;
+
+function isTimeout(error: { message?: string; code?: string }): boolean {
+  return error.code === '57014' || /statement timeout/i.test(error.message ?? '');
 }
 
 export async function fetchKeyInfo(client: SupabaseClient): Promise<KeyInfo | null> {
