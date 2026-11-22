@@ -19,9 +19,12 @@ export interface LyricStanza {
 const SECTION =
   /^\s*[[(]?\s*((?:pre[- ]?chorus|post[- ]?chorus|chorus|verse|bridge|intro|outro|hook|refrain|interlude|tag|coda|breakdown|instrumental|solo)(?:\s*\d+)?(?:\s*[x×]\s*\d+)?)\s*[\])]?\s*:?\s*$/i;
 
-/** "[Chorus]", "(Verse 2)", "Bridge:" on its own line → its name; otherwise null. */
+/** Any other short name in square brackets on its own line: "[Spoken]", "[Heartbeat]", "[Spoken word]". */
+const BRACKETED = /^\s*\[\s*([a-z][a-z0-9'’ -]{0,23}?)\s*\]\s*$/i;
+
+/** "[Chorus]", "(Verse 2)", "Bridge:", "[Spoken]" on its own line → its name; otherwise null. */
 export function sectionLabel(line: string): string | null {
-  const m = line.match(SECTION);
+  const m = line.match(SECTION) ?? line.match(BRACKETED);
   if (!m) return null;
   const name = m[1].replace(/\s+/g, ' ').trim();
   return name.charAt(0).toUpperCase() + name.slice(1);

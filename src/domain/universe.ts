@@ -13,6 +13,14 @@ export const UNIVERSE_REALMS: { id: UniverseRealm; title: string }[] = [
   { id: 'art', title: 'Art & Experiments' },
 ];
 
+/** Creative Universe's public address. */
+export const UNIVERSE_SITE = 'https://kashka-25.github.io/creative-universe/';
+
+/** A work's own page there (its address, or one made from its name). */
+export function universeWorkUrl(slugOrTitle: string): string {
+  return `${UNIVERSE_SITE}#/work/${slugify(slugOrTitle)}`;
+}
+
 export function isUniverseRealm(v: unknown): v is UniverseRealm {
   return UNIVERSE_REALMS.some((r) => r.id === v);
 }

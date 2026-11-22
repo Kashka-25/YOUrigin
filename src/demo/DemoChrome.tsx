@@ -5,18 +5,19 @@ import { ArrowLeft, Compass, FlaskConical, Mail, RotateCcw, Sparkles, SquarePen 
 import { Logo } from '../components/Logo';
 import { BETA_EMAIL, BETA_MAILTO, demoAccessAllowed, demoBackUrl, DEMO_OFFLINE_MESSAGE } from './mode';
 import { resetDemo, startDemo, type DemoChoice } from './state';
-import { EXAMPLE_CREATOR, demoJourney, type DemoJourney } from './seed';
+import { DEMO_CREATOR, demoJourney, type DemoJourney } from './seed';
 
 /** The example journey: a few stops that show what YOUrigin is for, in a sensible order. */
 function journeyStops(j: DemoJourney): { to: string; title: string; text: string }[] {
   return [
     { to: '/universe', title: 'See the whole world', text: 'Projects, Works and recurring themes at a glance.' },
-    { to: `/initiative/${j.project}`, title: 'A project in progress', text: 'Saltglass Poems: notes, drafts and the book they feed.' },
-    { to: `/projects/${j.book}/read`, title: 'Read the book', text: 'The poems placed in order, as a reader would meet them.' },
-    { to: `/atlas/lineage/${j.poem}`, title: 'Follow a poem’s lineage', text: 'Creation Atlas: where Saltglass came from, and what it became.' },
-    { to: `/item/${j.song}`, title: 'A song and its Lyric view', text: 'Sections, rhymes and syllables, plus its earlier links.' },
+    { to: `/initiative/${j.project}`, title: 'A finished project', text: 'The Art of Free Flow: seven lessons, gathered into a course workbook.' },
+    { to: `/projects/${j.book}/read`, title: 'Read the workbook', text: 'The Art of Free Flow, lesson by lesson, as a reader would meet it.' },
+    { to: `/atlas/lineage/${j.poem}`, title: 'Follow a poem’s lineage', text: 'Creation Atlas: Forest of Dreams, from a question of why to the spoken word.' },
+    { to: `/item/${j.song}`, title: 'Spoken word in Lyric view', text: 'Ships, from My Living YOUlogy: sections, rhymes and syllables.' },
     { to: '/atlas/loom', title: 'The Loom', text: 'Ten months of making, Project by Project, dropping into Works.' },
-    { to: `/projects/${j.setlist}/stage`, title: 'Perform the set list', text: 'Stage view: one song at a time, in big type.' },
+    { to: `/projects/${j.setlist}/stage`, title: 'Perform the set list', text: 'Stage view for My Living YOUlogy: one piece at a time, in big type.' },
+    { to: '/posts', title: 'Plan a post', text: 'Instagram posts for the projects, from idea to approved.' },
     { to: `/portfolios/${j.portfolio}/preview`, title: 'A portfolio draft', text: 'How the work would look to a visitor.' },
     { to: '/', title: 'Gather your own thought', text: 'Write something. It stays in this browser.' },
   ];
@@ -61,7 +62,7 @@ function JourneyGuide() {
       </button>
       {open && (
         <nav aria-label="Example journey" className="absolute bottom-full left-1/2 mb-3 max-h-[calc(100dvh-10rem)] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto -translate-x-1/2 rounded-2xl border border-[#d6ad6d]/40 bg-[#1b1426] p-2 text-left shadow-2xl md:top-full md:right-0 md:bottom-auto md:left-auto md:mt-3 md:mb-0 md:translate-x-0">
-          <p className="px-2 pt-1 pb-2 text-[11px] text-[#c5b8c9]">A short journey through {EXAMPLE_CREATOR}’s codex.</p>
+          <p className="px-2 pt-1 pb-2 text-[11px] text-[#c5b8c9]">A short journey through {DEMO_CREATOR}’s codex.</p>
           <ol className="space-y-0.5">
             {journeyStops(journey).map((s, i) => (
               <li key={s.to}>
@@ -130,7 +131,7 @@ export function DemoWelcome() {
     setBusy(choice);
     try {
       await startDemo(choice);
-      // The example opens on the overview of Juno's world; a blank start on Gather.
+      // The example opens on Cassidy's Creations; a blank start on Gather.
       window.location.hash = choice === 'example' ? '#/initiatives' : '#/';
     } finally {
       setBusy(null);
@@ -156,9 +157,9 @@ export function DemoWelcome() {
             className="rounded-2xl border border-[#d6ad6d]/50 bg-[#d6ad6d]/10 p-5 text-left transition-colors hover:bg-[#d6ad6d]/20 disabled:opacity-60"
           >
             <Sparkles size={18} className="text-[#d6ad6d]" aria-hidden />
-            <span className="mt-2 block font-serif text-xl">Explore as an example person</span>
+            <span className="mt-2 block font-serif text-xl">Explore {DEMO_CREATOR}’s codex</span>
             <span className="mt-1 block text-sm text-[#c5b8c9]">
-              {busy === 'example' ? 'Setting the table…' : `Step into ${EXAMPLE_CREATOR}’s codex: an invented poet and songwriter, ten months in, with projects, a book, an album and a gig set list.`}
+              {busy === 'example' ? 'Setting the table…' : `Real projects (YOU, YOUrigin, IntoTheLighthouse, Empatherapy, The Art of Free Flow and My Living YOUlogy) with spoken word, a set list, a course workbook and posts.`}
             </span>
           </button>
           <button
@@ -173,7 +174,7 @@ export function DemoWelcome() {
           </button>
         </div>
         <p className="mx-auto mt-8 max-w-md text-sm leading-relaxed text-[#a99ab1]">
-          Everything stays in this browser on this device. The example person and their work are invented. {DEMO_OFFLINE_MESSAGE.replace('Not available in the demo: n', 'N')}
+          Everything stays in this browser on this device. The projects, pictures and spoken word are Cassidy’s own; the notes around them are examples written for the demo. {DEMO_OFFLINE_MESSAGE.replace('Not available in the demo: n', 'N')}
         </p>
         <div className="mx-auto mt-6 max-w-md rounded-2xl border border-[#d6ad6d]/30 bg-white/[.03] px-5 py-4">
           <BetaInvite />

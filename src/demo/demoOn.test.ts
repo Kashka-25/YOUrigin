@@ -33,11 +33,11 @@ describe('with ?demo', () => {
     localStorage.removeItem('yourigin.sync.enabled');
   });
 
-  it('starts as the example person, records nothing for sync, and resets to empty', async () => {
+  it('starts with Cassidy’s projects, records nothing for sync, and resets to empty', async () => {
     await ensureBuiltIns();
     const before = appOutbox.size;
     await startDemo('example');
-    expect(await db.projects.count()).toBe(7);
+    expect(await db.projects.count()).toBe(6);
     expect((await db.settings.get('demo'))?.value).toBe('example');
     expect(appOutbox.size).toBe(before); // demo writes are never queued for sync
     await resetDemo();
