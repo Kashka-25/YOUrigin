@@ -8,7 +8,7 @@ import { newPost } from '../posts/model';
 import type { Clip, ClipInfo } from '../domain/types';
 import { SYNC_TABLES } from './tracking';
 import { createKeyInfo } from './crypto';
-import { chunkPath, clipPass, cloudCopiesToRemove, decryptChunk, downloadClip, encryptChunk, ensureClipInfo, removeCloudCopy, uploadClip, type ClipStore } from './clips';
+import { chunkPath, clipPass, cloudCopiesToRemove, decryptChunk, downloadClip, encryptChunk, ensureClipInfo, removeCloudCopy, UPLOAD_PAUSED_AFTER, uploadClip, uploadState, type ClipStore } from './clips';
 
 // The test database (fake IndexedDB) can store Node's Blob but not jsdom's; browsers store either.
 const JsdomBlob = globalThis.Blob;
@@ -112,6 +112,35 @@ describe('videos across devices', () => {
     await uploadClip(phone, store, KEY, USER, id);
     expect(store.puts - before).toBe(3);
     expect((await phone.clipInfo.get(id))?.uploadedAt).toBeTypeOf('number');
+  });
+
+  it('how far an upload has come reaches the other devices, and shows when it stopped', async () => {
+    const [phone, laptop, store] = [await device(), await device(), new MemoryStore()];
+    const id = await addVideo(phone);
+    store.failPutAt = 3; // the phone is put away after three pieces
+    await expect(uploadClip(phone, store, KEY, USER, id)).rejects.toThrow();
+    await carryRecords(phone, laptop);
+    const seen = (await laptop.clipInfo.get(id)) as ClipInfo;
+    expect(seen.uploadedChunks).toBe(3);
+    expect(uploadState(seen, seen.updatedAt + 1000)).toEqual({ done: 3, total: 5, paused: false });
+    expect(uploadState(seen, seen.updatedAt + UPLOAD_PAUSED_AFTER + 1).paused).toBe(true);
+
+    await uploadClip(phone, store, KEY, USER, id);
+    await carryRecords(phone, laptop);
+    const done = (await laptop.clipInfo.get(id)) as ClipInfo;
+    expect(done.uploadedChunks).toBe(5);
+    expect(done.uploadedAt).toBeTypeOf('number');
+  });
+
+  it('progress never goes backwards or touches a copy that is finished or removed', async () => {
+    const [phone, store] = [await device(), new MemoryStore()];
+    const id = await addVideo(phone);
+    // another device already finished this one and it has since been removed
+    await phone.clipInfo.update(id, { removedFromCloudAt: 5, uploadedChunks: 4 });
+    expect(await uploadClip(phone, store, KEY, USER, id)).toBe(false);
+    expect((await phone.clipInfo.get(id))?.uploadedChunks).toBe(4);
+    expect(uploadState({ chunks: 5, uploadedChunks: 9, updatedAt: 0 }, 1).done).toBe(5);
+    expect(uploadState({ chunks: 5, updatedAt: 0 }, 1).done).toBe(0);
   });
 
   it('a download that drops keeps what arrived and fetches only the rest', async () => {

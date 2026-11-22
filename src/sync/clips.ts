@@ -97,16 +97,36 @@ export async function uploadClip(db: YOUriginDB, store: ClipStore, key: CryptoKe
     await store.put(chunkPath(userId, clipId, i), await encryptChunk(key, clipId, i, info.chunks, piece));
     // A whole-record put, never update(): a partial update could copy the stored video.
     await db.clips.put({ ...clip, uploadedChunks: i + 1 });
+    if (i + 1 < info.chunks) await markUploadProgress(db, clipId, i + 1);
     onProgress?.(i + 1, info.chunks);
   }
   const now = Date.now();
   // Another device may have finished (or removed) it meanwhile; only mark a still-pending copy.
   await db.transaction('rw', db.clipInfo, async () => {
     const latest = await db.clipInfo.get(clipId);
-    if (latest && !latest.uploadedAt && !latest.removedFromCloudAt) await db.clipInfo.update(clipId, { uploadedAt: now, updatedAt: now });
+    if (latest && !latest.uploadedAt && !latest.removedFromCloudAt) await db.clipInfo.update(clipId, { uploadedAt: now, uploadedChunks: info.chunks, updatedAt: now });
   });
   return true;
 }
+
+/** Records how many pieces are up, so the other devices can show it (it syncs with the record). */
+async function markUploadProgress(db: YOUriginDB, clipId: string, uploadedChunks: number): Promise<void> {
+  const now = Date.now();
+  await db.transaction('rw', db.clipInfo, async () => {
+    const latest = await db.clipInfo.get(clipId);
+    if (latest && !latest.uploadedAt && !latest.removedFromCloudAt && (latest.uploadedChunks ?? 0) < uploadedChunks) {
+      await db.clipInfo.update(clipId, { uploadedChunks, updatedAt: now });
+    }
+  });
+}
+
+/** How an upload happening on another device looks from here. */
+export function uploadState(info: Pick<ClipInfo, 'chunks' | 'uploadedChunks' | 'updatedAt'>, now = Date.now()): { done: number; total: number; paused: boolean } {
+  const done = Math.min(info.uploadedChunks ?? 0, info.chunks);
+  // No piece for a few minutes: that device was closed or put away part-way.
+  return { done, total: info.chunks, paused: now - info.updatedAt > UPLOAD_PAUSED_AFTER };
+}
+export const UPLOAD_PAUSED_AFTER = 3 * 60 * 1000;
 
 /**
  * Downloads and decrypts a video whose cloud copy is complete, keeping each

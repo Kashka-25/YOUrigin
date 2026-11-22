@@ -182,6 +182,8 @@ export interface ClipInfo extends Syncable {
   chunks: number;
   /** When the whole video finished uploading; null while it is still on its way. */
   uploadedAt: number | null;
+  /** Pieces up so far, so other devices can show how far an upload has come. Absent on records from before it was kept. */
+  uploadedChunks?: number;
   /** When the cloud copy was removed (after posting, or by hand). Devices that have it keep theirs. */
   removedFromCloudAt: number | null;
 }
