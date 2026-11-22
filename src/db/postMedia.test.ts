@@ -126,7 +126,7 @@ describe('videos', () => {
   });
 
   it('upgrading from version 6 keeps posts and adds an empty clips table', async () => {
-    expect(SCHEMA_VERSION).toBe(7);
+    expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(7);
     const name = `upgrade-${newId()}`;
     const old = new Dexie(name);
     old.version(60).stores({ posts: 'id, updatedAt, status, scheduledAt, world, *pieceIds', assets: 'id, updatedAt' });

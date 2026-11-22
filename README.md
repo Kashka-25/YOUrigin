@@ -201,6 +201,8 @@ A portfolio is a private draft on your devices (synced end-to-end encrypted with
 
 - **The public page** is a separate, small page at `p/` (`p/index.html`, `src/viewer/`) next to the app: `https://kashka-25.github.io/YOUrigin/p/#<token>`. The token after `#` never reaches GitHub Pages or other sites (no-referrer). It has no app code, sign-in, manifest or service worker, a strict Content-Security-Policy in the build, and `noindex` unless the portfolio is public. The app's service worker neither caches `p/` nor answers its navigations, so the app is never served in its place. A correct password gives this tab a pass (session storage only); the page forgets it as soon as the server stops accepting it. A custom domain can point the link and API elsewhere with `VITE_PORTFOLIO_BASE_URL` / `VITE_PORTFOLIO_API` at build time.
 
+- **Videos for posts** (`supabase/migrations/20261122120000_yourigin_clips.sql`): a private `yourigin-clips` bucket holding only encrypted 4 MB pieces at `<account id>/<video id>/<piece>`. Only the owner can read, add, replace or remove their pieces; adding needs the allowlist, removing never does. Run it in the SQL editor once, like the others. Until it is applied, videos stay on their device and Settings shows the upload error; nothing is lost.
+
 Deploying the server side (once, after review):
 
 ```bash

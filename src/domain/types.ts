@@ -161,6 +161,36 @@ export interface Clip {
   duration: number;
   createdAt: number;
   updatedAt: number;
+  /** How many pieces of this video are already in the encrypted cloud copy (uploads resume from here). */
+  uploadedChunks?: number;
+}
+
+/**
+ * What every device knows about a video (synced, end-to-end encrypted): enough
+ * to show it, and to fetch the encrypted cloud copy when it isn't on this device.
+ * The id is the clip's id.
+ */
+export interface ClipInfo extends Syncable {
+  name: string;
+  mime: string;
+  bytes: number;
+  width: number;
+  height: number;
+  duration: number;
+  /** Size of each encrypted piece before encryption, and how many there are. */
+  chunkSize: number;
+  chunks: number;
+  /** When the whole video finished uploading; null while it is still on its way. */
+  uploadedAt: number | null;
+  /** When the cloud copy was removed (after posting, or by hand). Devices that have it keep theirs. */
+  removedFromCloudAt: number | null;
+}
+
+/** A downloaded, decrypted piece of a video, kept only until the whole video is here. Device-local. */
+export interface ClipChunk {
+  clipId: string;
+  index: number;
+  data: ArrayBuffer;
 }
 
 export interface TagFamily extends Syncable {

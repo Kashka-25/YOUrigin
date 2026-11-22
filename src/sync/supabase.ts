@@ -53,6 +53,9 @@ export async function fetchKeyInfo(client: SupabaseClient): Promise<KeyInfo | nu
 export async function deleteRemoteSync(client: SupabaseClient, userId: string): Promise<void> {
   const records = await client.from('yourigin_records').delete().eq('user_id', userId);
   if (records.error) throw new Error(records.error.message);
+  // Video pieces are locked with the old passphrase too.
+  const { deleteAllCloudClips } = await import('./clipSync');
+  await deleteAllCloudClips(client, userId);
   const key = await client.from('yourigin_sync_keys').delete().eq('user_id', userId);
   if (key.error) throw new Error(key.error.message);
 }

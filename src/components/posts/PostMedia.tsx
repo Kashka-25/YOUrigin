@@ -1,5 +1,9 @@
 import { useRef, useState, type Ref } from 'react';
-import { ChevronLeft, ChevronRight, FileImage, Film, Link2, Play, Upload } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CloudDownload, FileImage, Film, Link2, Play, Upload } from 'lucide-react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../../db/db';
+import { downloadClipNow, useClipSyncStatus } from '../../sync/clipSync';
+import { formatBytes } from '../../io/images';
 import { AssetImage } from '../AssetImage';
 import { useAsset } from '../../db/assets';
 import { addClipOnThisDevice, useClipUrl } from '../../db/postMedia';
@@ -41,6 +45,9 @@ function ClipPlayer({ media, tall, videoRef }: { media: Extract<PostMedia, { kin
   const input = useRef<HTMLInputElement>(null);
   const [adding, setAdding] = useState(false);
   const [problem, setProblem] = useState('');
+  const record = useLiveQuery(() => db.clipInfo.get(media.clipId), [media.clipId]);
+  const progress = useClipSyncStatus().downloads[media.clipId];
+  const [fetching, setFetching] = useState(false);
   if (url) {
     return <video ref={videoRef} src={url} poster={poster?.dataUrl} className="h-full w-full bg-black object-contain" controls playsInline loop preload="metadata" aria-label={media.name} />;
   }
@@ -56,6 +63,54 @@ function ClipPlayer({ media, tall, videoRef }: { media: Extract<PostMedia, { kin
       setAdding(false);
     }
   };
+  const download = async () => {
+    setFetching(true);
+    setProblem('');
+    try {
+      await downloadClipNow(media.clipId);
+    } catch (e) {
+      setProblem(e instanceof Error ? e.message : String(e));
+    } finally {
+      setFetching(false);
+    }
+  };
+  const inCloud = !!record?.uploadedAt && !record.removedFromCloudAt;
+  if (missing && (inCloud || (record && !record.uploadedAt && !record.removedFromCloudAt))) {
+    const pct = progress ? Math.round((progress.done / Math.max(1, progress.total)) * 100) : 0;
+    return (
+      <span className="relative block h-full w-full bg-ink">
+        {media.posterAssetId && <AssetImage id={media.posterAssetId} alt="" className="absolute inset-0 h-full w-full object-cover opacity-80" />}
+        <span className={`absolute inset-x-3 ${tall ? 'bottom-6' : 'bottom-3'} flex flex-col items-center gap-2 rounded-xl bg-black/70 p-3 text-center text-xs text-white`}>
+          {inCloud ? (
+            <>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#1a1410] disabled:opacity-70"
+                disabled={fetching}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void download();
+                }}
+              >
+                <CloudDownload size={14} aria-hidden /> {fetching ? `Bringing it here… ${pct}%` : `Get this video here (${formatBytes(record.bytes)})`}
+              </button>
+              {fetching && (
+                <span className="h-1 w-full overflow-hidden rounded-full bg-white/25" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Download">
+                  <span className="block h-full bg-white transition-[width]" style={{ width: `${pct}%` }} />
+                </span>
+              )}
+            </>
+          ) : (
+            <span>
+              <Film size={14} className="mr-1 inline" aria-hidden />
+              On its way from the device it was added on. It can be played here once that device has been open with sync on.
+            </span>
+          )}
+          {problem && <span className="text-[11px] text-white/80">{problem}</span>}
+        </span>
+      </span>
+    );
+  }
   return (
     <span className="relative block h-full w-full bg-ink">
       {media.posterAssetId && <AssetImage id={media.posterAssetId} alt="" className="absolute inset-0 h-full w-full object-cover opacity-80" />}

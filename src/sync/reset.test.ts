@@ -13,6 +13,19 @@ function fakeClient(fail?: string) {
         },
       }),
     }),
+    storage: {
+      from: (bucket: string) => ({
+        list: async (prefix: string) => {
+          calls.push(`${bucket}:list ${prefix}`);
+          if (prefix === 'u1') return { data: [{ name: 'video-1' }], error: null };
+          return { data: [{ name: '0' }, { name: '1' }], error: null };
+        },
+        remove: async (paths: string[]) => {
+          calls.push(`${bucket}:remove ${paths.join(',')}`);
+          return { error: null };
+        },
+      }),
+    },
   } as unknown as SupabaseClient;
   return { client, calls };
 }
@@ -21,7 +34,13 @@ describe('starting sync over', () => {
   it("clears only this account's encrypted copy, then its passphrase check", async () => {
     const { client, calls } = fakeClient();
     await deleteRemoteSync(client, 'u1');
-    expect(calls).toEqual(['yourigin_records:user_id=u1', 'yourigin_sync_keys:user_id=u1']);
+    expect(calls).toEqual([
+      'yourigin_records:user_id=u1',
+      'yourigin-clips:list u1',
+      'yourigin-clips:list u1/video-1',
+      'yourigin-clips:remove u1/video-1/0,u1/video-1/1',
+      'yourigin_sync_keys:user_id=u1',
+    ]);
   });
 
   it('keeps the passphrase check if the copy could not be cleared', async () => {

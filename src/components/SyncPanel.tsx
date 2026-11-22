@@ -14,6 +14,7 @@ import {
 } from '../sync/controller';
 import { useConfirm } from './Modal';
 import { useToast } from './Toast';
+import { VideoSyncPanel } from './VideoSyncPanel';
 
 function ago(ts?: number) {
   if (!ts) return 'not yet';
@@ -297,6 +298,7 @@ export function SyncPanel() {
           </button>
         </div>
       </div>
+      <VideoSyncPanel />
       <p className="text-xs leading-relaxed text-muted">
         Edited the same piece on two devices while offline? The most recent edit wins, and the earlier wording stays in that piece's History on the device
         where it was written.

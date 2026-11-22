@@ -5,6 +5,7 @@ import { needsFullPull, SyncEngine } from './engine';
 import { SYNC_TABLES } from './tracking';
 import { appOutbox, clearState, getState, isSyncEnabled, setState, setSyncEnabled } from './runtime';
 import { deleteRemoteSync, fetchKeyInfo, getClient, saveKeyInfo, SupabaseTransport } from './supabase';
+import { scheduleClipSync } from './clipSync';
 
 export type SyncPhase =
   | 'off' // not set up on this device
@@ -117,6 +118,8 @@ export async function syncNow(): Promise<void> {
       const now = Date.now();
       await setState('lastSyncedAt', now);
       setStatus({ phase: 'idle', lastSyncedAt: now });
+      // Videos follow the records (their clipInfo has just arrived or gone out).
+      scheduleClipSync(1500);
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       setStatus(navigator.onLine ? { phase: 'error', error: friendly(message) } : { phase: 'offline' });
@@ -180,6 +183,15 @@ export async function startOver(): Promise<void> {
   const userId = data.session?.user.id;
   if (!userId) throw new Error('Your sign-in has expired. Sign in again, then start over.');
   await deleteRemoteSync(client, userId);
+  // The cloud videos went with it: videos on this device go up again under the new
+  // passphrase; ones that only lived in the cloud are marked as gone.
+  const local = new Set(await db.clips.toCollection().primaryKeys());
+  const now = Date.now();
+  await db.clipInfo.toCollection().modify((info) => {
+    if (local.has(info.id)) Object.assign(info, { uploadedAt: null, removedFromCloudAt: null, updatedAt: now });
+    else if (!info.removedFromCloudAt) Object.assign(info, { removedFromCloudAt: now, updatedAt: now });
+  });
+  for (const clip of await db.clips.toArray()) await db.clips.put({ ...clip, uploadedChunks: 0 });
   await setState('cursor', 0);
   await setState('seeded', false);
   setStatus({ phase: 'new-passphrase', error: undefined });

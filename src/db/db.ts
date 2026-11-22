@@ -14,6 +14,8 @@ import type {
   Template,
   Asset,
   Clip,
+  ClipChunk,
+  ClipInfo,
   Project,
 } from '../domain/types';
 import type { Portfolio } from '../portfolio/model';
@@ -23,7 +25,7 @@ import { installChangeTracking } from '../sync/tracking';
 import { DEMO, DEMO_DB_NAME } from '../demo/mode';
 import { appOutbox, isSyncEnabled } from '../sync/runtime';
 
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 /**
  * One-time, non-destructive migration: each existing standalone Work gets a
@@ -99,6 +101,8 @@ export class YOUriginDB extends Dexie {
   portfolios!: Table<Portfolio, string>;
   posts!: Table<Post, string>;
   clips!: Table<Clip, string>;
+  clipInfo!: Table<ClipInfo, string>;
+  clipChunks!: Table<ClipChunk, [string, number]>;
 
   constructor(name = 'yourigin') {
     super(name);
@@ -137,6 +141,9 @@ export class YOUriginDB extends Dexie {
     this.version(6).stores({ posts: 'id, updatedAt, status, scheduledAt, world, *pieceIds' });
     // v7: videos for posts, kept on this device only (not synced or backed up: too large).
     this.version(7).stores({ clips: 'id, updatedAt' });
+    // v8: videos reach every device. `clipInfo` syncs (what each video is and whether its
+    // encrypted cloud copy is up); `clipChunks` holds a download in progress on this device.
+    this.version(8).stores({ clipInfo: 'id, updatedAt', clipChunks: '[clipId+index], clipId' });
   }
 }
 

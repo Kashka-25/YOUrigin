@@ -6,11 +6,14 @@ import { newId } from '../domain/text';
 import { findMedia, isImageFile, isVideoFile, mediaKey } from '../io/postMedia';
 import type { Clip } from '../domain/types';
 import { formatForMedia, newPost, type Post, type PostMedia } from '../posts/model';
+import { ensureClipInfo } from '../sync/clips';
+import { scheduleClipSync } from '../sync/clipSync';
 
 // Pictures for posts are ordinary assets (synced, end-to-end encrypted).
-// Videos are clips: kept on the device they were added on, because they are far
-// larger than sync's ~3 MB requests. A still frame of each video is saved as an
-// asset, so the post shows its picture on every device.
+// Videos are clips, kept on the device as they are. They reach other devices
+// through an encrypted cloud copy (see sync/clips.ts) rather than record sync,
+// because they are far larger than sync's ~3 MB requests. A still frame of each
+// video is saved as an asset, so the post shows its picture on every device.
 
 export interface ClipProbe {
   width: number;
@@ -77,6 +80,8 @@ export async function saveClip(file: File, probe: (f: File) => Promise<ClipProbe
     updatedAt: now,
   };
   await db.clips.add(clip);
+  await ensureClipInfo(db, clip.id);
+  scheduleClipSync();
   let posterAssetId: string | undefined;
   if (info.poster) {
     try {
@@ -229,6 +234,14 @@ export async function addClipOnThisDevice(clipId: string, file: File, probe: (f:
     createdAt: now,
     updatedAt: now,
   });
+  // If its cloud copy is gone (or never finished), this file can be the one that goes up.
+  const record = await db.clipInfo.get(clipId);
+  if (record && !record.uploadedAt) {
+    await db.clipInfo.put({ ...record, name: file.name, mime: file.type || record.mime, bytes: file.size, chunks: Math.max(1, Math.ceil(file.size / record.chunkSize)), removedFromCloudAt: null, updatedAt: now });
+  } else if (!record) {
+    await ensureClipInfo(db, clipId);
+  }
+  scheduleClipSync();
 }
 
 /** The frame a video is showing right now, as a JPEG picture (null if it can't be read yet). */
