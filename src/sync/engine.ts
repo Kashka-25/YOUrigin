@@ -132,7 +132,8 @@ export class SyncEngine {
       after = page[page.length - 1].rev;
       await this.cursor.set(after);
       total += page.length;
-      if (page.length < PULL_PAGE) break;
+      // A page can be shorter than PULL_PAGE because the transport keeps pages light,
+      // so keep asking until nothing new is left.
     }
     return total;
   }
