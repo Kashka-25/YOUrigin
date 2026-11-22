@@ -94,17 +94,17 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <div className="app-main min-h-dvh flex-1">
-        <header className="no-print chrome sticky top-0 z-30 hidden h-14 items-center justify-between border-b border-line/70 bg-paper/75 px-8 backdrop-blur-xl md:flex">
+        <header data-screen-edge className="no-print chrome sticky top-0 z-30 hidden h-14 items-center justify-between border-b border-line/70 bg-paper/75 px-8 backdrop-blur-xl md:flex">
           <div />
           <div className="flex items-center gap-3"><SyncBadge compact /></div>
         </header>
-        <header className="no-print chrome sticky top-0 z-30 flex items-center justify-between border-b border-line/70 bg-paper/90 px-4 py-3 backdrop-blur-xl md:hidden">
+        <header data-screen-edge className="no-print chrome sticky top-0 z-30 flex items-center justify-between border-b border-line/70 bg-paper/90 px-4 py-3 backdrop-blur-xl md:hidden">
           <Logo size="sm" />
           <div className="flex items-center gap-2"><SyncBadge compact /><button type="button" className="btn-ghost min-h-10 px-2" onClick={() => setSearchOpen(true)} aria-label="Search"><Search size={20}/></button></div>
         </header>
         <main id="main" className="min-w-0 pb-24 md:pb-8">{children}</main>
       </div>
-      <nav aria-label="Main" className="mobile-dock no-print chrome fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav aria-label="Main" data-screen-edge className="mobile-dock no-print chrome fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t pb-[env(safe-area-inset-bottom)] md:hidden">
         {ROOMS.map((item) => <NavLink key={item.to} to={item.to} end={item.end} className={({isActive}) => `relative flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] ${activeFor(item.to,isActive) ? 'font-semibold' : 'text-[var(--chrome-text)]'}`}><item.icon size={19} strokeWidth={1.7}/>{item.label}</NavLink>)}
         <button type="button" onClick={() => setMoreOpen(true)} className="flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] text-[var(--chrome-text)]"><Menu size={19}/>More</button>
       </nav>
