@@ -105,8 +105,8 @@ export class SupabaseTransport implements SyncTransport {
 
 /** Tables whose records carry pictures, so their content is fetched a few at a time. */
 const HEAVY_TABLES = new Set(['assets']);
-const HEAVY_WEIGHT = 8;
-/** About 40 ordinary records, or 5 pictures, per content request. */
+const HEAVY_WEIGHT = 20;
+/** About 40 ordinary records, or 2 pictures, per content request (5 pictures took up to 7 s of the 8 s limit). */
 const GROUP_WEIGHT = 40;
 /** A page holds at most about this much encrypted content (characters of base64). */
 const PULL_PAGE_CHARS = 24_000_000;

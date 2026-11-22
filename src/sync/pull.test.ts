@@ -84,10 +84,20 @@ describe('pulling without timing out', () => {
     expect(page.every((r) => r.deleted || r.payload?.length)).toBe(true);
   });
 
+  it('asks for at most two pictures at a time', async () => {
+    const { client, queries } = fakeServer(rows, 2_700_000);
+    const page = await new SupabaseTransport(client).pull(0, 500);
+    expect(queries.filter((q) => q.timedOut)).toEqual([]);
+    expect(page.filter((r) => r.tbl === 'assets').length).toBeGreaterThan(2);
+  });
+
   it('halves a group that still times out', async () => {
-    const { client, queries } = fakeServer(rows, 2_000_000);
+    // pictures back to back, so two share a request, which this database can't manage in time
+    const pictures = Array.from({ length: 6 }, (_, i) => row(i + 1, 'assets', 1_300_000));
+    const { client, queries } = fakeServer(pictures, 2_000_000);
     const page = await new SupabaseTransport(client).pull(0, 500);
     expect(queries.some((q) => q.timedOut)).toBe(true);
+    expect(page).toHaveLength(6);
     expect(page.length).toBeGreaterThan(0);
     expect(page.filter((r) => r.tbl === 'assets').every((r) => r.payload?.length === 1_300_000)).toBe(true);
   });
