@@ -4,6 +4,12 @@ import { analyseLyric, lineSyllables, rhymeKey, schemeOf, sectionLabel, wordSyll
 describe('lyric space', () => {
   it('recognises section labels in the usual spellings', () => {
     expect(sectionLabel('[Chorus]')).toBe('Chorus');
+    expect(sectionLabel('[Spoken]')).toBe('Spoken');
+    expect(sectionLabel('[heartbeat]')).toBe('Heartbeat');
+    expect(sectionLabel('[Spoken word]')).toBe('Spoken word');
+    // Only short names in square brackets: not ad-libs in brackets, not lines of lyric.
+    expect(sectionLabel('(oh oh oh)')).toBeNull();
+    expect(sectionLabel('[and then the whole room started singing along with us]')).toBeNull();
     expect(sectionLabel('(verse 2)')).toBe('Verse 2');
     expect(sectionLabel('Pre-Chorus:')).toBe('Pre-Chorus');
     expect(sectionLabel('Bridge')).toBe('Bridge');

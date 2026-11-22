@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { Globe2, Trash2 } from 'lucide-react';
+import { ExternalLink, Globe2, Trash2 } from 'lucide-react';
 import type { Project, UniverseRealm } from '../domain/types';
-import { UNIVERSE_REALMS, isUniverseRealm, slugify } from '../domain/universe';
+import { UNIVERSE_REALMS, isUniverseRealm, slugify, universeWorkUrl } from '../domain/universe';
 import { CHANGE_NOTE_MAX, addChangeNote, removeChangeNote, setUniverseLink } from '../db/projectRecords';
 import { useConfirm } from './Modal';
 
@@ -81,6 +81,16 @@ export function UniversePanel({ project }: { project: Project }) {
             <p id="universe-slug-help" className="mt-1 text-xs text-muted">
               {realm ? 'Leave empty to use the name.' : 'Choose a realm first.'}
             </p>
+            {realm && (
+              <a
+                href={universeWorkUrl(project.universe?.slug || project.title)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1 text-sm text-gold underline-offset-4 hover:underline"
+              >
+                <ExternalLink size={14} aria-hidden /> Open its page in Creative Universe
+              </a>
+            )}
           </div>
         </div>
 
