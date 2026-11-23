@@ -6,6 +6,7 @@ import { newId } from '../domain/text';
 import { findMedia, isImageFile, isVideoFile, mediaKey } from '../io/postMedia';
 import type { Clip } from '../domain/types';
 import { formatForMedia, newPost, type Post, type PostMedia } from '../posts/model';
+import { shownAccount } from '../posts/accounts';
 import { ensureClipInfo } from '../sync/clips';
 import { scheduleClipSync } from '../sync/clipSync';
 
@@ -204,11 +205,12 @@ export function useClipUrl(clipId: string | undefined): { url: string | null; mi
 export async function addIdeas(files: File[], savers: MediaSavers = defaultSavers): Promise<number> {
   let added = 0;
   const now = Date.now();
+  const account = shownAccount();
   for (const [i, f] of files.entries()) {
     const m = await mediaFromFile(f, savers);
     if (!m) continue;
     // Newest first in the Ideas view, but files picked together keep their order.
-    await db.posts.add(newPost({ status: 'idea', media: [m], format: formatForMedia([m], 'single-image') }, now + files.length - i));
+    await db.posts.add(newPost({ status: 'idea', media: [m], format: formatForMedia([m], 'single-image'), account }, now + files.length - i));
     added++;
   }
   return added;

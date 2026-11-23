@@ -52,6 +52,11 @@ export interface Post extends Syncable {
    * Optional: posts made before links existed don't have one.
    */
   link?: string;
+  /**
+   * The Instagram account it goes on (see accounts.ts). Posts made before accounts
+   * existed don't have one and belong to the main account.
+   */
+  account?: string;
   /** Soft delete: the post sits aside until it is removed for good. */
   deletedAt: number | null;
 }

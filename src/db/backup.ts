@@ -21,6 +21,7 @@ const TABLES = [
   'posts',
   'clipInfo',
   'textStyles',
+  'postAccounts',
   'settings',
 ] as const;
 type TableName = (typeof TABLES)[number];

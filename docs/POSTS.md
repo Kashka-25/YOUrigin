@@ -22,6 +22,15 @@ Plan, write, review and approve social media posts (Instagram) inside YOUrigin. 
 
 Posted times are placeholders until real insights are in (`WEEK_PLAN` in `src/posts/model.ts`).
 
+## Accounts
+
+Each post belongs to one Instagram account. The row of @ buttons at the top of Posts picks the account, and every view (Week, Month, Grid, Board, Ideas) then shows only that account's posts, so each account has its own profile grid. New posts, ideas and imported drafts go on the account being shown. Gallery is the shared picture library, so it doesn't change.
+
+- It starts with **@_freethedream_** (colour travel, creation, music, talking heads) and **Poetry** (black-and-white photos with a Whisper line). The pencil beside the buttons renames an account, sets its @handle, or adds another. Names and handles sync to every device.
+- Move a post from the editor (**Account** row), or select several on the Board or in Ideas and choose **Or move to account**.
+- In the Grid, **Ideas** shows posts that have no date yet ahead of the planned ones, marked **No date**, to preview how the account could look. It is on at first for every account except the main one.
+- Posts from before accounts existed belong to the main account. A one-time banner offers to move posts whose notes start with “Poem idea:” to Poetry; nothing moves until you tap Move.
+
 ## Making a post
 
 Laid out like Instagram's "New post" so it feels familiar:

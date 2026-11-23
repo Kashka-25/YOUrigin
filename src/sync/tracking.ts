@@ -20,6 +20,7 @@ export const SYNC_TABLES = [
   'posts',
   'clipInfo',
   'textStyles',
+  'postAccounts',
 ] as const;
 export type SyncTable = (typeof SYNC_TABLES)[number];
 const SYNCED = new Set<string>(SYNC_TABLES);
@@ -28,7 +29,7 @@ const REMOTE = '__youriginRemote';
 
 /**
  * Runs `fn` in a read-write transaction whose writes are NOT recorded as local
- * changes — used when applying changes that arrived from the server.
+ * changes â€” used when applying changes that arrived from the server.
  */
 export async function runRemote<T>(db: Dexie, tables: string[], fn: () => Promise<T>): Promise<T> {
   return db.transaction('rw', tables, async (tx) => {

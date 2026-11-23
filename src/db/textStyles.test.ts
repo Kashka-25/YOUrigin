@@ -47,7 +47,7 @@ describe('signature styles', () => {
   });
 
   it('upgrading from version 8 keeps everything and adds the styles table', async () => {
-    expect(SCHEMA_VERSION).toBe(9);
+    expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(9);
     const name = `upgrade-${newId()}`;
     const old = new Dexie(name);
     old.version(80).stores({ posts: 'id, updatedAt, status, scheduledAt, world, *pieceIds', clipInfo: 'id, updatedAt' });
