@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { AlignCenter, AlignLeft, AlignRight, Bold, BookmarkPlus, CaseUpper, Check, Copy, Download, Italic, Pencil, Plus, Square, SunDim, Trash2, X } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, Bold, BookmarkPlus, CaseUpper, Check, Copy, Download, Italic, MoveHorizontal, Palette, Pencil, Plus, Sparkles, Square, SunDim, Trash2, Type, X } from 'lucide-react';
+import { Fold, FoldGroup } from '../Fold';
 import { deleteTextStyle, renameTextStyle, saveTextStyle, useTextStyles } from '../../db/textStyles';
 import { Modal } from '../Modal';
 import { useToast } from '../Toast';
@@ -44,6 +45,22 @@ async function savePicture(blob: Blob, name: string): Promise<'shared' | 'downlo
   return 'downloaded';
 }
 
+/** A brand colour's name, or the colour code for any other. */
+function colourName(hex: string): string {
+  for (const g of BRAND_COLOURS) for (const c of g.colours) if (c.hex === hex.toLowerCase()) return c.name;
+  return hex;
+}
+
+function effectsSummary(l: TextLayer): string {
+  const bits = [l.align === 'left' ? 'Left' : l.align === 'right' ? 'Right' : 'Centred'];
+  if (l.weight >= 650) bits.push('bold');
+  if (l.italic) bits.push('italic');
+  if (l.caps) bits.push('capitals');
+  if (l.shadow) bits.push('shadow');
+  if (l.backing) bits.push('box');
+  return bits.join(' · ');
+}
+
 function Toggle({ on, label, onClick, children }: { on: boolean; label: string; onClick: () => void; children: React.ReactNode }) {
   return (
     <button type="button" aria-pressed={on} aria-label={label} title={label} onClick={onClick} className={`btn min-h-10 px-3 ${on ? 'border-accent bg-accent/15 text-ink' : ''}`}>
@@ -80,6 +97,7 @@ export function TextStudio({
   const [selected, setSelected] = useState<string | null>(layers[0]?.id ?? null);
   const [saving, setSaving] = useState(false);
   const current = layers.find((l) => l.id === selected) ?? null;
+  const styleCount = useTextStyles()?.length ?? 0;
 
   const update = (id: string, patch: Partial<TextLayer>) => {
     const next = layers.map((l) => (l.id === id ? { ...l, ...patch } : l));
@@ -155,22 +173,21 @@ export function TextStudio({
                 onChange={(e) => set({ text: e.target.value })}
               />
 
-              <SignatureStyles current={lookOf(current)} onApply={(look) => set(look)} />
-
-              <fieldset>
-                <legend className="label">Brand looks</legend>
-                <div className="flex flex-wrap gap-1.5">
+              <FoldGroup>
+                <Fold title="Your signature styles" summary={styleCount ? `${styleCount} saved` : 'Save a look to reuse it anywhere'} icon={<BookmarkPlus size={18} />}>
+                  <SignatureStyles current={lookOf(current)} onApply={(look) => set(look)} />
+                </Fold>
+                <Fold title="Brand looks" summary="One tap: title, quote, headline…" icon={<Sparkles size={18} />}>
+                  <div className="flex flex-wrap gap-1.5">
                   {TEXT_LOOKS.map((look) => (
                     <button key={look.id} type="button" className="btn min-h-9 px-3 text-sm" onClick={() => set(lookFor(look.id, world))}>
                       {look.label}
                     </button>
                   ))}
                 </div>
-              </fieldset>
-
-              <fieldset>
-                <legend className="label">Font</legend>
-                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                </Fold>
+                <Fold title="Font" summary={<span style={{ fontFamily: fontFamily(current.font) }}>{TEXT_FONTS[current.font].label}</span>} icon={<Type size={18} />}>
+                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                   {FONT_ORDER.map((f) => (
                     <button
                       key={f}
@@ -188,11 +205,17 @@ export function TextStudio({
                     </button>
                   ))}
                 </div>
-              </fieldset>
-
-              <fieldset>
-                <legend className="label">Colour</legend>
-                <div className="space-y-2">
+                </Fold>
+                <Fold
+                  title="Colour"
+                  summary={
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-3 w-3 rounded-full border border-line" style={{ background: current.colour }} aria-hidden /> {colourName(current.colour)}
+                    </span>
+                  }
+                  icon={<Palette size={18} />}
+                >
+                  <div className="space-y-2">
                   {BRAND_COLOURS.map((g) => (
                     <div key={g.group} className="flex flex-wrap items-center gap-1.5">
                       <span className="w-full text-[11px] text-muted sm:w-28">{g.group}</span>
@@ -215,9 +238,9 @@ export function TextStudio({
                     Any other colour
                   </label>
                 </div>
-              </fieldset>
-
-              <div className="grid grid-cols-2 gap-3">
+                </Fold>
+                <Fold title="Size and spacing" summary="Size, width, weight, letter spacing" icon={<MoveHorizontal size={18} />}>
+                  <div className="grid grid-cols-2 gap-3">
                 <label className="text-sm">
                   <span className="label">Size</span>
                   <input type="range" min={0.025} max={0.18} step={0.002} value={current.size} onChange={(e) => set({ size: Number(e.target.value) })} className="w-full" />
@@ -243,8 +266,9 @@ export function TextStudio({
                   <input type="range" min={-0.05} max={0.3} step={0.01} value={current.tracking} onChange={(e) => set({ tracking: Number(e.target.value) })} className="w-full" />
                 </label>
               </div>
-
-              <div className="flex flex-wrap gap-1.5">
+                </Fold>
+                <Fold title="Alignment and effects" summary={effectsSummary(current)} icon={<AlignCenter size={18} />}>
+                  <div className="flex flex-wrap gap-1.5">
                 <Toggle on={current.align === 'left'} label="Align left" onClick={() => set({ align: 'left' })}>
                   <AlignLeft size={16} />
                 </Toggle>
@@ -280,6 +304,8 @@ export function TextStudio({
                   Box colour
                 </label>
               )}
+                </Fold>
+              </FoldGroup>
 
               <div className="flex gap-2 border-t border-line pt-3">
                 <button type="button" className="btn" onClick={duplicate}>
@@ -339,15 +365,14 @@ function SignatureStyles({ current, onApply }: { current: TextLook; onApply: (lo
     toast(`Saved “${name}”. It’s on all your devices.`);
   };
   return (
-    <fieldset>
-      <legend className="label flex w-full items-center">
-        Your signature styles
-        {!!styles?.length && (
-          <button type="button" className="ml-auto text-xs font-normal normal-case text-ink-2 underline" onClick={() => setManaging(!managing)}>
-            {managing ? 'Done' : 'Edit'}
+    <div>
+      {!!styles?.length && (
+        <div className="mb-2 flex justify-end">
+          <button type="button" className="text-xs text-ink-2 underline" onClick={() => setManaging(!managing)}>
+            {managing ? 'Done' : 'Edit styles'}
           </button>
-        )}
-      </legend>
+        </div>
+      )}
       {managing ? (
         <ul className="space-y-1.5">
           {styles?.map((s) => (
@@ -387,6 +412,6 @@ function SignatureStyles({ current, onApply }: { current: TextLook; onApply: (lo
         </div>
       )}
       {!styles?.length && naming === null && <p className="mt-1 text-xs text-muted">Style some words the way you like, then save the look to reuse it on any device.</p>}
-    </fieldset>
+    </div>
   );
 }
