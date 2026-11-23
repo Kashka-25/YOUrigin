@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type DragEvent, type PointerEvent, type Re
 import { DndContext, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, horizontalListSortingStrategy, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Camera, ChevronLeft, ChevronRight, ImagePlus, Images, Plus, Trash2, Type, Upload } from 'lucide-react';
+import { Camera, Check, ChevronLeft, ChevronRight, ImagePlus, Images, Lightbulb, Plus, Trash2, Type, Upload } from 'lucide-react';
 import { TextStudio } from './TextStudio';
 import type { TextLayer } from '../../posts/textLayers';
 import { MediaThumb, Slide } from './PostMedia';
@@ -10,6 +10,7 @@ import { AssetImage } from '../AssetImage';
 import { frameFromVideo } from '../../db/postMedia';
 import { POST_MEDIA_ACCEPT } from '../../io/postMedia';
 import type { PostFormat, PostMedia, PostWorld } from '../../posts/model';
+import type { TakeOutTo } from '../../db/posts';
 
 /** A stable id for each piece of media in the strip (the same file twice gets a suffix). */
 function mediaIds(media: PostMedia[]): string[] {
@@ -22,7 +23,7 @@ function mediaIds(media: PostMedia[]): string[] {
   });
 }
 
-function Thumb({ id, media, index, selected, onSelect }: { id: string; media: PostMedia; index: number; selected: boolean; onSelect: () => void }) {
+function Thumb({ id, media, index, selected, chosen, onSelect }: { id: string; media: PostMedia; index: number; selected: boolean; chosen?: boolean; onSelect: () => void }) {
   const s = useSortable({ id });
   return (
     <li
@@ -35,13 +36,21 @@ function Thumb({ id, media, index, selected, onSelect }: { id: string; media: Po
         {...s.attributes}
         {...s.listeners}
         onClick={onSelect}
-        aria-label={`Slide ${index + 1}${selected ? ', selected' : ''}. Drag to reorder.`}
-        aria-pressed={selected}
-        className={`block touch-none overflow-hidden rounded-lg ring-offset-2 ring-offset-card ${selected ? 'ring-2 ring-accent' : 'opacity-80 hover:opacity-100'}`}
+        aria-label={chosen === undefined ? `Slide ${index + 1}${selected ? ', selected' : ''}. Drag to reorder.` : `Take out slide ${index + 1}`}
+        aria-pressed={chosen ?? selected}
+        className={`block touch-none overflow-hidden rounded-lg ring-offset-2 ring-offset-card ${(chosen ?? selected) ? 'ring-2 ring-accent' : 'opacity-80 hover:opacity-100'}`}
       >
         <MediaThumb media={media} className="aspect-[4/5] w-16 sm:w-20" />
       </button>
       <span className="pointer-events-none absolute left-1 top-1 rounded-full bg-black/60 px-1.5 text-[10px] font-semibold text-white tabular-nums">{index + 1}</span>
+      {chosen !== undefined && (
+        <span
+          className={`pointer-events-none absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white ${chosen ? 'bg-accent text-accent-ink' : 'bg-black/30'}`}
+          aria-hidden
+        >
+          {chosen && <Check size={12} strokeWidth={3} />}
+        </span>
+      )}
     </li>
   );
 }
@@ -151,6 +160,7 @@ export function MediaComposer({
   onReorder,
   onCover,
   onText,
+  onTakeOut,
   world = 'healing',
 }: {
   media: PostMedia[];
@@ -164,6 +174,8 @@ export function MediaComposer({
   onCover?: (index: number, picture: File) => void;
   /** New words on the picture at this place. */
   onText?: (index: number, text: TextLayer[]) => void;
+  /** Moves these slides out of the post: back to Ideas, or into a new post of their own. */
+  onTakeOut?: (indexes: number[], to: TakeOutTo) => void;
   /** The post's world, for its accent colour. */
   world?: PostWorld;
 }) {
@@ -174,6 +186,8 @@ export function MediaComposer({
   const [choosing, setChoosing] = useState(false);
   const [writing, setWriting] = useState(false);
   const [selected, setSelected] = useState(0);
+  /** Slides chosen to take out, while choosing (null when not choosing). */
+  const [taking, setTaking] = useState<number[] | null>(null);
   const [over, setOver] = useState(false);
   const swipe = useRef<number | null>(null);
   const at = Math.min(selected, Math.max(0, media.length - 1));
@@ -208,6 +222,11 @@ export function MediaComposer({
     const to = ids.indexOf(String(target.id));
     onReorder(arrayMove(media, from, to));
     setSelected(to);
+    // Chosen slides stay chosen when they move.
+    if (taking) {
+      const order = arrayMove(media.map((_, i) => i), from, to);
+      setTaking(taking.map((i) => order.indexOf(i)));
+    }
   };
   const go = (i: number) => setSelected(Math.max(0, Math.min(media.length - 1, i)));
 
@@ -386,9 +405,20 @@ export function MediaComposer({
         <SortableContext items={ids} strategy={horizontalListSortingStrategy}>
           <ul className="mt-3 flex items-center gap-2 overflow-x-auto pb-1 pt-1" aria-label="Slides in order">
             {media.map((m, i) => (
-              <Thumb key={ids[i]} id={ids[i]} media={m} index={i} selected={i === at} onSelect={() => setSelected(i)} />
+              <Thumb
+                key={ids[i]}
+                id={ids[i]}
+                media={m}
+                index={i}
+                selected={i === at}
+                chosen={taking ? taking.includes(i) : undefined}
+                onSelect={() => {
+                  setSelected(i);
+                  if (taking) setTaking(taking.includes(i) ? taking.filter((x) => x !== i) : [...taking, i]);
+                }}
+              />
             ))}
-            <li className="shrink-0">
+            <li className={`shrink-0 ${taking ? 'hidden' : ''}`}>
               <button
                 type="button"
                 onClick={pick}
@@ -403,7 +433,52 @@ export function MediaComposer({
           </ul>
         </SortableContext>
       </DndContext>
-      <p className="mt-1 text-xs text-muted">Drag to reorder. Pictures sync to all your devices; videos stay on this one.</p>
+      {taking ? (
+        <div className="mt-2 rounded-xl border border-accent/50 bg-card p-3" role="group" aria-label="Take slides out">
+          <p className="mb-2 text-sm text-ink-2">
+            {taking.length ? `${taking.length} slide${taking.length === 1 ? '' : 's'} chosen. Nothing is deleted.` : 'Tap the slides to take out of this post.'}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="btn min-h-9 px-3"
+              disabled={!taking.length}
+              onClick={() => {
+                onTakeOut?.(taking, 'ideas');
+                setTaking(null);
+                setSelected(0);
+              }}
+            >
+              <Lightbulb size={15} /> {taking.length > 1 ? 'Each back to Ideas' : 'Back to Ideas'}
+            </button>
+            <button
+              type="button"
+              className="btn min-h-9 px-3"
+              disabled={!taking.length || taking.length === media.length}
+              title={taking.length === media.length ? 'Leave at least one slide here' : undefined}
+              onClick={() => {
+                onTakeOut?.(taking, 'new-post');
+                setTaking(null);
+                setSelected(0);
+              }}
+            >
+              <Images size={15} /> {taking.length > 1 ? 'Make their own carousel' : 'Make its own post'}
+            </button>
+            <button type="button" className="btn-ghost min-h-9 px-3" onClick={() => setTaking(null)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-1 flex items-start gap-2">
+          <p className="min-w-0 flex-1 text-xs text-muted">Drag to reorder. Pictures sync to all your devices; videos stay on this one.</p>
+          {onTakeOut && (
+            <button type="button" className="btn-ghost -mt-1 min-h-8 shrink-0 px-2 text-xs" onClick={() => setTaking([])}>
+              Take slides out
+            </button>
+          )}
+        </div>
+      )}
       {fileInput}
     </section>
   );

@@ -46,6 +46,8 @@ The **Ideas** tab is a place for photos and videos you might post one day. **Jot
 
 The **Gallery** tab (beside Ideas) shows every picture and video in YOUrigin; **Add photos & videos** adds more from the device. Tap **Select** (or long-press a picture) and tap pictures in slide order: with one chosen, **Make an idea**; with several, **Make a carousel** appears and opens the new post, slides in that order (or **Make separate ideas**). **Add ideas** (or drop files on it) turns each into its own undated Idea, shown like a camera roll. Tap one to open it, or **Select** several and **Combine into one post** to make a carousel in the order you tapped them; the others are set aside.
 
+To go the other way, open a post and tap **Take slides out** under its slides, then tap the slides to take. **Back to Ideas** makes each one its own Idea again; **Make their own carousel** (or **Make its own post** for one) puts them together in a new post in Ideas. Slides are moved, not copied, keep any words on them, and stay in the same world and account. The toast's **Undo** puts them back.
+
 ## Seeing what you're making
 
 - Every post opens with a **preview** as followers will see it: swipe or use the arrows through a carousel's slides, or play the Reel, with the caption, call to action and hashtags underneath. It updates as you edit.

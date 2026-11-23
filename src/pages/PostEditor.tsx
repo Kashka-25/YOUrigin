@@ -11,7 +11,7 @@ import { FORMAT_ICON, PostStatusPill, WorldDot } from '../components/posts/PostB
 import { useAutosave } from '../hooks/useAutosave';
 import { DEMO } from '../demo/mode';
 import { useLibrary } from '../hooks/useLibrary';
-import { deletePost, linkPiece, restorePost, setPostStatus, unlinkPiece, updatePost, usePost, type PostPatch } from '../db/posts';
+import { deletePost, linkPiece, putMediaBack, restorePost, setPostStatus, takeOutMedia, unlinkPiece, updatePost, usePost, type PostPatch, type TakeOutTo } from '../db/posts';
 import { mediaFromFile, removeMediaIfUnused, withCover } from '../db/postMedia';
 import { movePostsToAccount, usePostAccounts } from '../db/postAccounts';
 import { accountLabel, accountOf } from '../posts/accounts';
@@ -251,6 +251,24 @@ function Editor({ post }: { post: Post }) {
     await removeMediaIfUnused(m);
   };
 
+  /** Moves slides out of this post, to Ideas or into a new post of their own. They aren't deleted. */
+  const takeOut = async (indexes: number[], to: TakeOutTo) => {
+    await flush();
+    const before = { media: fields.media, format: fields.format };
+    const made = await takeOutMedia(post.id, indexes, to);
+    if (!made.length) return;
+    const kept = fields.media.filter((_, i) => !indexes.includes(i));
+    setFields((f) => ({ ...f, media: kept, format: formatForMedia(kept, f.format) }));
+    const n = indexes.length;
+    const slides = `${n} slide${n === 1 ? '' : 's'}`;
+    toast(to === 'ideas' ? `${slides} back in Ideas.` : n === 1 ? 'Made into its own post, in Ideas.' : `${slides} made into their own carousel, in Ideas.`, {
+      undo: async () => {
+        await putMediaBack(post.id, before, made);
+        setFields((f) => ({ ...f, ...before }));
+      },
+    });
+  };
+
   const setCover = async (index: number, picture: File) => {
     try {
       const { asset } = await saveImage(picture);
@@ -310,6 +328,7 @@ function Editor({ post }: { post: Post }) {
           busy={adding}
           onAdd={(f) => void addMedia(f)}
           onRemove={(i) => void removeMedia(i)}
+          onTakeOut={(indexes, to) => void takeOut(indexes, to)}
           onReorder={(media) => set({ media })}
           onCover={(i, f) => void setCover(i, f)}
           world={fields.world}
