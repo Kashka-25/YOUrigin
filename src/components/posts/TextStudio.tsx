@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import {
   AArrowDown,
   AArrowUp,
@@ -74,7 +74,7 @@ const HIGHLIGHTS = ['#fdd63a', '#d4a85a', '#ef8c5e', '#5fc49c', '#76b6ec', '#b8a
 type Pop = 'styles' | 'font' | 'colour' | 'highlight' | 'more' | null;
 
 /** One icon button on the toolbar, Word-style: pressed when its effect is on. */
-function Tool({ label, on, onClick, children, wide }: { label: string; on?: boolean; onClick: () => void; children: ReactNode; wide?: boolean }) {
+function Tool({ label, on, onClick, children, wide }: { label: string; on?: boolean; onClick: (e: MouseEvent<HTMLButtonElement>) => void; children: ReactNode; wide?: boolean }) {
   return (
     <button
       type="button"
@@ -138,6 +138,8 @@ export function TextStudio({
   const [selected, setSelected] = useState<string | null>(layers[0]?.id ?? null);
   const [editing, setEditing] = useState<string | null>(null);
   const [pop, setPop] = useState<Pop>(null);
+  // where the open pop-out hangs: just under the button that opened it
+  const [anchor, setAnchor] = useState<{ x: number; y: number; width: number }>({ x: 0, y: 0, width: 0 });
   const [saving, setSaving] = useState(false);
   const bar = useRef<HTMLDivElement>(null);
   const current = layers.find((l) => l.id === selected) ?? null;
@@ -159,7 +161,12 @@ export function TextStudio({
     if (changed && !('x' in patch) && !('text' in patch)) rememberLook(changed);
   };
   const set = (patch: Partial<TextLayer>) => current && update(current.id, patch);
-  const toggle = (p: Exclude<Pop, null>) => setPop((x) => (x === p ? null : p));
+  const toggle = (p: Exclude<Pop, null>, e: MouseEvent<HTMLButtonElement>) => {
+    const b = e.currentTarget.getBoundingClientRect();
+    const r = bar.current?.getBoundingClientRect();
+    if (r) setAnchor({ x: b.left - r.left + b.width / 2, y: b.bottom - r.top, width: r.width });
+    setPop((x) => (x === p ? null : p));
+  };
   const add = () => {
     const l = newTextLayer(rememberedLook(), { y: layers.length ? Math.min(0.85, 0.3 + layers.length * 0.18) : 0.5 });
     onChange([...layers, l]);
@@ -219,10 +226,10 @@ export function TextStudio({
         <div ref={bar} className="relative mt-3">
           {current ? (
             <div className="flex flex-wrap items-center justify-center gap-0.5 rounded-xl border border-line bg-card p-1" role="toolbar" aria-label="Text formatting">
-              <Tool label="Styles" wide on={pop === 'styles'} onClick={() => toggle('styles')}>
+              <Tool label="Styles" wide on={pop === 'styles'} onClick={(e) => toggle('styles', e)}>
                 <BookmarkPlus size={17} /> <span className="text-sm">Styles</span> <ChevronDown size={14} />
               </Tool>
-              <Tool label="Font" wide on={pop === 'font'} onClick={() => toggle('font')}>
+              <Tool label="Font" wide on={pop === 'font'} onClick={(e) => toggle('font', e)}>
                 <span className="max-w-24 truncate text-[16px]" style={{ fontFamily: fontFamily(current.font) }}>
                   {TEXT_FONTS[current.font].label}
                 </span>
@@ -248,13 +255,13 @@ export function TextStudio({
               <Tool label="Underline" on={!!current.underline} onClick={() => set({ underline: !current.underline })}>
                 <Underline size={18} />
               </Tool>
-              <Tool label="Highlight" on={pop === 'highlight' || !!current.highlight} onClick={() => toggle('highlight')}>
+              <Tool label="Highlight" on={pop === 'highlight' || !!current.highlight} onClick={(e) => toggle('highlight', e)}>
                 <span className="relative flex flex-col items-center">
                   <Highlighter size={17} />
                   <span className="mt-0.5 h-1 w-5 rounded-full border border-line" style={{ background: current.highlight ?? 'transparent' }} />
                 </span>
               </Tool>
-              <Tool label="Text colour" on={pop === 'colour'} onClick={() => toggle('colour')}>
+              <Tool label="Text colour" on={pop === 'colour'} onClick={(e) => toggle('colour', e)}>
                 <span className="relative flex flex-col items-center">
                   <Baseline size={17} />
                   <span className="mt-0.5 h-1 w-5 rounded-full border border-line" style={{ background: current.colour }} />
@@ -284,7 +291,7 @@ export function TextStudio({
               >
                 <Square size={17} />
               </Tool>
-              <Tool label="Width and spacing" on={pop === 'more'} onClick={() => toggle('more')}>
+              <Tool label="Width and spacing" on={pop === 'more'} onClick={(e) => toggle('more', e)}>
                 <SlidersHorizontal size={17} />
               </Tool>
               <Divider />
@@ -305,7 +312,15 @@ export function TextStudio({
           )}
 
           {current && pop && (
-            <div className="absolute inset-x-0 top-full z-30 mt-1 max-h-[45vh] overflow-y-auto rounded-xl border border-line bg-card p-3 shadow-xl">
+            <div
+              className="absolute z-30 max-h-[45vh] overflow-y-auto rounded-xl border border-line bg-card p-3 shadow-xl"
+              style={{
+                top: anchor.y + 6,
+                width: Math.min(340, anchor.width),
+                // centred under its button, kept inside the toolbar's width
+                left: clamp(anchor.x - Math.min(340, anchor.width) / 2, 0, Math.max(0, anchor.width - Math.min(340, anchor.width))),
+              }}
+            >
               {pop === 'styles' && (
                 <div className="space-y-3">
                   <SignatureStyles current={lookOf(current)} onApply={(look) => set(look)} />
