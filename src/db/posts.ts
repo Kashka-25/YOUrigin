@@ -124,6 +124,49 @@ export async function combinePosts(ids: string[]): Promise<string | null> {
   });
 }
 
+/** Where slides taken out of a post go: back to Ideas one by one, or together into a new post. */
+export type TakeOutTo = 'ideas' | 'new-post';
+
+/**
+ * Takes slides out of a post without losing them. With 'ideas', each slide
+ * becomes its own Idea again; with 'new-post', the slides start a new post
+ * together (a carousel when there are several), kept in Ideas until it gets a
+ * date. Slides are moved, never copied, and keep any words placed on them.
+ * New posts stay in the same world and on the same account. Returns the new
+ * posts' ids, in slide order (empty when nothing was taken out).
+ */
+export async function takeOutMedia(postId: string, indexes: number[], to: TakeOutTo, now = Date.now()): Promise<string[]> {
+  return db.transaction('rw', db.posts, async () => {
+    const post = await db.posts.get(postId);
+    if (!post) return [];
+    const picked = [...new Set(indexes)].filter((i) => i >= 0 && i < post.media.length).sort((a, b) => a - b);
+    if (!picked.length) return [];
+    const taken = picked.map((i) => post.media[i]);
+    const kept = post.media.filter((_, i) => !picked.includes(i));
+    const home = { status: 'idea' as const, world: post.world, ...(post.account ? { account: post.account } : {}) };
+    // Ideas show newest first, so the first slide taken out is made last and shows first.
+    const made =
+      to === 'ideas'
+        ? taken.map((m, i) => newPost({ ...home, media: [m], format: formatForMedia([m], 'single-image') }, now + taken.length - i))
+        : [newPost({ ...home, media: taken, format: formatForMedia(taken, 'single-image') }, now)];
+    await db.posts.bulkAdd(made);
+    await db.posts.update(postId, { media: kept, format: formatForMedia(kept, post.format), updatedAt: now });
+    return made.map((p) => p.id);
+  });
+}
+
+/**
+ * Undoes takeOutMedia: the post gets its slides back as they were, and the
+ * posts made from them are set aside (so they can still be brought back).
+ */
+export async function putMediaBack(postId: string, before: Pick<Post, 'media' | 'format'>, madeIds: string[]): Promise<void> {
+  await db.transaction('rw', db.posts, async () => {
+    const now = Date.now();
+    await db.posts.update(postId, { media: before.media, format: before.format, updatedAt: now });
+    for (const id of madeIds) await db.posts.update(id, { deletedAt: now, updatedAt: now });
+  });
+}
+
 /** The live (not set aside) post each imported draft key belongs to. */
 export async function postsByDraftKey(): Promise<Map<string, string>> {
   const all = await db.posts.toArray();
