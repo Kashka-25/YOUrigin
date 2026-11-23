@@ -38,6 +38,11 @@ export async function runRemote<T>(db: Dexie, tables: string[], fn: () => Promis
   });
 }
 
+/** Writes in this transaction stay on this device: they are not recorded for sync. */
+export function untracked(tx: { idbtrans: unknown }): void {
+  (tx.idbtrans as Record<string, boolean>)[REMOTE] = true;
+}
+
 /**
  * Dexie middleware that records every local add/put/delete on synced tables
  * into the outbox. Deletes become tombstones simply by the record being absent

@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react';
-import { AtSign, Pencil, Plus } from 'lucide-react';
+import { AtSign, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Modal } from '../Modal';
 import { useToast } from '../Toast';
-import { addAccount, movePostsToAccount, saveAccount } from '../../db/postAccounts';
-import { accountLabel, cleanHandle, type PostAccount } from '../../posts/accounts';
+import { addAccount, movePostsToAccount, removeAccount, saveAccount } from '../../db/postAccounts';
+import { MAIN_ACCOUNT, accountLabel, canRemoveAccount, cleanHandle, type PostAccount } from '../../posts/accounts';
 
 /** One button per Instagram account; the chosen one is what every Posts view shows. */
 export function AccountSwitcher({ accounts, current, counts, onChoose }: { accounts: PostAccount[]; current: string; counts: Record<string, number>; onChoose: (id: string) => void }) {
@@ -29,15 +29,16 @@ export function AccountSwitcher({ accounts, current, counts, onChoose }: { accou
       <button type="button" className="btn-ghost shrink-0" aria-label="Edit accounts" title="Edit accounts" onClick={() => setEditing(true)}>
         <Pencil size={16} />
       </button>
-      <AccountsDialog open={editing} onClose={() => setEditing(false)} accounts={accounts} />
+      <AccountsDialog open={editing} onClose={() => setEditing(false)} accounts={accounts} counts={counts} />
     </div>
   );
 }
 
-function AccountRow({ account }: { account: PostAccount }) {
+function AccountRow({ account, count, main }: { account: PostAccount; count: number; main: PostAccount }) {
   const toast = useToast();
   const [name, setName] = useState(account.name);
   const [handle, setHandle] = useState(account.handle);
+  const [removing, setRemoving] = useState(false);
   const changed = name.trim() !== account.name || cleanHandle(handle) !== account.handle;
   const save = async (e: FormEvent) => {
     e.preventDefault();
@@ -58,14 +59,45 @@ function AccountRow({ account }: { account: PostAccount }) {
           <input className="input" value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="not chosen yet" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
         </span>
       </label>
-      <button type="submit" className="btn-primary" disabled={!changed}>
-        Save
-      </button>
+      <span className="flex gap-2">
+        <button type="submit" className="btn-primary" disabled={!changed}>
+          Save
+        </button>
+        {canRemoveAccount(account.id) && (
+          <button type="button" className="btn-ghost" aria-label={`Remove ${accountLabel(account)}`} title="Remove this account" onClick={() => setRemoving(true)}>
+            <Trash2 size={16} />
+          </button>
+        )}
+      </span>
+      {removing && (
+        <div className="rounded-lg border border-line bg-paper-2 p-2 text-sm sm:col-span-3" role="alert">
+          <p className="text-ink">
+            Remove {accountLabel(account)}?{' '}
+            {count ? `${count === 1 ? 'Its post moves' : `Its ${count} posts move`} to ${accountLabel(main)}; nothing is deleted.` : 'It has no posts.'}
+          </p>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              className="btn"
+              onClick={async () => {
+                const n = await removeAccount(account.id, main.id);
+                toast(n ? `Account removed. ${n} moved to ${accountLabel(main)}.` : 'Account removed.');
+              }}
+            >
+              Remove
+            </button>
+            <button type="button" className="btn-ghost" onClick={() => setRemoving(false)}>
+              Keep it
+            </button>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
 
-export function AccountsDialog({ open, onClose, accounts }: { open: boolean; onClose: () => void; accounts: PostAccount[] }) {
+export function AccountsDialog({ open, onClose, accounts, counts }: { open: boolean; onClose: () => void; accounts: PostAccount[]; counts: Record<string, number> }) {
+  const main = accounts.find((a) => a.id === MAIN_ACCOUNT) ?? accounts[0];
   const toast = useToast();
   const [adding, setAdding] = useState('');
   const add = async (e: FormEvent) => {
@@ -80,7 +112,7 @@ export function AccountsDialog({ open, onClose, accounts }: { open: boolean; onC
       <p className="mb-3 text-sm text-ink-2">Each post belongs to one account, and each account has its own calendar, board, ideas and grid. Names and handles sync to your other devices.</p>
       <div className="space-y-2">
         {accounts.map((a) => (
-          <AccountRow key={`${a.id}-${a.updatedAt}`} account={a} />
+          <AccountRow key={`${a.id}-${a.updatedAt}`} account={a} count={counts[a.id] ?? 0} main={main} />
         ))}
       </div>
       <form onSubmit={(e) => void add(e)} className="mt-4 flex gap-2">
