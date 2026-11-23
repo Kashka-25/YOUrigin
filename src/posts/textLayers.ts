@@ -122,8 +122,8 @@ export const TEXT_LOOKS: { id: string; label: string; text?: string; look: Parti
   // Whisper: a poetic line set in a photo's quiet space. Cream on dark space, ink on pale sky or sand.
   { id: 'whisper', label: 'Whisper', look: { ...whisper, colour: '#f6efe2', shadow: true } },
   { id: 'whisper-ink', label: 'Whisper ink', look: { ...whisper, colour: '#2b2520', shadow: false } },
-  { id: 'mark', label: 'Name mark', text: 'Cassidy R.D', look: { ...nameMark, colour: '#d4a85a' } },
-  { id: 'mark-ink', label: 'Name mark ink', text: 'Cassidy R.D', look: { ...nameMark, colour: '#7d5a22' } },
+  { id: 'mark', label: 'Name mark', text: 'Cassidy Rae', look: { ...nameMark, colour: '#d4a85a' } },
+  { id: 'mark-ink', label: 'Name mark ink', text: 'Cassidy Rae', look: { ...nameMark, colour: '#7d5a22' } },
   { id: 'title', label: 'YOU title', look: { font: 'cinzel', colour: '#d4a85a', caps: true, tracking: 0.08, weight: 600, size: 0.07 } },
   { id: 'quote', label: 'Soft quote', look: { font: 'cormorant', italic: true, weight: 500, size: 0.08, colour: '#f6efe2' } },
   { id: 'story', label: 'Story serif', look: { font: 'newsreader', weight: 600, size: 0.075, colour: '#f6efe2' } },
