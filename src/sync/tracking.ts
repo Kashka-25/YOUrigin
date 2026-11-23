@@ -19,6 +19,7 @@ export const SYNC_TABLES = [
   'portfolios',
   'posts',
   'clipInfo',
+  'textStyles',
 ] as const;
 export type SyncTable = (typeof SYNC_TABLES)[number];
 const SYNCED = new Set<string>(SYNC_TABLES);

@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { AlignCenter, AlignLeft, AlignRight, Bold, CaseUpper, Copy, Download, Italic, Plus, Square, SunDim, Trash2 } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, Bold, BookmarkPlus, CaseUpper, Check, Copy, Download, Italic, Pencil, Plus, Square, SunDim, Trash2, X } from 'lucide-react';
+import { deleteTextStyle, renameTextStyle, saveTextStyle, useTextStyles } from '../../db/textStyles';
 import { Modal } from '../Modal';
 import { useToast } from '../Toast';
 import { AssetImage } from '../AssetImage';
 import { useAsset } from '../../db/assets';
 import { downloadBlob } from '../../io/export';
 import { TextOnPicture, fontFamily, renderSlide } from './TextOnPicture';
-import { BRAND_COLOURS, FONT_ORDER, TEXT_FONTS, TEXT_LOOKS, lookFor, lookOf, newTextLayer, readableOn, type TextLayer } from '../../posts/textLayers';
+import { BRAND_COLOURS, FONT_ORDER, TEXT_FONTS, TEXT_LOOKS, lookFor, lookOf, newTextLayer, readableOn, type TextLayer, type TextLook, type TextStyle } from '../../posts/textLayers';
 import type { PostWorld } from '../../posts/model';
 
 const LAST_LOOK = 'yourigin.posts.textLook';
@@ -154,6 +155,8 @@ export function TextStudio({
                 onChange={(e) => set({ text: e.target.value })}
               />
 
+              <SignatureStyles current={lookOf(current)} onApply={(look) => set(look)} />
+
               <fieldset>
                 <legend className="label">Brand looks</legend>
                 <div className="flex flex-wrap gap-1.5">
@@ -291,5 +294,99 @@ export function TextStudio({
         </div>
       </div>
     </Modal>
+  );
+}
+
+/** A style's name, shown in its own font and colour on a backdrop it reads against. */
+function StyleChip({ style, onClick }: { style: TextStyle; onClick: () => void }) {
+  const { look } = style;
+  const backdrop = readableOn(look.colour) === '#1a1410' ? '#1a1410' : '#f6efe2';
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={`Use “${style.name}”`}
+      className="max-w-full truncate rounded-lg border border-line px-3 py-1.5 text-[16px] leading-tight"
+      style={{
+        fontFamily: fontFamily(look.font),
+        fontWeight: look.weight,
+        fontStyle: look.italic ? 'italic' : undefined,
+        textTransform: look.caps ? 'uppercase' : undefined,
+        letterSpacing: look.tracking ? `${Math.min(look.tracking, 0.15)}em` : undefined,
+        color: look.colour,
+        background: look.backing ?? backdrop,
+      }}
+    >
+      {style.name}
+    </button>
+  );
+}
+
+/**
+ * Cassidy's own named looks, synced to every device: tap one to use it, save the current
+ * look as a new one (or over one of the same name), rename or remove them.
+ */
+function SignatureStyles({ current, onApply }: { current: TextLook; onApply: (look: TextLook) => void }) {
+  const toast = useToast();
+  const styles = useTextStyles();
+  const [naming, setNaming] = useState<string | null>(null);
+  const [managing, setManaging] = useState(false);
+  const save = async () => {
+    if (naming === null) return;
+    const name = naming.trim() || `Style ${(styles?.length ?? 0) + 1}`;
+    await saveTextStyle(name, current);
+    setNaming(null);
+    toast(`Saved “${name}”. It’s on all your devices.`);
+  };
+  return (
+    <fieldset>
+      <legend className="label flex w-full items-center">
+        Your signature styles
+        {!!styles?.length && (
+          <button type="button" className="ml-auto text-xs font-normal normal-case text-ink-2 underline" onClick={() => setManaging(!managing)}>
+            {managing ? 'Done' : 'Edit'}
+          </button>
+        )}
+      </legend>
+      {managing ? (
+        <ul className="space-y-1.5">
+          {styles?.map((s) => (
+            <li key={s.id} className="flex items-center gap-2">
+              <Pencil size={14} className="shrink-0 text-muted" aria-hidden />
+              <input className="input min-h-9 py-1" defaultValue={s.name} aria-label={`Rename ${s.name}`} onBlur={(e) => void renameTextStyle(s.id, e.target.value)} />
+              <button type="button" className="btn-ghost min-h-9 shrink-0 px-2 text-seed" aria-label={`Remove ${s.name}`} onClick={() => void deleteTextStyle(s.id)}>
+                <Trash2 size={15} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          {styles?.map((s) => <StyleChip key={s.id} style={s} onClick={() => onApply(s.look)} />)}
+          {naming === null ? (
+            <button type="button" className="btn min-h-9 px-3 text-sm" onClick={() => setNaming('')}>
+              <BookmarkPlus size={15} /> Save this look
+            </button>
+          ) : (
+            <form
+              className="flex w-full gap-1.5"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void save();
+              }}
+            >
+              <input className="input min-h-9 py-1" placeholder="Name it, e.g. YOU gold title" aria-label="Style name" value={naming} onChange={(e) => setNaming(e.target.value)} />
+              <button type="submit" className="btn-primary min-h-9 shrink-0 px-3" aria-label="Save style">
+                <Check size={15} />
+              </button>
+              <button type="button" className="btn-ghost min-h-9 shrink-0 px-2" aria-label="Cancel" onClick={() => setNaming(null)}>
+                <X size={15} />
+              </button>
+            </form>
+          )}
+        </div>
+      )}
+      {!styles?.length && naming === null && <p className="mt-1 text-xs text-muted">Style some words the way you like, then save the look to reuse it on any device.</p>}
+    </fieldset>
   );
 }

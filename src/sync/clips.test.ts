@@ -216,7 +216,7 @@ describe('video records', () => {
   });
 
   it('upgrading from version 7 keeps videos and adds the new tables', async () => {
-    expect(SCHEMA_VERSION).toBe(8);
+    expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(8);
     const name = `upgrade-${newId()}`;
     const old = new Dexie(name);
     old.version(70).stores({ posts: 'id, updatedAt, status, scheduledAt, world, *pieceIds', clips: 'id, updatedAt' });

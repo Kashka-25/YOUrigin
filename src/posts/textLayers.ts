@@ -1,4 +1,5 @@
 import type { PostWorld } from './model';
+import type { Syncable } from '../domain/types';
 import { newId } from '../domain/text';
 
 /**
@@ -93,6 +94,13 @@ export const WORLD_ACCENT: Record<PostWorld, string> = {
 };
 
 type Look = Omit<TextLayer, 'id' | 'text' | 'x' | 'y'>;
+export type TextLook = Look;
+
+/** A look Cassidy saved and named, kept in sync across devices. */
+export interface TextStyle extends Syncable {
+  name: string;
+  look: TextLook;
+}
 const base: Look = { w: 0.8, size: 0.075, font: 'newsreader', colour: '#f6efe2', align: 'center', weight: 600, italic: false, caps: false, tracking: 0, shadow: true, backing: null };
 
 /** One-tap brand looks. `accent` uses the post's world colour. */
