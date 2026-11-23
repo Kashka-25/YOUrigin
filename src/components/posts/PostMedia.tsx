@@ -7,6 +7,7 @@ import { uploadState } from '../../sync/clips';
 import type { ClipInfo } from '../../domain/types';
 import { formatBytes } from '../../io/images';
 import { AssetImage } from '../AssetImage';
+import { TextOnPicture } from './TextOnPicture';
 import { useAsset } from '../../db/assets';
 import { addClipOnThisDevice, useClipUrl } from '../../db/postMedia';
 import { VIDEO_ACCEPT } from '../../io/postMedia';
@@ -187,7 +188,15 @@ function ClipPlayer({ media, tall, videoRef }: { media: Extract<PostMedia, { kin
 
 export function Slide({ media, alt, tall, videoRef }: { media: PostMedia; alt: string; tall: boolean; videoRef?: Ref<HTMLVideoElement> }) {
   if (media.kind === 'clip') return <ClipPlayer media={media} tall={tall} videoRef={videoRef} />;
-  if (media.kind === 'asset') return <AssetImage id={media.assetId} alt={alt} className="h-full w-full object-cover" />;
+  if (media.kind === 'asset') {
+    if (!media.text?.length) return <AssetImage id={media.assetId} alt={alt} className="h-full w-full object-cover" />;
+    return (
+      <span className="relative block h-full w-full">
+        <AssetImage id={media.assetId} alt={alt} className="h-full w-full object-cover" />
+        <TextOnPicture layers={media.text} />
+      </span>
+    );
+  }
   return (
     <span className="flex h-full w-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-ink-2">
       <FileImage size={22} aria-hidden />

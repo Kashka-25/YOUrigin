@@ -1,5 +1,6 @@
 import type { Syncable } from '../domain/types';
 import { newId } from '../domain/text';
+import type { TextLayer } from './textLayers';
 
 // Posts: social media posts for Instagram, planned, written and approved here.
 // A post links to the pieces it draws on; it never holds a copy of them.
@@ -10,7 +11,8 @@ export type PostWorld = 'healing' | 'digital-homes' | 'worlds-stories' | 'music-
 
 /** A picture stored in YOUrigin, or a file kept elsewhere (Google Drive, the phone) named by its file name. */
 export type PostMedia =
-  | { kind: 'asset'; assetId: string }
+  /** `text`: words placed on the picture in YOUrigin (see textLayers.ts). */
+  | { kind: 'asset'; assetId: string; text?: TextLayer[] }
   | { kind: 'file'; name: string; note?: string }
   /**
    * A video kept on the device it was added on (videos are too large to sync).
