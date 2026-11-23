@@ -54,6 +54,13 @@ describe('looks', () => {
     expect(look).not.toHaveProperty('x');
     expect(look).not.toHaveProperty('id');
   });
+  it('a look keeps underline and highlight, and older words without them read as off', () => {
+    expect(lookOf({ ...newTextLayer(), underline: true, highlight: '#fdd63a' })).toMatchObject({ underline: true, highlight: '#fdd63a' });
+    const older = newTextLayer();
+    delete older.underline;
+    delete older.highlight;
+    expect(lookOf(older)).toMatchObject({ underline: false, highlight: null });
+  });
   it('picks readable words for a box colour', () => {
     expect(readableOn('#f6efe2')).toBe('#1a1410');
     expect(readableOn('#1a1410')).toBe('#f6efe2');

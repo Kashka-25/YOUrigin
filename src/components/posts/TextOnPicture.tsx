@@ -5,7 +5,7 @@ import '@fontsource-variable/playfair-display/wght.css';
 import '@fontsource-variable/playfair-display/wght-italic.css';
 import '@fontsource-variable/josefin-sans/wght.css';
 import '@fontsource-variable/caveat/wght.css';
-import { clamp, cssFont, layoutLayer, TEXT_FONTS, type TextLayer } from '../../posts/textLayers';
+import { clamp, cssFont, HIGHLIGHT, layoutLayer, TEXT_FONTS, UNDERLINE, withOpacity, type TextLayer } from '../../posts/textLayers';
 
 let measureCtx: CanvasRenderingContext2D | null = null;
 function ctx(): CanvasRenderingContext2D | null {
@@ -64,18 +64,25 @@ export function TextOnPicture({
   onSelect,
   onMove,
   onEditText,
+  editing: editingProp,
+  onEditingChange,
 }: {
   layers: TextLayer[] | undefined;
   selected?: string | null;
   onSelect?: (id: string | null) => void;
   onMove?: (id: string, x: number, y: number) => void;
   onEditText?: (id: string, text: string) => void;
+  /** Which words are open for typing, when the parent controls it. */
+  editing?: string | null;
+  onEditingChange?: (id: string | null) => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
   const drag = useRef<{ id: string; dx: number; dy: number; x: number; y: number } | null>(null);
   const hold = useRef<number | null>(null);
-  const [editing, setEditing] = useState<string | null>(null);
+  const [ownEditing, setOwnEditing] = useState<string | null>(null);
+  const editing = editingProp !== undefined ? editingProp : ownEditing;
+  const setEditing = (id: string | null) => (onEditingChange ? onEditingChange(id) : setOwnEditing(id));
   const stopHold = () => {
     if (hold.current !== null) window.clearTimeout(hold.current);
     hold.current = null;
@@ -196,9 +203,24 @@ export function TextOnPicture({
               )}
               {!typing && lay.lines.map((line, i) => {
                 const x = l.align === 'left' ? lay.pad : l.align === 'right' ? lay.box.width - lay.pad - lay.widths[i] : (lay.box.width - lay.widths[i]) / 2;
+                const baseline = lay.pad + i * lay.lh + base;
                 return (
+                  <span key={i}>
+                  {l.highlight && line.trim() && (
+                    <span
+                      aria-hidden
+                      style={{
+                        position: 'absolute',
+                        left: x - HIGHLIGHT.spill * lay.px,
+                        top: baseline - HIGHLIGHT.above * lay.px,
+                        width: lay.widths[i] + 2 * HIGHLIGHT.spill * lay.px,
+                        height: HIGHLIGHT.height * lay.px,
+                        background: withOpacity(l.highlight, HIGHLIGHT.opacity),
+                        borderRadius: lay.px * 0.12,
+                      }}
+                    />
+                  )}
                   <span
-                    key={i}
                     aria-hidden={editable || undefined}
                     style={{
                       position: 'absolute',
@@ -215,6 +237,21 @@ export function TextOnPicture({
                     }}
                   >
                     {line}
+                  </span>
+                  {l.underline && line.trim() && (
+                    <span
+                      aria-hidden
+                      style={{
+                        position: 'absolute',
+                        left: x,
+                        top: baseline + UNDERLINE.below * lay.px,
+                        width: lay.widths[i],
+                        height: Math.max(1, UNDERLINE.thickness * lay.px),
+                        background: l.colour,
+                        boxShadow: l.shadow ? `0 ${lay.px * 0.04}px ${lay.px * 0.18}px rgba(0,0,0,.55)` : undefined,
+                      }}
+                    />
+                  )}
                   </span>
                 );
               })}
@@ -282,8 +319,19 @@ export async function renderSlide(pictureUrl: string, layers: TextLayer[], tall:
       g.shadowOffsetY = lay.px * 0.04;
     }
     lay.lines.forEach((line, i) => {
-      const x = l.align === 'left' ? lay.pad : l.align === 'right' ? lay.box.width - lay.pad - lay.widths[i] : (lay.box.width - lay.widths[i]) / 2;
-      g.fillText(line, lay.box.left + x, lay.box.top + lay.pad + i * lay.lh + base);
+      const x = lay.box.left + (l.align === 'left' ? lay.pad : l.align === 'right' ? lay.box.width - lay.pad - lay.widths[i] : (lay.box.width - lay.widths[i]) / 2);
+      const y = lay.box.top + lay.pad + i * lay.lh + base;
+      if (l.highlight && line.trim()) {
+        g.save();
+        g.shadowColor = 'transparent';
+        g.fillStyle = withOpacity(l.highlight, HIGHLIGHT.opacity);
+        g.beginPath();
+        g.roundRect(x - HIGHLIGHT.spill * lay.px, y - HIGHLIGHT.above * lay.px, lay.widths[i] + 2 * HIGHLIGHT.spill * lay.px, HIGHLIGHT.height * lay.px, lay.px * 0.12);
+        g.fill();
+        g.restore();
+      }
+      g.fillText(line, x, y);
+      if (l.underline && line.trim()) g.fillRect(x, y + UNDERLINE.below * lay.px, lay.widths[i], Math.max(1, UNDERLINE.thickness * lay.px));
     });
     g.restore();
   }

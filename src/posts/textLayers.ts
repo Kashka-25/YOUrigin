@@ -31,6 +31,10 @@ export interface TextLayer {
   shadow: boolean;
   /** A box behind the words (#rrggbb), or none. */
   backing: string | null;
+  /** A line under the words. */
+  underline?: boolean;
+  /** A marker-pen stroke behind each line (#rrggbb, drawn see-through), or none. */
+  highlight?: string | null;
 }
 
 export const TEXT_FONTS: Record<TextFont, { label: string; family: string; note: string; weights: [number, number] }> = {
@@ -128,8 +132,8 @@ export function newTextLayer(look: Partial<Look> = {}, at: { x?: number; y?: num
 
 /** The look of a layer, to reuse for the next one. */
 export function lookOf(l: TextLayer): Look {
-  const { w, size, font, colour, align, weight, italic, caps, tracking, shadow, backing } = l;
-  return { w, size, font, colour, align, weight, italic, caps, tracking, shadow, backing };
+  const { w, size, font, colour, align, weight, italic, caps, tracking, shadow, backing, underline = false, highlight = null } = l;
+  return { w, size, font, colour, align, weight, italic, caps, tracking, shadow, backing, underline, highlight };
 }
 
 export const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -138,6 +142,16 @@ export const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.ma
 export const LINE_HEIGHT = 1.18;
 /** Padding inside a backing box, in em. */
 export const BOX_PAD = 0.45;
+
+/** Where an underline and a highlight sit, in em from a line's baseline (same on screen and saved). */
+export const UNDERLINE = { below: 0.12, thickness: 0.06 };
+export const HIGHLIGHT = { above: 0.8, height: 1.02, spill: 0.12, opacity: 0.55 };
+
+/** #rrggbb as a see-through colour. */
+export function withOpacity(hex: string, a: number): string {
+  const n = parseInt(hex.replace('#', ''), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
 
 export function cssFont(l: Pick<TextLayer, 'font' | 'weight' | 'italic'>, px: number): string {
   return `${l.italic ? 'italic ' : ''}${l.weight} ${px}px "${TEXT_FONTS[l.font].family}"`;
