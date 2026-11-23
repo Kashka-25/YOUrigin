@@ -24,6 +24,17 @@ export type PostOrigin =
   | { kind: 'cassidy' }
   | { kind: 'claude'; draftKey: string; fileName: string; importedAt: number };
 
+/** One edit request on a post, typed by Cassidy for Claude. */
+export interface PostEdit {
+  id: string;
+  text: string;
+  createdAt: number;
+  /** When it was done, or null while it is still waiting. */
+  doneAt: number | null;
+  /** What was changed, written when it was marked done. */
+  reply?: string;
+}
+
 export interface Post extends Syncable {
   /** Planned date and time (local), or null while it is still an unplaced idea. */
   scheduledAt: number | null;
@@ -57,6 +68,12 @@ export interface Post extends Syncable {
    * existed don't have one and belong to the main account.
    */
   account?: string;
+  /**
+   * Edit requests: changes Cassidy types for Claude to make to this post (a new crop, words
+   * moved, another poem). Claude marks each one done, with a short note of what changed.
+   * Never exported. Optional: posts made before edits existed don't have any.
+   */
+  edits?: PostEdit[];
   /** Soft delete: the post sits aside until it is removed for good. */
   deletedAt: number | null;
 }

@@ -75,6 +75,14 @@ To go the other way, open a post and tap **Take slides out** under its slides, t
 
 Gentle checks (never blocking): a caption that touches on crisis without a helpline; cannabis words (Instagram restricts cannabis promotion); missing alt text; over the caption or hashtag limits.
 
+## Edits (for Claude)
+
+Each post has an **Edits** row at the top of its details. Type what to change there (a new crop, a different colour kept, the poem moved, another poem) and tap **Add edit**; add as many as you like. Claude reads them, makes the change and taps **Done** with a short note of what changed. Done edits stay under **Done** with their notes, and **Ask again** puts one back on the list.
+
+When any post has edits waiting, the Posts page shows "N edits waiting on M posts" above the views, across every account; tap it to see them all and open a post. Edits are part of the post, so they sync and go into backups; they are never exported.
+
+For Claude: read the `edits` on each post in the synced `posts` table (`doneAt: null` means waiting), make the change, then mark it done in the post's Edits row with a note. Notes to self are still Cassidy's own notes.
+
 ## Drafts file format (for Claude)
 
 A JSON file. A full example with invented text: [`samples/post-drafts.sample.json`](samples/post-drafts.sample.json).
