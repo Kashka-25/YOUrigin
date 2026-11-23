@@ -61,6 +61,13 @@ describe('looks', () => {
     delete older.highlight;
     expect(lookOf(older)).toMatchObject({ underline: false, highlight: null });
   });
+  it('Whisper comes in cream and ink, and leaves the side the words sit on alone', () => {
+    expect(lookFor('whisper')).toMatchObject({ font: 'cormorant', italic: true, weight: 500, size: 0.05, w: 0.64, colour: '#f6efe2', shadow: true, backing: null });
+    expect(lookFor('whisper-ink')).toMatchObject({ font: 'cormorant', colour: '#2b2520', shadow: false });
+    expect(lookFor('whisper')).not.toHaveProperty('align');
+    expect(lookFor('mark')).toMatchObject({ font: 'cinzel', caps: true, tracking: 0.28, size: 0.019, colour: '#d4a85a' });
+    expect(lookFor('mark-ink').colour).toBe('#7d5a22');
+  });
   it('picks readable words for a box colour', () => {
     expect(readableOn('#f6efe2')).toBe('#1a1410');
     expect(readableOn('#1a1410')).toBe('#f6efe2');
