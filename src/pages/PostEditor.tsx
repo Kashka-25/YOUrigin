@@ -1,12 +1,14 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Accessibility, AlertTriangle, ArrowLeft, AtSign, CalendarClock, Check, ChevronDown, Copy, ExternalLink, Eye, FolderOpen, Globe, Hash, Link2, ListChecks, Megaphone, Plus, Quote, Search, Shapes, Sparkles, StickyNote, Trash2, Type, Undo2, X } from 'lucide-react';
+import { MessageSquareText, Accessibility, AlertTriangle, ArrowLeft, AtSign, CalendarClock, Check, ChevronDown, Copy, ExternalLink, Eye, FolderOpen, Globe, Hash, Link2, ListChecks, Megaphone, Plus, Quote, Search, Shapes, Sparkles, StickyNote, Trash2, Type, Undo2, X } from 'lucide-react';
 import { EmptyState, SaveIndicator, Spinner } from '../components/ui';
 import { Modal, useConfirm } from '../components/Modal';
 import { useToast } from '../components/Toast';
 import { AutoTextarea } from '../components/AutoTextarea';
 import { PostPreview } from '../components/posts/PostMedia';
 import { MediaComposer } from '../components/posts/MediaComposer';
+import { PostEditsPanel } from '../components/posts/PostEdits';
+import { editsSummary, openEdits } from '../posts/edits';
 import { FORMAT_ICON, PostStatusPill, WorldDot } from '../components/posts/PostBits';
 import { useAutosave } from '../hooks/useAutosave';
 import { DEMO } from '../demo/mode';
@@ -369,6 +371,10 @@ function Editor({ post }: { post: Post }) {
         )}
 
         <div className="rounded-2xl border border-line bg-card px-4">
+          <Row icon={MessageSquareText} label="Edits" summary={editsSummary(post)} open={openEdits(post).length > 0}>
+            <PostEditsPanel post={post} />
+          </Row>
+
           <Row icon={CalendarClock} label="Schedule" summary={when ? `${when.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })} · ${fields.time || '—'}` : 'Not placed yet'}>
             <div className="grid grid-cols-2 gap-3">
               <label>

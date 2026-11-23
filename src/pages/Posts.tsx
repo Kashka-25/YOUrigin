@@ -13,6 +13,7 @@ import { GalleryPicker } from '../components/posts/GalleryPicker';
 import { GalleryView } from '../components/art/GalleryView';
 import { DEMO } from '../demo/mode';
 import { AccountSwitcher, MoveToAccount } from '../components/posts/Accounts';
+import { EditsWaiting } from '../components/posts/PostEdits';
 import { movePostsToAccount, usePoemIdeasToMove, usePostAccounts } from '../db/postAccounts';
 import { MAIN_ACCOUNT, POETRY_ACCOUNT, accountLabel, accountOf, rememberShownAccount, shownAccount, type PostAccount } from '../posts/accounts';
 import {
@@ -891,6 +892,9 @@ export function Posts() {
       </header>
 
       {accounts && <AccountSwitcher accounts={accounts} current={account} counts={counts} onChoose={chooseAccount} />}
+      {allPosts && accounts && (
+        <EditsWaiting posts={allPosts} accountName={(p) => accountLabel(accounts.find((a) => a.id === accountOf(p)) ?? accounts[0])} />
+      )}
       {accounts && <PoemIdeasOffer poetry={accounts.find((a) => a.id === POETRY_ACCOUNT)} main={accounts.find((a) => a.id === MAIN_ACCOUNT)} />}
 
       <div className="mb-5 grid grid-cols-3 gap-1 rounded-xl border border-line p-1 sm:inline-grid sm:grid-cols-6" role="tablist" aria-label="View">
