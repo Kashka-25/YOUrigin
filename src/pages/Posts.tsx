@@ -1,6 +1,6 @@
-import { useRef, useState, type DragEvent, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type DragEvent, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Download, FolderOpen, ImagePlus, Images, Lightbulb, Move, Plus, Upload } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Download, FolderOpen, ImagePlus, Images, Lightbulb, Move, Plus, Upload } from 'lucide-react';
 import { EmptyState, Spinner } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { combinePosts, createPost, deletePost, movePostInFeed, setPostStatus, usePosts } from '../db/posts';
@@ -670,6 +670,18 @@ function IdeasView({ posts }: { posts: Post[] }) {
 }
 
 /** Social media posts: planned on a calendar or profile grid, written, reviewed and approved here. */
+function MenuItem({ icon: Icon, label, hint, onClick, disabled, className = '' }: { icon: typeof Upload; label: string; hint: string; onClick: () => void; disabled?: boolean; className?: string }) {
+  return (
+    <button type="button" disabled={disabled} onClick={onClick} className={`flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-paper-2 disabled:opacity-50 ${className}`}>
+      <Icon size={16} className="mt-0.5 shrink-0 text-ink-2" aria-hidden />
+      <span>
+        <span className="block text-sm font-medium text-ink">{label}</span>
+        <span className="block text-xs text-muted">{hint}</span>
+      </span>
+    </button>
+  );
+}
+
 export function Posts() {
   const posts = usePosts();
   const navigate = useNavigate();
@@ -678,6 +690,16 @@ export function Posts() {
   const view = (VIEWS.find((v) => v.id === params.get('view'))?.id ?? rememberedView()) as View;
   const at = parseDay(params.get('at')) ?? new Date();
   const fileInput = useRef<HTMLInputElement>(null);
+  const filesMenu = useRef<HTMLDetailsElement>(null);
+  // Tapping anywhere else closes the Files menu.
+  useEffect(() => {
+    const close = (e: PointerEvent) => {
+      const menu = filesMenu.current;
+      if (menu?.open && !menu.contains(e.target as Node)) menu.removeAttribute('open');
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, []);
   const folderInput = useRef<HTMLInputElement>(null);
   const mediaInput = useRef<HTMLInputElement>(null);
   const [review, setReview] = useState<DraftsReview | null>(null);
@@ -731,18 +753,18 @@ export function Posts() {
           <h1 className="page-title">Posts</h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn" onClick={() => fileInput.current?.click()} title="Pick the drafts file with its images and videos, or a .zip">
-            <Upload size={16} /> Import drafts
-          </button>
-          <button type="button" className="btn hidden md:inline-flex" onClick={() => folderInput.current?.click()} title="Pick a folder that holds a drafts file and its images and videos">
-            <FolderOpen size={16} /> Import a folder
-          </button>
-          <button type="button" className="btn" disabled={attaching} onClick={() => mediaInput.current?.click()} title="Add images and videos to posts that list them by file name">
-            <ImagePlus size={16} /> {attaching ? 'Adding…' : 'Add media'}
-          </button>
-          <button type="button" className="btn" onClick={() => setExporting(true)}>
-            <Download size={16} /> Export approved
-          </button>
+          {/* Importing and exporting fold into one menu, so the page stays quiet. */}
+          <details className="group relative" ref={filesMenu}>
+            <summary className="btn list-none [&::-webkit-details-marker]:hidden" aria-label="Import and export">
+              <FolderOpen size={16} /> {attaching ? 'Adding…' : 'Files'} <ChevronDown size={15} className="transition-transform group-open:rotate-180" aria-hidden />
+            </summary>
+            <div className="absolute right-0 z-30 mt-2 w-64 rounded-xl border border-line bg-card p-1.5 shadow-xl" onClick={() => filesMenu.current?.removeAttribute('open')}>
+              <MenuItem icon={Upload} label="Import drafts" hint="A drafts file with its pictures, or a .zip" onClick={() => fileInput.current?.click()} />
+              <MenuItem icon={FolderOpen} label="Import a folder" hint="A folder with a drafts file inside" onClick={() => folderInput.current?.click()} className="hidden md:flex" />
+              <MenuItem icon={ImagePlus} label="Add media" hint="Pictures for posts that name them" onClick={() => mediaInput.current?.click()} disabled={attaching} />
+              <MenuItem icon={Download} label="Export approved" hint="Ready posts, for scheduling" onClick={() => setExporting(true)} />
+            </div>
+          </details>
           <button type="button" className="btn-primary" onClick={async () => navigate(`/posts/${await createPost()}`)}>
             <Plus size={16} /> New post
           </button>

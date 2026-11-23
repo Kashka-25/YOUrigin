@@ -15,6 +15,7 @@ import {
 import { useConfirm } from './Modal';
 import { useToast } from './Toast';
 import { VideoSyncPanel } from './VideoSyncPanel';
+import { MoreAbout } from './Fold';
 
 function ago(ts?: number) {
   if (!ts) return 'not yet';
@@ -76,10 +77,13 @@ export function SyncPanel() {
   if (status.phase === 'off') {
     return (
       <div className="space-y-4">
-        <p className="text-[15px] leading-relaxed text-ink-2">
-          Keep your phone and laptop in step automatically. Your writing is <strong className="text-ink">encrypted on this device</strong> with a passphrase
-          only you know before it is uploaded, so the server can never read it. Sign in with the same email and password you use for the YOU app.
-        </p>
+        <p className="text-sm text-ink-2">Sign in with your YOU app email and password to keep your phone and laptop in step.</p>
+        <MoreAbout>
+          <p>
+            Your writing is <strong className="text-ink">encrypted on this device</strong> with a passphrase only you know before it is uploaded, so the server can
+            never read it.
+          </p>
+        </MoreAbout>
         <form
           className="panel grid gap-3 p-4 sm:grid-cols-2"
           onSubmit={(e) => {
