@@ -20,6 +20,7 @@ const TABLES = [
   'portfolios',
   'posts',
   'clipInfo',
+  'textStyles',
   'settings',
 ] as const;
 type TableName = (typeof TABLES)[number];
