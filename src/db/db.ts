@@ -21,12 +21,13 @@ import type {
 import type { Portfolio } from '../portfolio/model';
 import type { Post } from '../posts/model';
 import type { TextStyle } from '../posts/textLayers';
+import type { PostAccount } from '../posts/accounts';
 import { BUILT_IN_FAMILIES, BUILT_IN_TEMPLATES } from '../domain/constants';
 import { installChangeTracking } from '../sync/tracking';
 import { DEMO, DEMO_DB_NAME } from '../demo/mode';
 import { appOutbox, isSyncEnabled } from '../sync/runtime';
 
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
 
 /**
  * One-time, non-destructive migration: each existing standalone Work gets a
@@ -82,7 +83,7 @@ export async function migrateLegacyWorksToProjects(
 
 /**
  * Local-first store in IndexedDB. Schema changes go through `this.version(n)`
- * blocks — add a new version with an upgrade function, never edit an old one.
+ * blocks â€” add a new version with an upgrade function, never edit an old one.
  */
 export class YOUriginDB extends Dexie {
   content!: Table<ContentItem, string>;
@@ -105,6 +106,7 @@ export class YOUriginDB extends Dexie {
   clipInfo!: Table<ClipInfo, string>;
   clipChunks!: Table<ClipChunk, [string, number]>;
   textStyles!: Table<TextStyle, string>;
+  postAccounts!: Table<PostAccount, string>;
 
   constructor(name = 'yourigin') {
     super(name);
@@ -148,6 +150,9 @@ export class YOUriginDB extends Dexie {
     this.version(8).stores({ clipInfo: 'id, updatedAt', clipChunks: '[clipId+index], clipId' });
     // v9: signature styles for words on pictures (synced, so every device has them).
     this.version(9).stores({ textStyles: 'id, updatedAt' });
+    // v10: Instagram accounts posts belong to (names and handles; synced). Posts gain an optional
+    // `account`; ones without it belong to the main account, so no post needs rewriting.
+    this.version(10).stores({ postAccounts: 'id, updatedAt' });
   }
 }
 

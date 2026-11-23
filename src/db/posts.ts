@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './db';
 import { formatForMedia, moveInFeed, moveStatus, newPost, type Post, type PostStatus } from '../posts/model';
+import { shownAccount } from '../posts/accounts';
 
 // Posts live on this device and sync end-to-end encrypted like everything else.
 // These are the only functions that write them.
@@ -13,8 +14,9 @@ export function usePost(id: string | undefined): Post | null | undefined {
   return useLiveQuery(async () => (id ? ((await db.posts.get(id)) ?? null) : null), [id]);
 }
 
+/** A new post, on the account the Posts page is showing unless the patch names one. */
 export async function createPost(patch: Partial<Post> = {}): Promise<string> {
-  const p = newPost(patch);
+  const p = newPost({ account: shownAccount(), ...patch });
   await db.posts.add(p);
   return p.id;
 }
@@ -84,7 +86,8 @@ export async function savePostDrafts(posts: Post[]): Promise<number> {
   return db.transaction('rw', db.posts, async () => {
     const keys = await importedDraftKeys();
     const fresh = posts.filter((p) => p.origin.kind !== 'claude' || !keys.has(p.origin.draftKey));
-    await db.posts.bulkAdd(fresh.map((p) => ({ ...p, status: 'draft' as const, approvedAt: null, postedAt: null })));
+    const account = shownAccount();
+    await db.posts.bulkAdd(fresh.map((p) => ({ account, ...p, status: 'draft' as const, approvedAt: null, postedAt: null })));
     return fresh.length;
   });
 }
