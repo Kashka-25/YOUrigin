@@ -145,9 +145,9 @@ export function TextStudio({
             className={`relative mx-auto w-full overflow-hidden rounded-xl bg-paper-2 ${tall ? 'aspect-[9/16] max-w-[min(100%,calc(40vh*0.5625))] md:max-w-[min(100%,calc(60vh*0.5625))]' : 'aspect-[4/5] max-w-[min(100%,calc(40vh*0.8))] md:max-w-[min(100%,calc(60vh*0.8))]'}`}
           >
             <AssetImage id={assetId} className="absolute inset-0 h-full w-full object-cover" />
-            <TextOnPicture layers={layers} selected={selected} onSelect={setSelected} onMove={(id, x, y) => update(id, { x, y })} />
+            <TextOnPicture layers={layers} selected={selected} onSelect={setSelected} onMove={(id, x, y) => update(id, { x, y })} onEditText={(id, text) => update(id, { text })} />
           </div>
-          <p className="mt-2 text-center text-xs text-muted">Drag the words to place them. Tap the picture to unselect.</p>
+          <p className="mt-2 text-center text-xs text-muted">Drag the words to place them. Double-tap or hold them to type on the picture.</p>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
             <button type="button" className="btn" onClick={add}>
               <Plus size={16} /> Add text

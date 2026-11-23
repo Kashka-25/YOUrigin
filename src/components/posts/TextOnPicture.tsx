@@ -55,22 +55,38 @@ function useFontsReady(layers: TextLayer[]): number {
 
 /**
  * The words on a picture, laid over it. Sized from the slide's own width, so a thumbnail
- * and the full slide match. With `onChange`, boxes can be tapped to select and dragged.
+ * and the full slide match. With `onMove`, boxes can be tapped to select and dragged; with
+ * `onEditText`, double-clicking or holding the words types straight onto the picture.
  */
 export function TextOnPicture({
   layers,
   selected,
   onSelect,
   onMove,
+  onEditText,
 }: {
   layers: TextLayer[] | undefined;
   selected?: string | null;
   onSelect?: (id: string | null) => void;
   onMove?: (id: string, x: number, y: number) => void;
+  onEditText?: (id: string, text: string) => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
-  const drag = useRef<{ id: string; dx: number; dy: number } | null>(null);
+  const drag = useRef<{ id: string; dx: number; dy: number; x: number; y: number } | null>(null);
+  const hold = useRef<number | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const stopHold = () => {
+    if (hold.current !== null) window.clearTimeout(hold.current);
+    hold.current = null;
+  };
+  const startEditing = (id: string) => {
+    if (!onEditText) return;
+    stopHold();
+    drag.current = null;
+    onSelect?.(id);
+    setEditing(id);
+  };
   useFontsReady(layers ?? []);
   useLayoutEffect(() => {
     const el = box.current;
@@ -88,12 +104,21 @@ export function TextOnPicture({
     e.stopPropagation();
     onSelect?.(l.id);
     const r = box.current!.getBoundingClientRect();
-    drag.current = { id: l.id, dx: l.x - (e.clientX - r.left) / r.width, dy: l.y - (e.clientY - r.top) / r.height };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    drag.current = { id: l.id, dx: l.x - (e.clientX - r.left) / r.width, dy: l.y - (e.clientY - r.top) / r.height, x: e.clientX, y: e.clientY };
+    // holding still on the words opens them for typing
+    stopHold();
+    if (onEditText) hold.current = window.setTimeout(() => startEditing(l.id), 450);
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      /* the pointer has already gone */
+    }
   };
   const move = (e: PointerEvent) => {
     const d = drag.current;
     if (!d || !box.current) return;
+    if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 6) stopHold();
+    else if (hold.current !== null) return;
     const r = box.current.getBoundingClientRect();
     onMove?.(d.id, clamp((e.clientX - r.left) / r.width + d.dx, 0, 1), clamp((e.clientY - r.top) / r.height + d.dy, 0, 1));
   };
@@ -102,7 +127,7 @@ export function TextOnPicture({
     <div
       ref={box}
       className={`absolute inset-0 select-none overflow-hidden ${editable ? 'touch-none' : 'pointer-events-none'}`}
-      onPointerDown={editable ? () => onSelect?.(null) : undefined}
+      onPointerDown={editable ? () => (setEditing(null), onSelect?.(null)) : undefined}
     >
       {size.w > 0 &&
         (layers ?? []).map((l) => {
@@ -110,15 +135,22 @@ export function TextOnPicture({
           const base = baselineIn(l, lay.px, lay.lh, c);
           const m = metricsOf(l, lay.px, c);
           const track = l.tracking * lay.px;
+          const typing = editing === l.id;
           return (
             <div
               key={l.id}
               role={editable ? 'button' : undefined}
               aria-label={editable ? `Text: ${l.text}` : undefined}
-              onPointerDown={(e) => down(e, l)}
+              onPointerDown={(e) => (typing ? e.stopPropagation() : down(e, l))}
               onPointerMove={move}
-              onPointerUp={() => (drag.current = null)}
-              className={editable ? `cursor-move ${selected === l.id ? 'outline-dashed outline-2 outline-offset-2 outline-white/90' : ''}` : ''}
+              onPointerUp={() => {
+                drag.current = null;
+                stopHold();
+              }}
+              onPointerCancel={stopHold}
+              onDoubleClick={() => startEditing(l.id)}
+              onContextMenu={editable ? (e) => e.preventDefault() : undefined}
+              className={editable ? `${typing ? '' : 'cursor-move'} ${selected === l.id ? 'outline-dashed outline-2 outline-offset-2 outline-white/90' : ''}` : ''}
               style={{
                 position: 'absolute',
                 left: lay.box.left,
@@ -129,7 +161,40 @@ export function TextOnPicture({
                 borderRadius: l.backing ? lay.px * 0.3 : undefined,
               }}
             >
-              {lay.lines.map((line, i) => {
+              {typing && (
+                <textarea
+                  ref={(el) => {
+                    if (el && document.activeElement !== el) {
+                      el.focus();
+                      el.setSelectionRange(el.value.length, el.value.length);
+                    }
+                  }}
+                  aria-label="Words on the picture"
+                  value={l.text}
+                  onChange={(e) => onEditText?.(l.id, e.target.value)}
+                  onBlur={() => setEditing(null)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setEditing(null);
+                    }
+                  }}
+                  className="absolute inset-0 resize-none overflow-hidden border-0 bg-black/25 outline-none"
+                  style={{
+                    padding: lay.pad,
+                    font: cssFont(l, lay.px),
+                    lineHeight: `${lay.lh}px`,
+                    letterSpacing: track ? `${track}px` : undefined,
+                    textAlign: l.align,
+                    textTransform: l.caps ? 'uppercase' : undefined,
+                    color: l.colour,
+                    caretColor: l.colour,
+                    borderRadius: l.backing ? lay.px * 0.3 : undefined,
+                  }}
+                />
+              )}
+              {!typing && lay.lines.map((line, i) => {
                 const x = l.align === 'left' ? lay.pad : l.align === 'right' ? lay.box.width - lay.pad - lay.widths[i] : (lay.box.width - lay.widths[i]) / 2;
                 return (
                   <span
