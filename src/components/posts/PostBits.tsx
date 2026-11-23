@@ -4,6 +4,7 @@ import { Clapperboard, GalleryHorizontal, Image as ImageIcon, Quote, CircleDashe
 import { projectColourStyle } from '../ProjectColourPicker';
 import { AssetImage } from '../AssetImage';
 import { MediaThumb, firstPicture } from './PostMedia';
+import { TextOnPicture } from './TextOnPicture';
 import type { ProjectColour } from '../../domain/types';
 import { FORMAT_LABEL, STATUS_LABEL, WORLD_COLOUR, WORLD_LABEL, timeKey, type Post, type PostFormat, type PostStatus, type PostWorld } from '../../posts/model';
 
@@ -76,7 +77,10 @@ export function FeedTileFace({ post }: { post: Post }) {
   return (
     <span className="post-tile relative block aspect-[4/5] w-full overflow-hidden" style={worldStyle(post.world)}>
       {pictureId ? (
-        <AssetImage id={pictureId} alt={post.altText} className="absolute inset-0 h-full w-full object-cover" />
+        <>
+          <AssetImage id={pictureId} alt={post.altText} className="absolute inset-0 h-full w-full object-cover" />
+          {picture?.kind === 'asset' && picture.text?.length ? <TextOnPicture layers={picture.text} /> : null}
+        </>
       ) : (
         <span className="absolute inset-0 flex items-center justify-center p-2 text-center font-serif text-[13px] leading-snug text-ink sm:p-4 sm:text-base">
           <span className="line-clamp-5">{post.hook.trim() || postTitle(post)}</span>

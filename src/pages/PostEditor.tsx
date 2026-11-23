@@ -309,6 +309,8 @@ function Editor({ post }: { post: Post }) {
           onRemove={(i) => void removeMedia(i)}
           onReorder={(media) => set({ media })}
           onCover={(i, f) => void setCover(i, f)}
+          world={fields.world}
+          onText={(i, text) => set({ media: fields.media.map((m, j) => (j === i && m.kind === 'asset' ? { ...m, text: text.length ? text : undefined } : m)) })}
         />
 
         {post.origin.kind === 'claude' && (
@@ -396,7 +398,7 @@ function Editor({ post }: { post: Post }) {
             <AutoTextarea id="post-hook" minHeight={56} className="input font-serif text-lg" ariaLabel="On-image hook" value={fields.hook} onChange={(hook) => set({ hook })} />
             {quoteDrifted && <span className="mt-1 block text-xs text-muted">This line is no longer word for word in the linked piece.</span>}
             {fields.media.some((m) => m.kind !== 'file') && (
-              <p className="mt-1 text-xs text-muted">The slides are finished pictures, so editing the hook here doesn’t redraw them. Change it (or say what you want in Notes to self) and Claude redraws the slides; import the update and choose “Update pictures” to swap them in, keeping your words.</p>
+              <p className="mt-1 text-xs text-muted">This is the line for the post. To put words on a picture yourself, tap <strong>Add text</strong> on the slide above.</p>
             )}
           </Row>
 

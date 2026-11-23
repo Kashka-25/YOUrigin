@@ -281,8 +281,13 @@ export async function updatePictures(
   const post = await db.posts.get(postId);
   if (!post || !names.some((n) => findMedia(files, n.name))) return false;
   const named: PostMedia[] = names.map((n) => ({ kind: 'file', name: n.name, ...(n.note ? { note: n.note } : {}) }));
-  const { media } = await fillMedia(named, files, savers);
+  const filled = (await fillMedia(named, files, savers)).media;
   const old = post.media;
+  // Words Cassidy placed on a picture stay on the redrawn picture in the same place.
+  const media = filled.map((m, i) => {
+    const was = old[i];
+    return m.kind === 'asset' && was?.kind === 'asset' && was.text?.length ? { ...m, text: was.text } : m;
+  });
   await db.posts.update(postId, { media, format: formatForMedia(media, post.format), updatedAt: Date.now() });
   const kept = new Set(media.map((m) => (m.kind === 'asset' ? `a:${m.assetId}` : m.kind === 'clip' ? `c:${m.clipId}` : '')));
   for (const m of old) {

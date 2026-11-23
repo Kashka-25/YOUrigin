@@ -237,6 +237,18 @@ describe('redrawn pictures', () => {
     expect(await db.assets.get('old-2')).toBeUndefined();
   });
 
+  it('keeps words placed on a picture when that picture is redrawn', async () => {
+    const { updatePictures } = await import('./postMedia');
+    const { newTextLayer } = await import('../posts/textLayers');
+    const words = [{ ...newTextLayer({ font: 'cinzel' }), text: 'Seven realms' }];
+    const id = await createPost({ media: [{ kind: 'asset', assetId: 'was-1', text: words }, { kind: 'asset', assetId: 'was-2' }] });
+    const files = new Map([jpg('b-1.jpg'), jpg('b-2.jpg')].map((f) => [mediaKey(f.name), f]));
+    expect(await updatePictures(id, [{ name: 'b-1.jpg' }, { name: 'b-2.jpg' }], files, fakeSavers().savers)).toBe(true);
+    const after = (await db.posts.get(id))!;
+    expect(after.media[0]).toEqual({ kind: 'asset', assetId: 'asset-b-1.jpg', text: words });
+    expect(after.media[1]).toEqual({ kind: 'asset', assetId: 'asset-b-2.jpg' });
+  });
+
   it('changes nothing when none of the named pictures were picked', async () => {
     const { updatePictures } = await import('./postMedia');
     const id = await createPost({ media: [{ kind: 'asset', assetId: 'keep' }] });

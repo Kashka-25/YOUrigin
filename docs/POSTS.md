@@ -132,3 +132,9 @@ Only Approved posts with a time in the range are included. Notes to self are nev
 ## Not built: publishing straight from the app
 
 Publishing from the device would need Instagram's API (a Business or Creator account linked to a Facebook Page, a Meta app and access tokens kept on the device) or Metricool's API (a paid plan). For now the export file is handed to Metricool. Worth revisiting once Metricool is connected.
+
+## Text on pictures
+
+On any picture slide in a post, **Add text** opens a small studio: add text boxes, drag them into place, and style them with brand looks (YOU title, Soft quote, Story serif, Headline, World label, Handwritten, Boxed), seven bundled fonts (Cinzel, Cormorant, Playfair, Newsreader, Josefin, Inter, Caveat; all work offline) and the brand palettes (YOU, the five worlds, Creative Universe, Atlantean Gardens), or any colour. The last look used becomes the start for the next box.
+
+The words are stored on the slide (`PostMedia.text`, fractions of the slide, so they sync encrypted and look the same everywhere) and show in the editor, Preview and the grid. **Save picture** draws the slide at 1080 wide (4:5, or 9:16 for Reels and Stories) with the words burned in: on the phone it opens the share sheet (save to gallery or straight to Instagram); on the laptop it downloads. Words stay in place when Claude's redrawn pictures are imported with "Update pictures". Text sits on pictures only, not on videos.

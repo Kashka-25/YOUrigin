@@ -2,12 +2,14 @@ import { useEffect, useRef, useState, type DragEvent, type PointerEvent, type Re
 import { DndContext, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, horizontalListSortingStrategy, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Camera, ChevronLeft, ChevronRight, ImagePlus, Images, Plus, Trash2, Upload } from 'lucide-react';
+import { Camera, ChevronLeft, ChevronRight, ImagePlus, Images, Plus, Trash2, Type, Upload } from 'lucide-react';
+import { TextStudio } from './TextStudio';
+import type { TextLayer } from '../../posts/textLayers';
 import { MediaThumb, Slide } from './PostMedia';
 import { AssetImage } from '../AssetImage';
 import { frameFromVideo } from '../../db/postMedia';
 import { POST_MEDIA_ACCEPT } from '../../io/postMedia';
-import type { PostFormat, PostMedia } from '../../posts/model';
+import type { PostFormat, PostMedia, PostWorld } from '../../posts/model';
 
 /** A stable id for each piece of media in the strip (the same file twice gets a suffix). */
 function mediaIds(media: PostMedia[]): string[] {
@@ -148,6 +150,8 @@ export function MediaComposer({
   onRemove,
   onReorder,
   onCover,
+  onText,
+  world = 'healing',
 }: {
   media: PostMedia[];
   format: PostFormat;
@@ -158,12 +162,17 @@ export function MediaComposer({
   onReorder: (media: PostMedia[]) => void;
   /** A new cover picture for the video at this place. */
   onCover?: (index: number, picture: File) => void;
+  /** New words on the picture at this place. */
+  onText?: (index: number, text: TextLayer[]) => void;
+  /** The post's world, for its accent colour. */
+  world?: PostWorld;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const coverInput = useRef<HTMLInputElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const [coverNote, setCoverNote] = useState('');
   const [choosing, setChoosing] = useState(false);
+  const [writing, setWriting] = useState(false);
   const [selected, setSelected] = useState(0);
   const [over, setOver] = useState(false);
   const swipe = useRef<number | null>(null);
@@ -273,6 +282,15 @@ export function MediaComposer({
             )}
           </>
         )}
+        {current?.kind === 'asset' && onText && (
+          <button
+            type="button"
+            className="absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-2 text-sm font-semibold text-white hover:bg-black/75"
+            onClick={() => setWriting(true)}
+          >
+            <Type size={16} aria-hidden /> {current.text?.length ? 'Edit text' : 'Add text'}
+          </button>
+        )}
         <button
           type="button"
           className="absolute bottom-2 right-2 rounded-full bg-black/60 p-2 text-white hover:bg-black/75"
@@ -348,6 +366,19 @@ export function MediaComposer({
             setCoverNote('Cover set from the video.');
             onCover(at, frame);
           }}
+        />
+      )}
+
+      {writing && current?.kind === 'asset' && onText && (
+        <TextStudio
+          open
+          onClose={() => setWriting(false)}
+          assetId={current.assetId}
+          layers={current.text ?? []}
+          tall={tall}
+          world={world}
+          slideName={`slide-${String(at + 1).padStart(2, '0')}`}
+          onChange={(text) => onText(at, text)}
         />
       )}
 
