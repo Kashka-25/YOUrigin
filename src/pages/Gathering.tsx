@@ -13,6 +13,7 @@ import { DestinationPicker } from '../components/DestinationPicker';
 import { FoldersMenu, RecentNoteBoxes } from '../components/gather/GatherHome';
 import { addImagePieces, IMAGE_ACCEPT } from '../db/assets';
 import { TagInput } from '../components/TagInput';
+import { normaliseTagName } from '../domain/text';
 import { BulkBar } from '../components/BulkBar';
 import { useAutoGrow } from '../hooks/useAutoGrow';
 import { db, requestPersistentStorage } from '../db/db';
@@ -173,6 +174,15 @@ export function Gathering() {
 
   const pieces = useMemo(() => splitPieces(value, split).map(parseCapture), [value, split]);
   const detectedTags = useMemo(() => [...new Set(pieces.flatMap((p) => p.tags))].filter((t) => !extraTags.includes(t)), [pieces, extraTags]);
+  // Tags that belong to a Creation: the note will join it when captured.
+  const filedInto = useMemo(() => {
+    if (!lib) return [];
+    return [...new Set([...detectedTags, ...extraTags])].flatMap((name) => {
+      const tag = lib.tags.find((t) => t.name === normaliseTagName(name));
+      const project = tag?.projectId ? lib.projects.find((p) => p.id === tag.projectId) : undefined;
+      return project ? [{ tag: tag!.name, project: project.title }] : [];
+    });
+  }, [lib, detectedTags, extraTags]);
   const hasText = pieces.some((p) => p.body.trim());
   const canCapture = (hasText || art.length > 0) && !saving;
   // A heading belongs to one piece; when splitting, each piece keeps its first line as its title.
@@ -428,6 +438,16 @@ export function Gathering() {
               />
             </div>
           </div>
+          {filedInto.length > 0 && (
+            <p className="mt-2 text-xs text-ink-2" role="status">
+              Will join {filedInto.map((f, i) => (
+                <span key={f.tag}>
+                  {i > 0 ? ', ' : ''}
+                  <span className="font-semibold text-ink">{f.project}</span> (#{f.tag})
+                </span>
+              ))}
+            </p>
+          )}
           <DestinationPicker value={destinations} onChange={setDestinations} />
         </div>
 

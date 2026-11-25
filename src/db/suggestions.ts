@@ -1,4 +1,5 @@
 import { db } from './db';
+import { fileByProjectTags } from './projectTags';
 import { ensureTags } from './tags';
 import type { ContentType, SuggestionKind } from '../domain/types';
 import { newId, normaliseTagName } from '../domain/text';
@@ -67,6 +68,9 @@ export async function acceptSuggestion(id: string): Promise<void> {
     }
     await db.suggestions.update(id, { state: 'accepted', updatedAt: now });
   });
+  // An accepted tag that belongs to a Creation files the note there.
+  const s = await db.suggestions.get(id);
+  if (s?.kind === 'tags' && s.state === 'accepted') await fileByProjectTags([s.contentId]);
 }
 
 export async function dismissSuggestion(id: string): Promise<void> {
