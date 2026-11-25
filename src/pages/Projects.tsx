@@ -14,7 +14,9 @@ import { createContent } from '../db/content';
 import { createBook, deleteBook, updateBook } from '../db/books';
 import { ImportDialog } from '../components/ImportDialog';
 import { displayTitle, excerpt } from '../domain/text';
-import { ancestorsOf, canMoveInto, childrenOf, descendantsOf, parentOf, topLevel, treeOrder } from '../domain/creations';
+import { ancestorsOf, canMoveInto, childrenOf, parentOf, topLevel, treeOrder } from '../domain/creations';
+import { creationCounts, notesIn } from '../domain/creationCounts';
+import { ProjectTagsSection } from '../components/ProjectTags';
 import { Modal, useConfirm } from '../components/Modal';
 import { EmptyState, Spinner } from '../components/ui';
 
@@ -24,28 +26,29 @@ function noteTitle(item: { title: string; body: string }) {
 
 type Lib = NonNullable<ReturnType<typeof useLibrary>>;
 
-/** Notes in this Creation and every branch inside it, each counted once. */
-function noteCount(lib: Lib, id: string): number {
-  const ids = new Set([id, ...descendantsOf(lib.projects, id).map((p) => p.id)]);
-  return lib.items.filter((i) => !i.deletedAt && !i.archived && (i.projectIds ?? []).some((p) => ids.has(p))).length;
-}
-
 /** A Creation as a picture tile: its cover (or a generated one in its colour), name and a quiet count. */
 function CreationTile({ lib, project }: { lib: Lib; project: Lib['projects'][number] }) {
-  const branches = childrenOf(lib.projects, project.id).length;
-  const notes = noteCount(lib, project.id);
+  const { notes, branches } = creationCounts(lib, project);
   return (
     <Link to={'/initiative/' + project.id} className="archive-card project-card group flex h-full flex-col overflow-hidden p-0" style={projectColourStyle(project.colour)}>
       <CoverPicture assetId={project.coverAssetId} colour={project.colour} seed={project.id} className="aspect-[16/7] w-full" />
       <div className="flex flex-1 flex-col p-4">
         <h3 className="font-serif text-2xl leading-tight text-ink group-hover:text-accent">{project.title}</h3>
-        <p className="mt-auto pt-3 text-xs text-muted">
-          {branches > 0 && <>{branches} {branches === 1 ? 'branch' : 'branches'} · </>}
-          {notes} {notes === 1 ? 'note' : 'notes'}
-        </p>
+        <p className="mt-auto pt-3 text-xs text-muted">{breakdown(notes, branches)}</p>
       </div>
     </Link>
   );
+}
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/** "92 notes · 2 branches · 9 chapters", leaving out what is zero (but always the notes). */
+function breakdown(notes: number, branches: number, chapters = 0): string {
+  return [
+    plural(notes, 'note', 'notes'),
+    branches ? plural(branches, 'branch', 'branches') : '',
+    chapters ? plural(chapters, 'chapter', 'chapters') : '',
+  ].filter(Boolean).join(' · ');
 }
 
 /** Name and colour, nothing more. With a parent, the new Creation becomes a branch inside it. */
@@ -149,17 +152,18 @@ export function ProjectHome() {
     [project.title, project.category, project.description, ...trail.map((t) => t.title)].join(' '),
   );
 
-  const notes = lib.items
-    .filter((item) => !item.deletedAt && !item.archived && (item.projectIds ?? []).includes(id))
-    .sort((a, b) => b.updatedAt - a.updatedAt);
+  // Notes linked here or placed in its workspace (book chapters or tray), each once.
+  const notes = notesIn(lib, id).sort((a, b) => b.updatedAt - a.updatedAt);
+  const counts = creationCounts(lib, project);
   const visibleNotes = noteQuery.trim()
     ? notes.filter((item) => (noteTitle(item) + ' ' + item.body).toLowerCase().includes(noteQuery.trim().toLowerCase()))
     : notes;
   const workspace = lib.books.find((work) => work.id === id)
     ?? lib.books.find((work) => (work.projectIds ?? []).includes(id)
       && work.title.trim().toLocaleLowerCase() === project.title.trim().toLocaleLowerCase());
+  const noteIds = new Set(notes.map((n) => n.id));
   const availableNotes = lib.items
-    .filter((item) => !item.deletedAt && !item.archived && !(item.projectIds ?? []).includes(id))
+    .filter((item) => !item.deletedAt && !item.archived && !noteIds.has(item.id))
     .filter((item) => (noteTitle(item) + ' ' + item.body).toLowerCase().includes(noteQuery.toLowerCase()))
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(0, 40);
@@ -260,6 +264,7 @@ export function ProjectHome() {
           <button type="button" className="btn-ghost mt-2 px-2 py-1 text-xs" onClick={openEdit}>Details</button>
           <button type="button" className="btn-ghost mt-2 px-2 py-1 text-xs text-muted" onClick={() => void removeThisProject()} title="Delete" aria-label={`Delete ${project.title}`}><Trash2 size={14} /></button>
         </div>
+        <p className="mt-2 text-sm text-ink-2" aria-label="What is in here">{breakdown(counts.notes, counts.branches, counts.chapters)}{counts.branches > 0 ? ' (notes include those in its branches)' : ''}</p>
         {project.description && <p className="mt-3 max-w-2xl font-serif text-lg leading-relaxed text-ink-2">{project.description}</p>}
         <CoverPicture assetId={project.coverAssetId} colour={project.colour} seed={project.id} className="mt-6 aspect-[16/5] w-full rounded-2xl border border-line" />
       </header>
@@ -275,6 +280,8 @@ export function ProjectHome() {
           </li>
         </ul>
       </section>
+
+      <ProjectTagsSection lib={lib} project={project} workspaceId={workspace?.id} />
 
       <section className="mt-10" aria-labelledby="creation-notes">
         <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
@@ -300,7 +307,11 @@ export function ProjectHome() {
                   <span className="mt-1 block line-clamp-2 whitespace-pre-line text-sm text-ink-2">{excerpt(item.body, 150)}</span>
                 </Link>
                 <button type="button" className="btn-ghost p-2" onClick={() => setMoving(item.id)} aria-label={'Move ' + displayTitle(item)} title="Move to another creation"><FolderInput size={15} /></button>
-                <button type="button" className="btn-ghost p-2" onClick={() => void removeItemFromProject(id, item.id)} aria-label={'Take ' + displayTitle(item) + ' out of here'} title="Take out of here (the note stays in All notes)"><Unlink size={15} /></button>
+                {(item.projectIds ?? []).includes(id) ? (
+                  <button type="button" className="btn-ghost p-2" onClick={() => void removeItemFromProject(id, item.id)} aria-label={'Take ' + displayTitle(item) + ' out of here'} title="Take out of here (the note stays in All notes)"><Unlink size={15} /></button>
+                ) : (
+                  <span className="px-2 text-xs text-muted" title="Placed in this Creation's workspace. Take it out there.">in the book</span>
+                )}
               </li>
             ))}
           </ul>

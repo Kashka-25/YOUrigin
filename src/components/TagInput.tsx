@@ -12,11 +12,14 @@ export function TagInput({
   onAdd,
   onRemove,
   placeholder = 'Add a tag…',
+  showChips = true,
 }: {
   value: string[];
   onAdd: (name: string) => void;
   onRemove: (name: string) => void;
   placeholder?: string;
+  /** False when the tags are listed elsewhere: then only the input (and its suggestions) shows. */
+  showChips?: boolean;
 }) {
   const lib = useLibrary();
   const [draft, setDraft] = useState('');
@@ -41,7 +44,7 @@ export function TagInput({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {value.map((name) => (
+      {showChips && value.map((name) => (
         <TagChip key={name} name={name} onRemove={() => onRemove(name)} />
       ))}
       <div className="relative min-w-[8rem] flex-1">
@@ -68,7 +71,7 @@ export function TagInput({
             } else if (e.key === 'ArrowUp') {
               e.preventDefault();
               setActive((a) => Math.max(a - 1, -1));
-            } else if (e.key === 'Backspace' && !draft && value.length) {
+            } else if (e.key === 'Backspace' && !draft && value.length && showChips) {
               onRemove(value[value.length - 1]);
             }
           }}

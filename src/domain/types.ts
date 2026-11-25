@@ -205,6 +205,10 @@ export interface Tag extends Syncable {
   /** Normalised lowercase name without '#'. Unique. */
   name: string;
   familyId: string | null;
+  /** A Creation's own tag: a note given this tag joins that Creation (and its workspace). */
+  projectId?: string;
+  /** With projectId: the chapter of the Creation's workspace a tagged note is placed in. Missing: the tray. */
+  sectionId?: string;
 }
 
 export interface Collection extends Syncable {
