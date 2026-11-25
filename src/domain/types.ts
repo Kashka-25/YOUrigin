@@ -33,6 +33,22 @@ export interface Project extends Syncable {
   universe?: UniverseLink;
   /** What changed, in Cassidy's words, newest first. Travels with the Project to Creative Universe. */
   changeNotes?: ChangeNote[];
+  /**
+   * The Resting box: pieces taken out of a Work's running order that still belong here,
+   * waiting for their place. Links only (the piece exists once). Unindexed and optional,
+   * so no schema change; see src/db/resting.ts.
+   */
+  resting?: RestingPiece[];
+}
+
+/** A piece resting in a Project, out of every Work but not out of the Project. */
+export interface RestingPiece {
+  contentId: string;
+  /** When it was set to rest (ms). */
+  at: number;
+  /** The Work and section it came out of, so it can go back where it was. */
+  fromWorkId?: string;
+  fromSectionId?: string | null;
 }
 
 /** A Creative Universe realm id (content/realms.json in that repo). */
