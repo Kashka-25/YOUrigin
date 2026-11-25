@@ -112,8 +112,23 @@ export interface TextStyle extends Syncable {
 }
 const base: Look = { w: 0.8, size: 0.075, font: 'newsreader', colour: '#f6efe2', align: 'center', weight: 600, italic: false, caps: false, tracking: 0, shadow: true, backing: null };
 
-/** One-tap brand looks. `accent` uses the post's world colour. */
-export const TEXT_LOOKS: { id: string; label: string; look: Partial<Look> & { accent?: boolean } }[] = [
+/** The words a new text box starts with. */
+export const PLACEHOLDER_TEXT = 'Your words';
+
+const whisper: Partial<Look> = { font: 'cormorant', italic: true, weight: 500, size: 0.05, w: 0.64, caps: false, tracking: 0.01, backing: null, underline: false, highlight: null };
+const nameMark: Partial<Look> = { font: 'cinzel', weight: 500, size: 0.019, caps: true, tracking: 0.28, italic: false, backing: null, shadow: false, underline: false, highlight: null };
+
+/**
+ * One-tap brand looks. `accent` uses the post's world colour. `text` fills a box that still
+ * holds the placeholder words (never Cassidy's own). Alignment is left alone, so a look keeps
+ * the side of the picture the words were placed on.
+ */
+export const TEXT_LOOKS: { id: string; label: string; text?: string; look: Partial<Look> & { accent?: boolean } }[] = [
+  // Whisper: a poetic line set in a photo's quiet space. Cream on dark space, ink on pale sky or sand.
+  { id: 'whisper', label: 'Whisper', look: { ...whisper, colour: '#f6efe2', shadow: true } },
+  { id: 'whisper-ink', label: 'Whisper ink', look: { ...whisper, colour: '#2b2520', shadow: false } },
+  { id: 'mark', label: 'Name mark', text: 'Cassidy Rae', look: { ...nameMark, colour: '#d4a85a' } },
+  { id: 'mark-ink', label: 'Name mark ink', text: 'Cassidy Rae', look: { ...nameMark, colour: '#7d5a22' } },
   { id: 'title', label: 'YOU title', look: { font: 'cinzel', colour: '#d4a85a', caps: true, tracking: 0.08, weight: 600, size: 0.07 } },
   { id: 'quote', label: 'Soft quote', look: { font: 'cormorant', italic: true, weight: 500, size: 0.08, colour: '#f6efe2' } },
   { id: 'story', label: 'Story serif', look: { font: 'newsreader', weight: 600, size: 0.075, colour: '#f6efe2' } },
@@ -132,7 +147,7 @@ export function lookFor(id: string, world?: PostWorld): Partial<Look> {
 
 /** A new text box in the middle of the slide, in the look given (or the default). */
 export function newTextLayer(look: Partial<Look> = {}, at: { x?: number; y?: number } = {}): TextLayer {
-  return { ...base, ...look, id: newId(), text: 'Your words', x: at.x ?? 0.5, y: at.y ?? 0.5 };
+  return { ...base, ...look, id: newId(), text: PLACEHOLDER_TEXT, x: at.x ?? 0.5, y: at.y ?? 0.5 };
 }
 
 /** The look of a layer, to reuse for the next one. */

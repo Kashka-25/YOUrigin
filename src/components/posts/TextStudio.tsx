@@ -31,7 +31,7 @@ import { AssetImage } from '../AssetImage';
 import { useAsset } from '../../db/assets';
 import { downloadBlob } from '../../io/export';
 import { TextOnPicture, fontFamily, renderPicture, renderSlide } from './TextOnPicture';
-import { BRAND_COLOURS, FONT_ORDER, TEXT_FONTS, TEXT_LOOKS, clamp, lookFor, lookOf, newTextLayer, readableOn, type TextLayer, type TextLook, type TextStyle } from '../../posts/textLayers';
+import { BRAND_COLOURS, FONT_ORDER, PLACEHOLDER_TEXT, TEXT_FONTS, TEXT_LOOKS, clamp, lookFor, lookOf, newTextLayer, readableOn, type TextLayer, type TextLook, type TextStyle } from '../../posts/textLayers';
 import type { PostWorld } from '../../posts/model';
 
 const LAST_LOOK = 'yourigin.posts.textLook';
@@ -337,7 +337,8 @@ export function TextStudio({
                     <p className="label">Brand looks</p>
                     <div className="flex flex-wrap gap-1.5">
                       {TEXT_LOOKS.map((look) => (
-                        <button key={look.id} type="button" className="btn min-h-9 px-3 text-sm" onClick={() => set(lookFor(look.id, world))}>
+                        <button key={look.id} type="button" className="btn min-h-9 px-3 text-sm" onClick={() => set({ ...lookFor(look.id, world), ...(look.text && current.text === PLACEHOLDER_TEXT ? { text: look.text } : {}) })}
+                        >
                           {look.label}
                         </button>
                       ))}
