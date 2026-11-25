@@ -22,6 +22,7 @@ import {
   SunDim,
   Trash2,
   Underline,
+  Wind,
   X,
 } from 'lucide-react';
 import { deleteTextStyle, renameTextStyle, saveTextStyle, useTextStyles } from '../../db/textStyles';
@@ -30,11 +31,21 @@ import { useToast } from '../Toast';
 import { AssetImage } from '../AssetImage';
 import { useAsset } from '../../db/assets';
 import { downloadBlob } from '../../io/export';
-import { TextOnPicture, fontFamily, renderPicture, renderSlide } from './TextOnPicture';
+import { TextOnPicture, fontFamily, layerExtent, pictureSample, renderPicture, renderSlide } from './TextOnPicture';
+import { placeInSpot, quietMap, quietSpots } from '../../posts/quietSpace';
 import { BRAND_COLOURS, FONT_ORDER, PLACEHOLDER_TEXT, TEXT_FONTS, TEXT_LOOKS, clamp, lookFor, lookOf, newTextLayer, readableOn, type TextLayer, type TextLook, type TextStyle } from '../../posts/textLayers';
 import type { PostWorld } from '../../posts/model';
 
 const LAST_LOOK = 'yourigin.posts.textLook';
+
+/** Words that are a name mark (“Cassidy Rae”): they travel with the line they sign. */
+const MARK_TEXTS = new Set(TEXT_LOOKS.flatMap((l) => (l.text ? [l.text] : [])));
+
+/** The colours a line and its mark switch to so they read on a light or a dark place. */
+const READ_ON = {
+  light: { line: { colour: '#2b2520', shadow: false }, mark: { colour: '#7d5a22' }, label: 'dark ink' },
+  dark: { line: { colour: '#f6efe2', shadow: true }, mark: { colour: '#d4a85a' }, label: 'cream' },
+} as const;
 
 function rememberedLook(): Partial<TextLayer> {
   try {
@@ -146,6 +157,11 @@ export function TextStudio({
   // where the open pop-out hangs: just under the button that opened it
   const [anchor, setAnchor] = useState<{ x: number; y: number; width: number }>({ x: 0, y: 0, width: 0 });
   const [saving, setSaving] = useState(false);
+  // Which quiet spot the words were last put in, so tapping again offers the next one.
+  const [quiet, setQuiet] = useState<{ id: string; n: number } | null>(null);
+  const [placing, setPlacing] = useState(false);
+  // After placing: the words would read better in the other colour there.
+  const [hint, setHint] = useState<{ id: string; markId?: string; on: keyof typeof READ_ON } | null>(null);
   const bar = useRef<HTMLDivElement>(null);
   const current = layers.find((l) => l.id === selected) ?? null;
 
@@ -204,6 +220,52 @@ export function TextStudio({
       setSaving(false);
     }
   };
+  /**
+   * Moves the chosen words (and a name mark, if there is one on the picture) into the
+   * quietest part of the photo. Each tap after the first offers the next quietest place.
+   */
+  const placeQuietly = async () => {
+    if (!asset || !current) return;
+    setPlacing(true);
+    try {
+      const ratio = aspect ?? (tall ? 9 / 16 : 4 / 5);
+      const mark = MARK_TEXTS.has(current.text.trim()) ? undefined : layers.find((l) => l.id !== current.id && MARK_TEXTS.has(l.text.trim()));
+      const [map, line, markSize] = await Promise.all([pictureSample(asset.dataUrl, ratio).then((p) => quietMap(p)), layerExtent(current, ratio), mark ? layerExtent(mark, ratio) : undefined]);
+      const others = await Promise.all(
+        layers.filter((l) => l.id !== current.id && l.id !== mark?.id).map(async (l) => {
+          const e = await layerExtent(l, ratio);
+          return { x: l.x, y: l.y, w: e.boxW, h: e.h };
+        }),
+      );
+      const gap = 0.012;
+      const size = { w: Math.max(line.textW, markSize?.textW ?? 0), h: line.h + (markSize ? gap + markSize.h : 0) };
+      const spots = quietSpots(map, size, { avoid: others });
+      if (!spots.length) return;
+      const n = quiet?.id === current.id ? (quiet.n + 1) % spots.length : 0;
+      const spot = spots[n];
+      const at = placeInSpot(spot, current.align, line, markSize, gap);
+      onChange(
+        layers.map((l) =>
+          l.id === current.id ? { ...l, ...at.line } : mark && at.mark && l.id === mark.id ? { ...l, ...at.mark, align: current.align } : l,
+        ),
+      );
+      setQuiet({ id: current.id, n });
+      const isLight = readableOn(current.colour) === '#1a1410';
+      const on = spot.light > 0.62 && isLight ? 'light' : spot.light < 0.38 && !isLight ? 'dark' : null;
+      setHint(on ? { id: current.id, markId: mark?.id, on } : null);
+      toast(n === 0 ? 'Placed in the quietest part of the picture. Tap again for another place.' : `Another quiet place (${n + 1} of ${spots.length}).`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPlacing(false);
+    }
+  };
+  const applyHint = () => {
+    if (!hint) return;
+    const c = READ_ON[hint.on];
+    onChange(layers.map((l) => (l.id === hint.id ? { ...l, ...c.line } : l.id === hint.markId ? { ...l, ...c.mark } : l)));
+    setHint(null);
+  };
   const bold = !!current && current.weight >= 650;
   const sizePct = current ? Math.round(current.size * 1000) / 10 : 0;
 
@@ -228,6 +290,20 @@ export function TextStudio({
             onEditingChange={setEditing}
           />
         </div>
+
+        {hint && layers.some((l) => l.id === hint.id) && (
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-2 rounded-xl border border-accent/50 bg-accent/10 p-2 text-sm" role="status">
+            <span className="text-ink">
+              This place is {hint.on}; {READ_ON[hint.on].label} may read better there.
+            </span>
+            <button type="button" className="btn min-h-8 px-3" onClick={applyHint}>
+              Use {READ_ON[hint.on].label}
+            </button>
+            <button type="button" className="btn-ghost min-h-8 px-2" aria-label="Keep the colours" onClick={() => setHint(null)}>
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
         {/* The toolbar: every option is a button you can see, like a word processor. */}
         <div ref={bar} className="relative mt-3">
@@ -283,6 +359,9 @@ export function TextStudio({
               </Tool>
               <Tool label="Align right" on={current.align === 'right'} onClick={() => set({ align: 'right' })}>
                 <AlignRight size={18} />
+              </Tool>
+              <Tool label={placing ? 'Finding a quiet place…' : 'Place in quiet space'} on={quiet?.id === current.id} onClick={() => void placeQuietly()}>
+                <Wind size={18} className={placing ? 'animate-pulse' : undefined} />
               </Tool>
               <Divider />
               <Tool label="Capitals" on={current.caps} onClick={() => set({ caps: !current.caps })}>
