@@ -1,8 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   BriefcaseBusiness, Feather, FolderKanban, FolderOpen, Hash, Library, Menu,
-  Search, MoreHorizontal, ChevronDown, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit, Waypoints, Megaphone,
+  Search, MoreHorizontal, ChevronDown, Settings, Share2, Sprout, SpellCheck, Trash2, WifiOff, Orbit, Waypoints, Megaphone, Hammer, PenLine,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { SearchPalette } from './SearchPalette';
@@ -11,6 +11,9 @@ import { isOrphan } from '../domain/query';
 import { Modal } from './Modal';
 import { SyncBadge } from './SyncBadge';
 import { useOnline } from '../hooks/useOnline';
+import { BuildNoteComposer } from './build/BuildNoteComposer';
+import { rememberScreen } from './build/screen';
+import { screenName } from '../db/buildNotes';
 
 type NavDef = { to: string; label: string; icon: typeof Feather; end?: boolean };
 /** The three rooms: everything YOUrigin is for. */
@@ -30,6 +33,7 @@ const MORE: NavDef[] = [
   { to: '/spelling', label: 'Spelling', icon: SpellCheck },
   { to: '/portfolios', label: 'Portfolios', icon: BriefcaseBusiness },
   { to: '/shared', label: 'Shared to YOU', icon: Share2 },
+  { to: '/build-notes', label: 'Build notes', icon: Hammer },
   { to: '/settings', label: 'Settings & backup', icon: Settings },
   { to: '/trash', label: 'Trash', icon: Trash2 },
 ];
@@ -44,6 +48,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const online = useOnline();
   const [searchOpen, setSearchOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  // A change to make to YOUrigin, noted from whatever screen you're on.
+  const [noting, setNoting] = useState(false);
+  useEffect(() => rememberScreen(loc.pathname + loc.search), [loc.pathname, loc.search]);
   const galleryOn = loc.pathname === '/library' && new URLSearchParams(loc.search).get('view') === 'gallery';
   const activeFor = (to: string, isActive: boolean) => to === '/library?view=gallery' ? galleryOn : to === '/library' ? isActive && !galleryOn : to === '/initiatives' ? isActive || loc.pathname.startsWith('/initiative/') || loc.pathname.startsWith('/projects/') : isActive;
   useEffect(() => {
@@ -89,6 +96,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             </summary>
             <nav aria-label="More" className="mt-0.5 space-y-0.5">{MORE.map((i) => navItem(i, i.to === '/orphans' ? orphanCount : undefined))}</nav>
           </details>
+          <button type="button" onClick={() => setNoting(true)} className="nav-link mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm" title="Note a change to make to YOUrigin. It goes to Build Notes in Notion.">
+            <PenLine size={18} strokeWidth={1.7} aria-hidden /> <span className="flex-1 text-left">Note a change</span>
+          </button>
           <div className="mt-4 flex items-center justify-between px-3"><SyncBadge /><span className="sidebar-muted text-[11px]">{online ? 'Local-first · Online' : 'Offline · Ready'}</span></div>
           {!online && <p className="sidebar-muted mt-2 flex items-center gap-2 px-3 text-xs"><WifiOff size={13}/> Everything still works offline</p>}
         </div>
@@ -109,6 +119,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         <button type="button" onClick={() => setMoreOpen(true)} className="flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] text-[var(--chrome-text)]"><Menu size={19}/>More</button>
       </nav>
       <Modal open={moreOpen} onClose={() => setMoreOpen(false)} title="More"><nav className="space-y-1" aria-label="More">{MORE.map((i) => navItem(i, i.to === '/orphans' ? orphanCount : undefined))}</nav></Modal>
+      <Modal open={noting} onClose={() => setNoting(false)} title="Note a change to YOUrigin">
+        {noting && <BuildNoteComposer seenOn={screenName(loc.pathname + loc.search)} autoFocus onAdded={() => setNoting(false)} />}
+        <p className="mt-3 text-xs text-muted">
+          It goes to Build Notes in Notion. See them all in <Link to="/build-notes" className="underline" onClick={() => setNoting(false)}>Build notes</Link>.
+        </p>
+      </Modal>
       <SearchPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );

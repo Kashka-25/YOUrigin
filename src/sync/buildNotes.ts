@@ -122,3 +122,24 @@ export async function sendEditNote(item: ContentItem): Promise<string | undefine
   remember(item.id, { text, url, at: Date.now() });
   return url;
 }
+
+/**
+ * Sends every note here that is new or changed since it was last sent, one at a time.
+ * Returns how many went; stops quietly when offline or not signed in.
+ */
+export async function sendWaitingNotes(items: ContentItem[]): Promise<{ sent: number; error?: string }> {
+  const waiting = items.filter((i) => !i.deletedAt && needsSending(i));
+  if (!waiting.length) return { sent: 0 };
+  if (!navigator.onLine) return { sent: 0, error: 'You’re offline. They’ll send when you’re back online.' };
+  if (!(await isSignedIn())) return { sent: 0, error: 'Sign in under Settings → Sync and they’ll go to Notion.' };
+  let sent = 0;
+  for (const item of waiting) {
+    try {
+      await sendEditNote(item);
+      sent++;
+    } catch (e) {
+      return { sent, error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+  return { sent };
+}
