@@ -19,6 +19,7 @@ import { displayTitle, excerpt } from '../domain/text';
 import { ancestorsOf, canMoveInto, childrenOf, parentOf, topLevel, treeOrder } from '../domain/creations';
 import { creationCounts, notesIn } from '../domain/creationCounts';
 import { ProjectTagsSection } from '../components/ProjectTags';
+import { RestingBox } from '../components/book/RestingBox';
 import { Modal, useConfirm } from '../components/Modal';
 import { EmptyState, Spinner } from '../components/ui';
 
@@ -338,6 +339,8 @@ export function ProjectHome() {
           <div className="panel p-5 text-sm text-ink-2">{notes.length ? 'No notes match.' : 'No notes here yet.'}</div>
         )}
       </section>
+
+      <RestingBox className="mt-10" projects={[project]} works={lib.books} contentById={lib.contentById} preferWorkId={workspace?.id} />
 
       <NewCreationDialog open={addingBranch} onClose={() => setAddingBranch(false)} parent={project} />
 
