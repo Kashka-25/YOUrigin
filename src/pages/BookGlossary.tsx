@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BookOpenText, Check, Pencil, Plus } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
-import { addPage, addSection, renameSection, setSectionStatus } from '../db/books';
+import { addChapter, addPage, renameChapter, setSectionStatus } from '../db/books';
+import { chapterTagNotice } from '../db/chapterTags';
+import { useToast } from '../components/Toast';
 import { updateContent } from '../db/content';
 import { bookPages } from '../domain/bookPages';
 import { displayTitle } from '../domain/text';
@@ -43,6 +45,7 @@ export function BookGlossary() {
   const data = useBookPages(id);
   const nav = useNavigate();
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
 
   if (!lib) return <Spinner />;
   if (!data) return <EmptyState title="Book not found" action={<Link to="/initiatives" className="btn">All projects</Link>} />;
@@ -61,12 +64,16 @@ export function BookGlossary() {
   const newChapter = async () => {
     const title = window.prompt('Name of the new chapter', '');
     if (title === null) return;
-    await addSection(book.id, title);
+    const { tag } = await addChapter(book.id, title);
+    const notice = chapterTagNotice(tag);
+    if (notice) toast(notice);
   };
 
   const counts: Record<Status, number> = { none: 0, seed: 0, developing: 0, polished: 0 };
   flat.forEach(({ item }) => counts[item.status]++);
   let n = 0;
+  // Each chapter's linked tag: what to type in Gather to file a note there.
+  const tagOf = new Map(lib.tags.filter((t) => t.sectionId && t.projectId).map((t) => [t.sectionId!, t.name]));
 
   return (
     <div className="min-h-dvh bg-card text-ink">
@@ -107,7 +114,7 @@ export function BookGlossary() {
             n += pages.length;
             return (
               <section key={section?.id ?? 'loose'} aria-label={section?.title ?? 'Not in a chapter yet'}>
-                <ChapterHeading section={section} />
+                <ChapterHeading section={section} tag={section ? tagOf.get(section.id) : undefined} />
                 {pages.length === 0 ? (
                   <p className="py-2 pl-10 text-sm text-muted">No pages yet.</p>
                 ) : (
@@ -147,12 +154,16 @@ export function BookGlossary() {
 }
 
 /** A chapter's name with its own colour; the pencil renames it. */
-function ChapterHeading({ section }: { section: Section | null }) {
+function ChapterHeading({ section, tag }: { section: Section | null; tag?: string }) {
   const [editing, setEditing] = useState<string | null>(null);
+  const toast = useToast();
   if (!section)
     return <h2 className="border-b border-line pb-1.5 pl-10 font-sans text-xs font-semibold tracking-[0.2em] text-muted uppercase">Not in a chapter yet</h2>;
   const save = async () => {
-    if (editing !== null) await renameSection(section.id, editing);
+    if (editing !== null && editing.trim() !== section.title) {
+      const notice = chapterTagNotice(await renameChapter(section.id, editing));
+      if (notice) toast(notice);
+    }
     setEditing(null);
   };
   return (
@@ -160,7 +171,10 @@ function ChapterHeading({ section }: { section: Section | null }) {
       <StatusDot value={section.status ?? 'none'} what={`Chapter ${section.title}`} onChange={(s) => void setSectionStatus(section.id, s)} />
       {editing === null ? (
         <>
-          <h2 className="min-w-0 flex-1 truncate font-sans text-sm font-semibold tracking-[0.2em] text-accent uppercase">{section.title}</h2>
+          <h2 className="min-w-0 truncate font-sans text-sm font-semibold tracking-[0.2em] text-accent uppercase">{section.title}</h2>
+          <span className="min-w-0 flex-1 truncate text-xs text-muted" title={tag ? `Type #${tag} when you capture a note to file it in this chapter` : undefined}>
+            {tag ? `#${tag}` : ''}
+          </span>
           <button type="button" className="btn-ghost h-8 w-8 justify-center p-0 text-muted" aria-label={`Rename chapter ${section.title}`} onClick={() => setEditing(section.title)}>
             <Pencil size={14} />
           </button>
