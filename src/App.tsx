@@ -13,6 +13,7 @@ import { Gathering } from './pages/Gathering';
 import { MyUniverse } from './pages/MyUniverse';
 import { Library } from './pages/Library';
 import { ItemPage } from './pages/ItemPage';
+import { BuildNotes } from './pages/BuildNotes';
 import { Projects, ProjectHome } from './pages/Projects';
 import { BookBuilder } from './pages/BookBuilder';
 import { Manuscript } from './pages/Manuscript';
@@ -177,6 +178,7 @@ export default function App() {
                       <Route path="/collections/:id" element={<CollectionPage />} />
                       <Route path="/trash" element={<Trash />} />
                       <Route path="/settings" element={<Settings />} />
+                      <Route path="/build-notes" element={<BuildNotes />} />
                       <Route path="/spelling" element={<Spelling />} />
                       <Route path="/shared" element={<Shared />} />
                       <Route path="/portfolios" element={<Portfolios />} />
