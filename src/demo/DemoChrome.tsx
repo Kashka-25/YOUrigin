@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Compass, FlaskConical, Mail, RotateCcw, Sparkles, SquarePen } from 'lucide-react';
 import { Logo } from '../components/Logo';
@@ -86,9 +86,13 @@ function JourneyGuide() {
   );
 }
 
-/** A small, always-visible badge: it's a demo, on example data, with Reset and a way back.
+/** Stage view and the clean writing page are full screen, with their own controls: the badge would sit over them. */
+const STAGE = /^\/projects\/[^/]+\/(stage|book\/[^/]+)\/?$/;
+
+/** A small badge on every screen but Stage view and the writing page: it's a demo, on example data, with Reset and a way back.
  *  Phones: just above the bottom dock. Laptops: in the top bar, on the right. */
 export function DemoBar() {
+  const { pathname } = useLocation();
   const [busy, setBusy] = useState(false);
   const reset = async () => {
     if (!window.confirm('Reset the demo? Everything you made here is cleared and you start again.')) return;
@@ -101,6 +105,7 @@ export function DemoBar() {
       setBusy(false);
     }
   };
+  if (STAGE.test(pathname)) return null;
   return (
     <div
       data-screen-edge

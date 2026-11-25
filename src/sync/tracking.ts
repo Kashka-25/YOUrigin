@@ -20,6 +20,7 @@ export const SYNC_TABLES = [
   'posts',
   'clipInfo',
   'textStyles',
+  'postAccounts',
 ] as const;
 export type SyncTable = (typeof SYNC_TABLES)[number];
 const SYNCED = new Set<string>(SYNC_TABLES);
@@ -28,13 +29,18 @@ const REMOTE = '__youriginRemote';
 
 /**
  * Runs `fn` in a read-write transaction whose writes are NOT recorded as local
- * changes — used when applying changes that arrived from the server.
+ * changes â€” used when applying changes that arrived from the server.
  */
 export async function runRemote<T>(db: Dexie, tables: string[], fn: () => Promise<T>): Promise<T> {
   return db.transaction('rw', tables, async (tx) => {
     (tx.idbtrans as unknown as Record<string, boolean>)[REMOTE] = true;
     return fn();
   });
+}
+
+/** Writes in this transaction stay on this device: they are not recorded for sync. */
+export function untracked(tx: { idbtrans: unknown }): void {
+  (tx.idbtrans as Record<string, boolean>)[REMOTE] = true;
 }
 
 /**

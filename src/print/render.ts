@@ -9,6 +9,8 @@ export interface PrintInput {
   entries: BookEntry[];
   contentById: Map<string, ContentItem>;
   assets: Map<string, Asset>;
+  /** Pages set on a photo, already drawn with their words (entry id → picture). See photoPages.ts. */
+  photoPages?: Map<string, string>;
 }
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -50,7 +52,7 @@ export function resolveSpace(c: ContentItem, entry: Pick<BookEntry, 'space'> | u
 }
 
 /** The book as HTML, in reading order. Paged.js turns this into pages using bookCss(). */
-export function bookHtml({ book, design: d, sections, entries, contentById, assets }: PrintInput): string {
+export function bookHtml({ book, design: d, sections, entries, contentById, assets, photoPages }: PrintInput): string {
   const parts: string[] = [];
   const cover = book.coverAssetId ? assets.get(book.coverAssetId) : undefined;
   if (cover) parts.push(`<section class="yb-cover">${img(cover, 'yb-cover-img', `Cover of ${book.title}`)}</section>`);
@@ -119,6 +121,11 @@ export function bookHtml({ book, design: d, sections, entries, contentById, asse
         return `${layout === 'inline' ? sep : ''}<figure class="yb-fig yb-fig-${layout}" data-piece="${c.id}">${img(a, 'yb-fig-img', c.title)}${
           c.body.trim() ? `<figcaption>${esc(c.body)}</figcaption>` : ''
         }</figure>`;
+      }
+      // Set on a photo in this book: a page of its own, edge to edge, words and all.
+      const photo = photoPages?.get(placed[i].entry.id);
+      if (photo) {
+        return `<figure class="yb-fig yb-fig-full-bleed yb-photo-page" data-piece="${c.id}"><img class="yb-fig-img" src="${photo}" alt="${esc(displayTitle(c))}" /></figure>`;
       }
       const sp = resolveSpace(c, placed[i].entry, d);
       return `${sep}<article class="yb-piece yb-type-${c.type}${sp.kind !== 'none' ? ' yb-has-space' : ''}" data-piece="${c.id}">

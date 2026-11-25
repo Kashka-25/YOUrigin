@@ -1,3 +1,4 @@
+import type { TextLayer } from '../posts/textLayers';
 // Core data model. Content is independent from structure: books, collections
 // and relationships only ever *reference* content by id.
 
@@ -204,6 +205,10 @@ export interface Tag extends Syncable {
   /** Normalised lowercase name without '#'. Unique. */
   name: string;
   familyId: string | null;
+  /** A Creation's own tag: a note given this tag joins that Creation (and its workspace). */
+  projectId?: string;
+  /** With projectId: the chapter of the Creation's workspace a tagged note is placed in. Missing: the tray. */
+  sectionId?: string;
 }
 
 export interface Collection extends Syncable {
@@ -327,6 +332,8 @@ export interface Section extends Syncable {
   notes: string;
   /** Optional artwork shown on the section's opening page (asset id). */
   imageAssetId?: string;
+  /** The chapter's own traffic light (missing = no colour). */
+  status?: Status;
 }
 
 /** A reference from a book (and optionally a section) to a content item.
@@ -339,6 +346,18 @@ export interface BookEntry extends Syncable {
   order: number;
   /** Writing/drawing space after this piece in this book (default: automatic). */
   space?: EntrySpace;
+  /** In this book, the piece is set on a photo (a page of its own, edge to edge). */
+  photo?: EntryPhoto;
+}
+
+/**
+ * A photo behind a piece's page in one book, with the words placed on it. The words that
+ * show the piece itself are linked to it (`bind`), so the piece still exists only once.
+ */
+export interface EntryPhoto {
+  /** The picture (asset id): a Gallery photo, or one used in a post. */
+  assetId: string;
+  layers: TextLayer[];
 }
 
 /** 'idea': the idea behind an artwork (from = artwork, to = the note). */

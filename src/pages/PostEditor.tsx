@@ -1,18 +1,22 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Accessibility, AlertTriangle, ArrowLeft, CalendarClock, Check, ChevronDown, Copy, ExternalLink, Eye, FolderOpen, Globe, Hash, Link2, ListChecks, Megaphone, Plus, Quote, Search, Shapes, Sparkles, StickyNote, Trash2, Type, Undo2, X } from 'lucide-react';
+import { MessageSquareText, Accessibility, AlertTriangle, ArrowLeft, AtSign, CalendarClock, Check, ChevronDown, Copy, ExternalLink, Eye, FolderOpen, Globe, Hash, Link2, ListChecks, Megaphone, Plus, Quote, Search, Shapes, Sparkles, StickyNote, Trash2, Type, Undo2, X } from 'lucide-react';
 import { EmptyState, SaveIndicator, Spinner } from '../components/ui';
 import { Modal, useConfirm } from '../components/Modal';
 import { useToast } from '../components/Toast';
 import { AutoTextarea } from '../components/AutoTextarea';
 import { PostPreview } from '../components/posts/PostMedia';
 import { MediaComposer } from '../components/posts/MediaComposer';
+import { PostEditsPanel } from '../components/posts/PostEdits';
+import { editsSummary, openEdits } from '../posts/edits';
 import { FORMAT_ICON, PostStatusPill, WorldDot } from '../components/posts/PostBits';
 import { useAutosave } from '../hooks/useAutosave';
 import { DEMO } from '../demo/mode';
 import { useLibrary } from '../hooks/useLibrary';
-import { deletePost, linkPiece, restorePost, setPostStatus, unlinkPiece, updatePost, usePost, type PostPatch } from '../db/posts';
+import { deletePost, linkPiece, putMediaBack, restorePost, setPostStatus, takeOutMedia, unlinkPiece, updatePost, usePost, type PostPatch, type TakeOutTo } from '../db/posts';
 import { mediaFromFile, removeMediaIfUnused, withCover } from '../db/postMedia';
+import { movePostsToAccount, usePostAccounts } from '../db/postAccounts';
+import { accountLabel, accountOf } from '../posts/accounts';
 import { removeAssetIfUnused, saveImage } from '../db/assets';
 import { collectImportFiles } from '../io/postMedia';
 import { TYPE_LABEL } from '../domain/constants';
@@ -196,6 +200,7 @@ function Editor({ post }: { post: Post }) {
   const toast = useToast();
   const confirm = useConfirm();
   const lib = useLibrary();
+  const accounts = usePostAccounts();
   const [fields, setFields] = useState<Fields>(() => fieldsOf(post));
   const [picking, setPicking] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -246,6 +251,24 @@ function Editor({ post }: { post: Post }) {
     setMedia(fields.media.filter((_, i) => i !== index));
     await flush();
     await removeMediaIfUnused(m);
+  };
+
+  /** Moves slides out of this post, to Ideas or into a new post of their own. They aren't deleted. */
+  const takeOut = async (indexes: number[], to: TakeOutTo) => {
+    await flush();
+    const before = { media: fields.media, format: fields.format };
+    const made = await takeOutMedia(post.id, indexes, to);
+    if (!made.length) return;
+    const kept = fields.media.filter((_, i) => !indexes.includes(i));
+    setFields((f) => ({ ...f, media: kept, format: formatForMedia(kept, f.format) }));
+    const n = indexes.length;
+    const slides = `${n} slide${n === 1 ? '' : 's'}`;
+    toast(to === 'ideas' ? `${slides} back in Ideas.` : n === 1 ? 'Made into its own post, in Ideas.' : `${slides} made into their own carousel, in Ideas.`, {
+      undo: async () => {
+        await putMediaBack(post.id, before, made);
+        setFields((f) => ({ ...f, ...before }));
+      },
+    });
   };
 
   const setCover = async (index: number, picture: File) => {
@@ -307,6 +330,7 @@ function Editor({ post }: { post: Post }) {
           busy={adding}
           onAdd={(f) => void addMedia(f)}
           onRemove={(i) => void removeMedia(i)}
+          onTakeOut={(indexes, to) => void takeOut(indexes, to)}
           onReorder={(media) => set({ media })}
           onCover={(i, f) => void setCover(i, f)}
           world={fields.world}
@@ -347,6 +371,10 @@ function Editor({ post }: { post: Post }) {
         )}
 
         <div className="rounded-2xl border border-line bg-card px-4">
+          <Row icon={MessageSquareText} label="Edits" summary={editsSummary(post)} open={openEdits(post).length > 0}>
+            <PostEditsPanel post={post} />
+          </Row>
+
           <Row icon={CalendarClock} label="Schedule" summary={when ? `${when.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })} · ${fields.time || '—'}` : 'Not placed yet'}>
             <div className="grid grid-cols-2 gap-3">
               <label>
@@ -367,6 +395,31 @@ function Editor({ post }: { post: Post }) {
               </p>
             )}
           </Row>
+
+          {accounts && accounts.length > 1 && (
+            <Row icon={AtSign} label="Account" summary={accountLabel(accounts.find((a) => a.id === accountOf(post)) ?? accounts[0])}>
+              <fieldset>
+                <legend className="label">Instagram account this goes on</legend>
+                <div className="flex flex-wrap gap-2">
+                  {accounts.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      aria-pressed={accountOf(post) === a.id}
+                      className={`btn min-h-10 ${accountOf(post) === a.id ? 'border-accent bg-accent/10 text-ink' : ''}`}
+                      onClick={async () => {
+                        if (accountOf(post) === a.id) return;
+                        await movePostsToAccount([post.id], a.id);
+                        toast(`Moved to ${accountLabel(a)}.`);
+                      }}
+                    >
+                      <AtSign size={14} aria-hidden /> {a.handle || a.name}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            </Row>
+          )}
 
           <Row icon={Shapes} label="Format and world" summary={`${FORMAT_LABEL[fields.format]} · ${WORLD_LABEL[fields.world]}`}>
             <fieldset>

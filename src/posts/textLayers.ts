@@ -35,6 +35,11 @@ export interface TextLayer {
   underline?: boolean;
   /** A marker-pen stroke behind each line (#rrggbb, drawn see-through), or none. */
   highlight?: string | null;
+  /**
+   * Words that come from a piece rather than being typed here: its body (a poem) or its
+   * title. The piece's own words are always used, so editing the poem updates the page.
+   */
+  bind?: 'body' | 'title';
 }
 
 export const TEXT_FONTS: Record<TextFont, { label: string; family: string; note: string; weights: [number, number] }> = {
@@ -223,4 +228,9 @@ export function readableOn(hex: string): string {
     return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
   });
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#1a1410' : '#f6efe2';
+}
+
+/** The layers with linked words filled in from the piece they come from. Content exists once. */
+export function withBoundText(layers: TextLayer[], piece: { title: string; body: string }): TextLayer[] {
+  return layers.map((l) => (l.bind === 'body' ? { ...l, text: piece.body.trim() } : l.bind === 'title' ? { ...l, text: piece.title.trim() } : l));
 }

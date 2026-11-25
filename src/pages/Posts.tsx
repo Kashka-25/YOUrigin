@@ -12,8 +12,13 @@ import { FeedTileFace, PostChip, WorldDot, postTitle } from '../components/posts
 import { GalleryPicker } from '../components/posts/GalleryPicker';
 import { GalleryView } from '../components/art/GalleryView';
 import { DEMO } from '../demo/mode';
+import { AccountSwitcher, MoveToAccount } from '../components/posts/Accounts';
+import { EditsWaiting } from '../components/posts/PostEdits';
+import { movePostsToAccount, usePoemIdeasToMove, usePostAccounts } from '../db/postAccounts';
+import { MAIN_ACCOUNT, POETRY_ACCOUNT, accountLabel, accountOf, rememberShownAccount, shownAccount, type PostAccount } from '../posts/accounts';
 import {
   STATUS_LABEL,
+  isFeedFormat,
   STATUS_ORDER,
   WEEK_PLAN,
   addDays,
@@ -225,10 +230,34 @@ function MonthView({ posts, at, setAt }: { posts: Post[]; at: Date; setAt: (d: D
  * is the schedule. Drag on a laptop; on the phone, tap Arrange, tap a post,
  * then tap where it should go.
  */
-function GridView({ posts }: { posts: Post[] }) {
+const GRID_IDEAS_KEY = 'yourigin.posts.gridIdeas.';
+
+/** Whether the grid shows undated posts as a preview: remembered per account, on at first except for the main one. */
+function rememberedGridIdeas(account: string): boolean {
+  try {
+    const v = localStorage.getItem(GRID_IDEAS_KEY + account);
+    if (v) return v === 'on';
+  } catch {
+    /* private mode */
+  }
+  return account !== MAIN_ACCOUNT;
+}
+
+function GridView({ posts, account }: { posts: Post[]; account: string }) {
   const navigate = useNavigate();
   const toast = useToast();
   const feed = feedOrder(posts);
+  // Posts with no date yet (mostly ideas), shown ahead of the planned feed as a preview of the profile.
+  const undated = posts.filter((p) => p.scheduledAt === null && isFeedFormat(p.format)).sort((a, b) => b.createdAt - a.createdAt);
+  const [withIdeas, setWithIdeasState] = useState(() => rememberedGridIdeas(account));
+  const setWithIdeas = (on: boolean) => {
+    setWithIdeasState(on);
+    try {
+      localStorage.setItem(GRID_IDEAS_KEY + account, on ? 'on' : 'off');
+    } catch {
+      /* private mode */
+    }
+  };
   const [arranging, setArranging] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
@@ -258,9 +287,17 @@ function GridView({ posts }: { posts: Post[] }) {
     setPicked(null);
   };
 
-  if (!feed.length) {
+  const preview = withIdeas && !arranging ? undated : [];
+  const ideasToggle = undated.length > 0 && (
+    <button type="button" className={withIdeas ? 'btn-primary' : 'btn'} aria-pressed={withIdeas} onClick={() => setWithIdeas(!withIdeas)} title="Show posts with no date yet, ahead of the planned ones">
+      <Lightbulb size={16} /> Ideas {undated.length}
+    </button>
+  );
+
+  if (!feed.length && !preview.length) {
     return (
       <>
+        {ideasToggle && <div className="mb-3 flex justify-end">{ideasToggle}</div>}
         <EmptyState title="The grid is empty">Give a post a date and time and it appears here, in the place it will take in your profile.</EmptyState>
         <Unplaced posts={posts} />
       </>
@@ -272,9 +309,16 @@ function GridView({ posts }: { posts: Post[] }) {
     <>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <p className="min-w-0 flex-1 text-sm text-ink-2">
-          {arranging ? (picked ? 'Now tap where it should go.' : 'Tap the post to move.') : 'Your profile as it will look, newest first.'}
+          {arranging
+            ? picked
+              ? 'Now tap where it should go.'
+              : 'Tap the post to move.'
+            : preview.length
+              ? 'Your profile as it could look: posts with no date yet come first, marked “No date”.'
+              : 'Your profile as it will look, newest first.'}
         </p>
-        <button
+        {!arranging && ideasToggle}
+        {feed.length > 0 && <button
           type="button"
           className={arranging ? 'btn-primary' : 'btn'}
           aria-pressed={arranging}
@@ -284,9 +328,19 @@ function GridView({ posts }: { posts: Post[] }) {
           }}
         >
           <Move size={16} /> {arranging ? 'Done' : 'Arrange'}
-        </button>
+        </button>}
       </div>
       <ol className="mx-auto grid max-w-xl grid-cols-3 gap-0.5 overflow-hidden rounded-lg bg-line" aria-label="Profile grid">
+        {preview.map((p) => (
+          <li key={p.id} className="relative">
+            <button type="button" onClick={() => navigate(`/posts/${p.id}`)} aria-label={`${postTitle(p)}, ${STATUS_LABEL[p.status]}, no date yet`} className="relative block w-full">
+              <FeedTileFace post={p} />
+            </button>
+            <span className="pointer-events-none absolute left-1 top-1 z-10 rounded border border-dashed border-white/70 bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white" aria-hidden>
+              No date
+            </span>
+          </li>
+        ))}
         {feed.map((p, i) => (
           <li
             key={p.id}
@@ -326,7 +380,8 @@ function GridView({ posts }: { posts: Post[] }) {
         ))}
       </ol>
       {hidden > 0 && <p className="mt-3 text-center text-xs text-muted">Stories aren’t shown here: they don’t appear in the profile grid.</p>}
-      <Unplaced posts={posts} />
+      {/* Posts with no date that aren't already in the preview above (Stories, or all of them with Ideas off). */}
+      <Unplaced posts={posts.filter((p) => !preview.includes(p))} />
     </>
   );
 }
@@ -355,7 +410,7 @@ function rememberedStage(): PostStatus {
  * long-press a post), pick one or several, then choose the stage; on a laptop, a post can
  * also be dragged onto a stage's tab.
  */
-function BoardView({ posts }: { posts: Post[] }) {
+function BoardView({ posts, accounts, account }: { posts: Post[]; accounts: PostAccount[]; account: string }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [stage, setStageState] = useState<PostStatus>(rememberedStage);
@@ -489,6 +544,7 @@ function BoardView({ posts }: { posts: Post[] }) {
               </button>
             ))}
           </div>
+          <MoveToAccount ids={chosen} accounts={accounts} current={account} onMoved={stopSelecting} />
         </div>
       )}
     </>
@@ -499,7 +555,7 @@ function BoardView({ posts }: { posts: Post[] }) {
  * Ideas: photos and videos kept to sort through later, like a camera roll.
  * Tap one to open it; select several to combine them into one post (a carousel).
  */
-function IdeasView({ posts }: { posts: Post[] }) {
+function IdeasView({ posts, accounts, account }: { posts: Post[]; accounts: PostAccount[]; account: string }) {
   const navigate = useNavigate();
   const toast = useToast();
   const input = useRef<HTMLInputElement>(null);
@@ -641,13 +697,16 @@ function IdeasView({ posts }: { posts: Post[] }) {
       )}
 
       {selecting && chosen.length > 0 && (
-        <div className="sticky bottom-[calc(64px+env(safe-area-inset-bottom))] z-20 mt-4 flex flex-wrap items-center justify-end gap-2 rounded-xl border border-line bg-card/95 p-3 backdrop-blur md:bottom-0">
-          <button type="button" className="btn-ghost text-seed" onClick={() => void setAside()}>
-            Set aside
-          </button>
-          <button type="button" className="btn-primary" disabled={chosen.length < 2} onClick={() => void combine()}>
-            Combine into one post ({chosen.length})
-          </button>
+        <div className={`sticky ${DEMO ? 'bottom-[calc(124px+env(safe-area-inset-bottom))]' : 'bottom-[calc(64px+env(safe-area-inset-bottom))]'} z-20 mt-4 rounded-xl border border-line bg-card/95 p-3 backdrop-blur md:bottom-0`}>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <button type="button" className="btn-ghost text-seed" onClick={() => void setAside()}>
+              Set aside
+            </button>
+            <button type="button" className="btn-primary" disabled={chosen.length < 2} onClick={() => void combine()}>
+              Combine into one post ({chosen.length})
+            </button>
+          </div>
+          <MoveToAccount ids={chosen} accounts={accounts} current={account} onMoved={finish} />
         </div>
       )}
 
@@ -682,8 +741,76 @@ function MenuItem({ icon: Icon, label, hint, onClick, disabled, className = '' }
   );
 }
 
+const POEM_OFFER_KEY = 'yourigin.posts.poemIdeasOffer';
+
+/**
+ * A one-time offer: ideas whose notes start with "Poem idea:" were written for the poetry
+ * account but sit in the main one. Nothing moves until Cassidy taps Move.
+ */
+function PoemIdeasOffer({ poetry, main }: { poetry: PostAccount | undefined; main: PostAccount | undefined }) {
+  const toast = useToast();
+  const ids = usePoemIdeasToMove();
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(POEM_OFFER_KEY) === 'done';
+    } catch {
+      return false;
+    }
+  });
+  if (!poetry || !main || dismissed || !ids?.length) return null;
+  const done = () => {
+    setDismissed(true);
+    try {
+      localStorage.setItem(POEM_OFFER_KEY, 'done');
+    } catch {
+      /* private mode */
+    }
+  };
+  return (
+    <div className="mb-4 rounded-xl border border-accent/50 bg-accent/10 p-3" role="status">
+      <p className="text-sm text-ink">
+        {ids.length} post{ids.length === 1 ? '' : 's'} in {accountLabel(main)} {ids.length === 1 ? 'has' : 'have'} notes starting “Poem idea:”. Move {ids.length === 1 ? 'it' : 'them'} to {accountLabel(poetry)}?
+      </p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={async () => {
+            const n = await movePostsToAccount(ids, poetry.id);
+            done();
+            toast(`${n} moved to ${accountLabel(poetry)}.`);
+          }}
+        >
+          Move {ids.length} to {accountLabel(poetry)}
+        </button>
+        <button type="button" className="btn-ghost" onClick={done}>
+          Leave them
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function Posts() {
-  const posts = usePosts();
+  const allPosts = usePosts();
+  const accounts = usePostAccounts();
+  const [accountChoice, setAccountChoice] = useState(shownAccount);
+  // An account removed on another device falls back to the main one.
+  const account = !accounts || accounts.some((a) => a.id === accountChoice) ? accountChoice : MAIN_ACCOUNT;
+  const chooseAccount = (id: string) => {
+    rememberShownAccount(id);
+    setAccountChoice(id);
+  };
+  // Once the remembered account is gone, new posts go to the main one too.
+  useEffect(() => {
+    if (account !== accountChoice) {
+      rememberShownAccount(account);
+      setAccountChoice(account);
+    }
+  }, [account, accountChoice]);
+  const posts = allPosts?.filter((p) => accountOf(p) === account);
+  const counts: Record<string, number> = {};
+  for (const p of allPosts ?? []) counts[accountOf(p)] = (counts[accountOf(p)] ?? 0) + 1;
   const navigate = useNavigate();
   const toast = useToast();
   const [params, setParams] = useSearchParams();
@@ -771,6 +898,12 @@ export function Posts() {
         </div>
       </header>
 
+      {accounts && <AccountSwitcher accounts={accounts} current={account} counts={counts} onChoose={chooseAccount} />}
+      {allPosts && accounts && (
+        <EditsWaiting posts={allPosts} accountName={(p) => accountLabel(accounts.find((a) => a.id === accountOf(p)) ?? accounts[0])} />
+      )}
+      {accounts && <PoemIdeasOffer poetry={accounts.find((a) => a.id === POETRY_ACCOUNT)} main={accounts.find((a) => a.id === MAIN_ACCOUNT)} />}
+
       <div className="mb-5 grid grid-cols-3 gap-1 rounded-xl border border-line p-1 sm:inline-grid sm:grid-cols-6" role="tablist" aria-label="View">
         {VIEWS.map((v) => (
           <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={`rounded-lg px-2 py-2 text-sm font-medium sm:px-4 ${view === v.id ? 'bg-accent text-accent-ink' : 'text-ink-2 hover:text-ink'}`} onClick={() => setView(v.id)}>
@@ -779,20 +912,20 @@ export function Posts() {
         ))}
       </div>
 
-      {!posts ? (
+      {!posts || !accounts ? (
         <Spinner />
       ) : view === 'week' ? (
         <WeekView posts={posts} at={at} setAt={setAt} />
       ) : view === 'month' ? (
         <MonthView key={`${at.getFullYear()}-${at.getMonth()}`} posts={posts} at={at} setAt={setAt} />
       ) : view === 'grid' ? (
-        <GridView posts={posts} />
+        <GridView key={account} posts={posts} account={account} />
       ) : view === 'ideas' ? (
-        <IdeasView posts={posts} />
+        <IdeasView key={account} posts={posts} accounts={accounts} account={account} />
       ) : view === 'gallery' ? (
         <GalleryView addable />
       ) : (
-        <BoardView posts={posts} />
+        <BoardView key={account} posts={posts} accounts={accounts} account={account} />
       )}
 
       {posts && !posts.length && view !== 'grid' && view !== 'ideas' && view !== 'gallery' && (

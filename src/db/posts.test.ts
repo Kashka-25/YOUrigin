@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import Dexie from 'dexie';
 import { db, SCHEMA_VERSION, YOUriginDB } from './db';
 import { exportBackup, replaceWithBackup } from './backup';
-import { createPost, deletePost, importedDraftKeys, linkPiece, movePostInFeed, savePostDrafts, setPostStatus, unlinkPiece } from './posts';
+import { createPost, deletePost, importedDraftKeys, linkPiece, movePostInFeed, putMediaBack, savePostDrafts, setPostStatus, takeOutMedia, unlinkPiece } from './posts';
 import { createContent } from './content';
 import { SYNC_TABLES } from '../sync/tracking';
 import { draftsToPosts, parsePostDrafts, resolvePostDrafts } from '../io/importPosts';
@@ -164,5 +164,60 @@ describe('importing drafts', () => {
     const d = parsePostDrafts(text).drafts[0];
     expect(d).toMatchObject({ format: 'single-image', world: 'healing', scheduledAt: null });
     expect(d.warnings).toHaveLength(3);
+  });
+});
+
+describe('taking slides out of a post', () => {
+  const ids = (m: { kind: string; assetId?: string }[]) => m.map((x) => x.assetId ?? x.kind);
+  const carousel = () =>
+    createPost({
+      status: 'draft',
+      world: 'worlds-stories',
+      account: 'poetry',
+      caption: 'Words that stay put',
+      media: ['a', 'b', 'c', 'd'].map((assetId) => ({ kind: 'asset' as const, assetId, ...(assetId === 'b' ? { text: [] } : {}) })),
+      format: 'carousel',
+    });
+
+  it('sends each chosen slide back to Ideas as its own post, in the same world and account', async () => {
+    const id = await carousel();
+    const made = await takeOutMedia(id, [3, 1], 'ideas', 1000);
+    expect(made).toHaveLength(2);
+    const post = await db.posts.get(id);
+    expect(ids(post!.media)).toEqual(['a', 'c']);
+    expect(post).toMatchObject({ format: 'carousel', caption: 'Words that stay put', status: 'draft' });
+    const ideas = (await db.posts.bulkGet(made)).map((p) => p!);
+    expect(ideas.map((p) => ids(p.media))).toEqual([['b'], ['d']]);
+    for (const p of ideas) expect(p).toMatchObject({ status: 'idea', scheduledAt: null, format: 'single-image', world: 'worlds-stories', account: 'poetry', caption: '' });
+    // Ideas show newest first: the first slide taken out shows first.
+    expect(ideas[0].createdAt).toBeGreaterThan(ideas[1].createdAt);
+  });
+
+  it('makes the chosen slides into their own carousel, and one left behind makes a single picture', async () => {
+    const id = await carousel();
+    const [made, ...more] = await takeOutMedia(id, [0, 2, 3], 'new-post');
+    expect(more).toEqual([]);
+    expect(await db.posts.get(made)).toMatchObject({ status: 'idea', format: 'carousel', world: 'worlds-stories', account: 'poetry' });
+    expect(ids((await db.posts.get(made))!.media)).toEqual(['a', 'c', 'd']);
+    expect(await db.posts.get(id)).toMatchObject({ format: 'single-image', media: [{ kind: 'asset', assetId: 'b', text: [] }] });
+  });
+
+  it('moves slides without copying them, and undo puts everything back', async () => {
+    const id = await carousel();
+    const before = (await db.posts.get(id))!;
+    const made = await takeOutMedia(id, [0, 1], 'ideas');
+    const all = (await db.posts.toArray()).flatMap((p) => ids(p.media));
+    expect(all.sort()).toEqual(['a', 'b', 'c', 'd']);
+    await putMediaBack(id, before, made);
+    expect(await db.posts.get(id)).toMatchObject({ media: before.media, format: 'carousel' });
+    for (const m of made) expect((await db.posts.get(m))?.deletedAt).toBeTypeOf('number');
+  });
+
+  it('changes nothing when no slides are chosen or the post is gone', async () => {
+    const id = await carousel();
+    expect(await takeOutMedia(id, [], 'ideas')).toEqual([]);
+    expect(await takeOutMedia(id, [9], 'new-post')).toEqual([]);
+    expect(await takeOutMedia('missing', [0], 'ideas')).toEqual([]);
+    expect(await db.posts.count()).toBe(1);
   });
 });

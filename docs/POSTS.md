@@ -22,6 +22,17 @@ Plan, write, review and approve social media posts (Instagram) inside YOUrigin. 
 
 Posted times are placeholders until real insights are in (`WEEK_PLAN` in `src/posts/model.ts`).
 
+## Accounts
+
+Each post belongs to one Instagram account. The row of @ buttons at the top of Posts picks the account, and every view (Week, Month, Grid, Board, Ideas) then shows only that account's posts, so each account has its own profile grid. New posts, ideas and imported drafts go on the account being shown. Gallery is the shared picture library, so it doesn't change.
+
+- A new device starts with one account, **My account**, with no handle yet. The pencil beside the buttons renames an account, sets its @handle, adds another, or removes one. Names and handles sync to every device.
+- Cassidy's devices keep the two accounts they started with: **@_freethedream_** (colour travel, creation, music, talking heads) and **Poetry** (black-and-white photos with a Whisper line).
+- Removing an account moves all its posts (set-aside ones too) to the main account first, so nothing is lost. The main account can be renamed but not removed. An account that still has posts always shows, even if it was removed on another device.
+- Move a post from the editor (**Account** row), or select several on the Board or in Ideas and choose **Or move to account**.
+- In the Grid, **Ideas** shows posts that have no date yet ahead of the planned ones, marked **No date**, to preview how the account could look. It is on at first for every account except the main one.
+- Posts from before accounts existed belong to the main account. A one-time banner offers to move posts whose notes start with “Poem idea:” to Poetry; nothing moves until you tap Move.
+
 ## Making a post
 
 Laid out like Instagram's "New post" so it feels familiar:
@@ -36,6 +47,8 @@ Laid out like Instagram's "New post" so it feels familiar:
 The **Ideas** tab is a place for photos and videos you might post one day. **Jot a post idea…** keeps an idea in words alone. **From Gallery** turns pieces in the Gallery into ideas that point at the same picture or video (nothing is copied); photos and videos shared to YOUrigin from the phone's gallery land in the Gallery, ready for this.
 
 The **Gallery** tab (beside Ideas) shows every picture and video in YOUrigin; **Add photos & videos** adds more from the device. Tap **Select** (or long-press a picture) and tap pictures in slide order: with one chosen, **Make an idea**; with several, **Make a carousel** appears and opens the new post, slides in that order (or **Make separate ideas**). **Add ideas** (or drop files on it) turns each into its own undated Idea, shown like a camera roll. Tap one to open it, or **Select** several and **Combine into one post** to make a carousel in the order you tapped them; the others are set aside.
+
+To go the other way, open a post and tap **Take slides out** under its slides, then tap the slides to take. **Back to Ideas** makes each one its own Idea again; **Make their own carousel** (or **Make its own post** for one) puts them together in a new post in Ideas. Slides are moved, not copied, keep any words on them, and stay in the same world and account. The toast's **Undo** puts them back.
 
 ## Seeing what you're making
 
@@ -63,6 +76,14 @@ The **Gallery** tab (beside Ideas) shows every picture and video in YOUrigin; **
 | Notes to self | Never exported |
 
 Gentle checks (never blocking): a caption that touches on crisis without a helpline; cannabis words (Instagram restricts cannabis promotion); missing alt text; over the caption or hashtag limits.
+
+## Edits (for Claude)
+
+Each post has an **Edits** row at the top of its details. Type what to change there (a new crop, a different colour kept, the poem moved, another poem) and tap **Add edit**; add as many as you like. Claude reads them, makes the change and taps **Done** with a short note of what changed. Done edits stay under **Done** with their notes, and **Ask again** puts one back on the list.
+
+When any post has edits waiting, the Posts page shows "N edits waiting on M posts" above the views, across every account; tap it to see them all and open a post. Edits are part of the post, so they sync and go into backups; they are never exported.
+
+For Claude: read the `edits` on each post in the synced `posts` table (`doneAt: null` means waiting), make the change, then mark it done in the post's Edits row with a note. Notes to self are still Cassidy's own notes.
 
 ## Drafts file format (for Claude)
 
@@ -138,3 +159,11 @@ Publishing from the device would need Instagram's API (a Business or Creator acc
 On any picture slide in a post, **Add text** opens a small studio: add text boxes, drag them into place, and style them with brand looks (YOU title, Soft quote, Story serif, Headline, World label, Handwritten, Boxed), seven bundled fonts (Cinzel, Cormorant, Playfair, Newsreader, Josefin, Inter, Caveat; all work offline) and the brand palettes (YOU, the five worlds, Creative Universe, Atlantean Gardens), or any colour. The last look used becomes the start for the next box.
 
 The words are stored on the slide (`PostMedia.text`, fractions of the slide, so they sync encrypted and look the same everywhere) and show in the editor, Preview and the grid. **Save picture** draws the slide at 1080 wide (4:5, or 9:16 for Reels and Stories) with the words burned in: on the phone it opens the share sheet (save to gallery or straight to Instagram); on the laptop it downloads. Words stay in place when Claude's redrawn pictures are imported with "Update pictures". Text sits on pictures only, not on videos.
+
+**Plain page.** Beside **Add** in a post's slides (and on an empty post), **Plain page** adds a sheet of warm beige paper with a faint grain to write on. It's a picture like any other, so **Add text** puts a poem on it; a dark ink look reads well. Alternating these with photo poems breaks up a feed the way a poetry book breaks up its photographs.
+
+### Poems on photos in a book
+
+The same words-on-pictures tool works for book pages. Open a poem from its book (so the piece page shows the book's controls) and, under **On a photo**, tap **Set it on a photo** and choose a Gallery photo or one used in a post. The poem becomes its own page in that book, edge to edge, with its words on the picture: by default in your saved **Whisper** style, with the book's author name beneath in your signature style. **Place the words** opens the studio at the book's page shape; **Back on the page** returns it to an ordinary page.
+
+The words showing the poem are linked to it (`TextLayer.bind`), so the poem is still written once: edit the poem and the page follows, and the studio won't let those words be retyped on the picture. The photo and placement belong to the poem's place in that one book (`BookEntry.photo`), so the same poem can sit on a different photo in another book, or on plain paper. When printing, each photo page is drawn at 300 dpi for the book's trim, exactly as it looks in the studio, and placed as a full-bleed page.

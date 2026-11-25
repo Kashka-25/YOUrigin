@@ -30,7 +30,7 @@ import { useToast } from '../Toast';
 import { AssetImage } from '../AssetImage';
 import { useAsset } from '../../db/assets';
 import { downloadBlob } from '../../io/export';
-import { TextOnPicture, fontFamily, renderSlide } from './TextOnPicture';
+import { TextOnPicture, fontFamily, renderPicture, renderSlide } from './TextOnPicture';
 import { BRAND_COLOURS, FONT_ORDER, PLACEHOLDER_TEXT, TEXT_FONTS, TEXT_LOOKS, clamp, lookFor, lookOf, newTextLayer, readableOn, type TextLayer, type TextLook, type TextStyle } from '../../posts/textLayers';
 import type { PostWorld } from '../../posts/model';
 
@@ -120,6 +120,8 @@ export function TextStudio({
   assetId,
   layers,
   tall,
+  aspect,
+  title = 'Text on the picture',
   world,
   slideName,
   onChange,
@@ -129,6 +131,9 @@ export function TextStudio({
   assetId: string;
   layers: TextLayer[];
   tall: boolean;
+  /** A page shape (width ÷ height) other than a post's, such as a book page. Overrides `tall`. */
+  aspect?: number;
+  title?: string;
   world: PostWorld;
   slideName: string;
   onChange: (layers: TextLayer[]) => void;
@@ -180,6 +185,7 @@ export function TextStudio({
   };
   const duplicate = () => {
     if (!current) return;
+    // A copy of linked words is the copy's own words (only the original stays linked).
     const copy = { ...newTextLayer(lookOf(current), { x: current.x, y: Math.min(0.95, current.y + 0.1) }), text: current.text };
     onChange([...layers, copy]);
     setSelected(copy.id);
@@ -189,7 +195,7 @@ export function TextStudio({
     setSaving(true);
     setEditing(null);
     try {
-      const blob = await renderSlide(asset.dataUrl, layers, tall);
+      const blob = aspect ? await renderPicture(asset.dataUrl, layers, 1500, Math.round(1500 / aspect)) : await renderSlide(asset.dataUrl, layers, tall);
       const how = await savePicture(blob, `${slideName}.jpg`);
       if (how !== 'cancelled') toast(how === 'shared' ? 'Picture ready.' : 'Picture saved with its words.');
     } catch (e) {
@@ -202,10 +208,11 @@ export function TextStudio({
   const sizePct = current ? Math.round(current.size * 1000) / 10 : 0;
 
   return (
-    <Modal open={open} onClose={onClose} title="Text on the picture" wide>
+    <Modal open={open} onClose={onClose} title={title} wide>
       <div className="mx-auto max-w-xl">
         <div
-          className={`relative mx-auto w-full overflow-hidden rounded-xl bg-paper-2 ${tall ? 'aspect-[9/16] max-w-[min(100%,calc(52vh*0.5625))]' : 'aspect-[4/5] max-w-[min(100%,calc(52vh*0.8))]'}`}
+          className={`relative mx-auto w-full overflow-hidden rounded-xl bg-paper-2 ${aspect ? '' : tall ? 'aspect-[9/16] max-w-[min(100%,calc(52vh*0.5625))]' : 'aspect-[4/5] max-w-[min(100%,calc(52vh*0.8))]'}`}
+          style={aspect ? { aspectRatio: String(aspect), maxWidth: `min(100%, calc(52vh * ${aspect}))` } : undefined}
         >
           <AssetImage id={assetId} className="absolute inset-0 h-full w-full object-cover" />
           <TextOnPicture
@@ -295,9 +302,11 @@ export function TextStudio({
                 <SlidersHorizontal size={17} />
               </Tool>
               <Divider />
-              <Tool label="Type the words" on={editing === current.id} onClick={() => setEditing(editing === current.id ? null : current.id)}>
-                <Pencil size={17} />
-              </Tool>
+              {!current.bind && (
+                <Tool label="Type the words" on={editing === current.id} onClick={() => setEditing(editing === current.id ? null : current.id)}>
+                  <Pencil size={17} />
+                </Tool>
+              )}
               <Tool label="Duplicate" onClick={duplicate}>
                 <Copy size={17} />
               </Tool>
@@ -421,7 +430,9 @@ export function TextStudio({
           )}
         </div>
 
-        <p className="mt-2 text-center text-xs text-muted">Drag the words to place them. Double-tap or hold them to type on the picture.</p>
+        <p className="mt-2 text-center text-xs text-muted">
+          {current?.bind ? 'These are your piece’s own words: drag to place them, and change the words in the piece itself.' : 'Drag the words to place them. Double-tap or hold them to type on the picture.'}
+        </p>
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           <button type="button" className="btn" onClick={add}>
             <Plus size={16} /> Add text

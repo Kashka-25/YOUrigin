@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpenText } from 'lucide-react';
+import { ArrowLeft, BookOpenText, List } from 'lucide-react';
 import { ContentsList, useBookOrder } from '../components/book/ContentsList';
 import { EmptyState, Spinner } from '../components/ui';
 import { useLibrary } from '../hooks/useLibrary';
@@ -17,7 +17,10 @@ export function BookContents() {
         <Link to={`/projects/${order.book.id}`} className="btn-ghost -ml-3">
           <ArrowLeft size={16} /> Builder
         </Link>
-        <Link to={`/projects/${order.book.id}/read`} className="btn-ghost ml-auto">
+        <Link to={`/projects/${order.book.id}/book`} className="btn-ghost ml-auto">
+          <List size={16} /> Glossary
+        </Link>
+        <Link to={`/projects/${order.book.id}/read`} className="btn-ghost">
           <BookOpenText size={16} /> Read
         </Link>
       </div>

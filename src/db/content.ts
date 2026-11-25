@@ -1,5 +1,6 @@
 import { db } from './db';
 import { ensureTags } from './tags';
+import { fileByProjectTags } from './projectTags';
 import type { ContentItem, ContentSource, ContentType, Status } from '../domain/types';
 import { newId } from '../domain/text';
 import { assetInUse } from './assetUse';
@@ -21,6 +22,13 @@ export async function createContent(input: NewContent): Promise<string> {
 
 /** Bulk create in one transaction — used by capture-split and file import. */
 export async function createMany(inputs: NewContent[]): Promise<string[]> {
+  const ids = await createManyRows(inputs);
+  // Notes captured with a Creation's tag join that Creation straight away.
+  if (inputs.some((i) => i.tagNames?.length)) await fileByProjectTags(ids);
+  return ids;
+}
+
+async function createManyRows(inputs: NewContent[]): Promise<string[]> {
   return db.transaction('rw', db.content, db.tags, async () => {
     const allNames = [...new Set(inputs.flatMap((i) => i.tagNames ?? []))];
     const nameToId = await ensureTags(allNames);
@@ -89,9 +97,12 @@ async function withSnapshot(ids: string[], mutate: (items: ContentItem[]) => Con
 export async function addTagsToItems(ids: string[], tagNames: string[]): Promise<Undo> {
   const map = await ensureTags(tagNames);
   const tagIds = [...map.values()];
-  return withSnapshot(ids, (items) =>
+  const undo = await withSnapshot(ids, (items) =>
     items.map((i) => ({ ...i, tagIds: [...new Set([...i.tagIds, ...tagIds])] })),
   );
+  // A Creation's tag files the notes there too. Undo takes the tag off; the notes stay filed.
+  await fileByProjectTags(ids);
+  return undo;
 }
 
 export async function removeTagFromItems(ids: string[], tagId: string): Promise<Undo> {

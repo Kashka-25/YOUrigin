@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Archive, ArrowLeft, BookA, BookPlus, ChevronDown, ChevronLeft, ChevronRight, FolderKanban, FolderPlus, List, Maximize2, Minimize2, Trash2, X } from 'lucide-react';
 import { ContentsList, useBookOrder } from '../components/book/ContentsList';
 import { SpaceControl } from '../components/book/SpaceControl';
+import { PhotoPageControl } from '../components/book/PhotoPageControl';
 import { displayTitle } from '../domain/text';
 import { db } from '../db/db';
 import { useLibrary } from '../hooks/useLibrary';
@@ -212,6 +213,11 @@ function Editor({ item }: { item: ContentItem }) {
         )}
         <div className="flex items-center gap-2">
           <SaveIndicator state={state} />
+          {order && at >= 0 && (
+            <Link to={`/projects/${order.book.id}/book/${item.id}`} className="btn-ghost text-xs" onClick={() => void flush()} title="Write this page in the clean view, with the book's glossary">
+              <List size={15} /> Clean page
+            </Link>
+          )}
           <button type="button" className="btn-ghost text-xs" onClick={() => setFocus(true)} title="Hide the bars while you write">
             <Maximize2 size={15} /> Focus
           </button>
@@ -336,7 +342,12 @@ function Editor({ item }: { item: ContentItem }) {
           </section>
           {order && (() => {
             const entry = lib.entries.find((e) => e.bookId === order.book.id && e.contentId === item.id);
-            return entry && item.type !== 'image' ? <SpaceControl entry={entry} item={item} /> : null;
+            return entry && item.type !== 'image' ? (
+              <>
+                <SpaceControl entry={entry} item={item} />
+                <PhotoPageControl entry={entry} item={item} />
+              </>
+            ) : null;
           })()}
           {item.type === 'image' && <ArtPanel item={item} />}
           {item.type === 'image' && (
