@@ -88,7 +88,8 @@ export function TextOnPicture({
     hold.current = null;
   };
   const startEditing = (id: string) => {
-    if (!onEditText) return;
+    // Words linked to a piece are edited in the piece itself, not on the picture.
+    if (!onEditText || layers?.find((l) => l.id === id)?.bind) return;
     stopHold();
     drag.current = null;
     onSelect?.(id);
@@ -283,8 +284,15 @@ function loadImage(src: string): Promise<HTMLImageElement> {
  * (or 9:16) frame, as it shows in YOUrigin, with the words drawn on top.
  */
 export async function renderSlide(pictureUrl: string, layers: TextLayer[], tall: boolean): Promise<Blob> {
-  const W = 1080;
-  const H = tall ? 1920 : 1350;
+  return renderPicture(pictureUrl, layers, 1080, tall ? 1920 : 1350);
+}
+
+/**
+ * Draws a picture with its words at any size (W × H pixels): the picture fills it, cropped
+ * from the centre, and the words sit where they were placed. Used for post slides and for
+ * book pages set on a photo, so both look exactly as they do on screen.
+ */
+export async function renderPicture(pictureUrl: string, layers: TextLayer[], W: number, H: number): Promise<Blob> {
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;

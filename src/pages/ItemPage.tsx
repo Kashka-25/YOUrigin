@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Archive, ArrowLeft, BookA, BookPlus, ChevronDown, ChevronLeft, ChevronRight, FolderKanban, FolderPlus, List, Maximize2, Minimize2, Trash2, X } from 'lucide-react';
 import { ContentsList, useBookOrder } from '../components/book/ContentsList';
 import { SpaceControl } from '../components/book/SpaceControl';
+import { PhotoPageControl } from '../components/book/PhotoPageControl';
 import { displayTitle } from '../domain/text';
 import { db } from '../db/db';
 import { useLibrary } from '../hooks/useLibrary';
@@ -341,7 +342,12 @@ function Editor({ item }: { item: ContentItem }) {
           </section>
           {order && (() => {
             const entry = lib.entries.find((e) => e.bookId === order.book.id && e.contentId === item.id);
-            return entry && item.type !== 'image' ? <SpaceControl entry={entry} item={item} /> : null;
+            return entry && item.type !== 'image' ? (
+              <>
+                <SpaceControl entry={entry} item={item} />
+                <PhotoPageControl entry={entry} item={item} />
+              </>
+            ) : null;
           })()}
           {item.type === 'image' && <ArtPanel item={item} />}
           {item.type === 'image' && (

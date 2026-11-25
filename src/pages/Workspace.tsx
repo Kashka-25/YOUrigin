@@ -12,6 +12,7 @@ import { nudgeTarget, type OutlineGroup } from '../domain/outline';
 import { displayTitle, wordCount } from '../domain/text';
 import type { Asset, Book, BookEntry, ContentItem, Section, Status } from '../domain/types';
 import { bookCss, bookHtml } from '../print/render';
+import { usePhotoPages } from '../print/usePhotoPages';
 import { resolveDesign } from '../print/design';
 import { usePagedPreview } from '../print/usePagedPreview';
 import { AutoTextarea } from '../components/AutoTextarea';
@@ -267,8 +268,20 @@ function PagePreview({ book, group, pieceId }: { book: Book; group: Group; piece
   const stage = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(0.55);
 
-  const source = useMemo(() => {
+  const photoInput = useMemo(() => {
     if (!lib || !assets) return null;
+    const ids = new Set(group.entries.filter((x) => x.entry.photo).map((x) => x.entry.photo!.assetId));
+    return {
+      design: resolveDesign(book),
+      entries: group.entries.map((x) => x.entry),
+      contentById: lib.contentById,
+      assets: new Map(assets.filter((a) => ids.has(a.id)).map((a): [string, Asset] => [a.id, a])),
+    };
+  }, [lib, assets, book, group]);
+  const photoPages = usePhotoPages(photoInput);
+
+  const source = useMemo(() => {
+    if (!lib || !assets || !photoPages) return null;
     // Only this chapter, without the book's front and back pages.
     const design = { ...resolveDesign(book), titlePage: false, toc: false, copyright: '', dedication: '', acknowledgements: '', bleed: false };
     const section: Section = group.section ?? { id: TRAY_ID, bookId: book.id, title: 'Not placed yet', order: 0, notes: '', createdAt: 0, updatedAt: 0 };
@@ -280,10 +293,11 @@ function PagePreview({ book, group, pieceId }: { book: Book; group: Group; piece
       entries: group.entries.map((x) => ({ ...x.entry, sectionId: section.id })),
       contentById: lib.contentById,
       assets: new Map(assets.filter((a) => used.has(a.id)).map((a): [string, Asset] => [a.id, a])),
+      photoPages,
     });
     // The one chapter starts on the first page.
     return { html: `<div class="yb-root">${html}</div>`, css: `${bookCss(design)}\n.yb-section { break-before: auto; }` };
-  }, [lib, assets, book, group]);
+  }, [lib, assets, book, group, photoPages]);
 
   const { pages, rendering, error } = usePagedPreview(stage, source?.html ?? '', source?.css ?? '', 600);
 
