@@ -2,13 +2,14 @@ import { useEffect, useRef, useState, type DragEvent, type PointerEvent, type Re
 import { DndContext, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, horizontalListSortingStrategy, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Camera, Check, ChevronLeft, ChevronRight, ImagePlus, Images, Lightbulb, Plus, Trash2, Type, Upload } from 'lucide-react';
+import { Camera, Check, ChevronLeft, ChevronRight, FileText, ImagePlus, Images, Lightbulb, Plus, Trash2, Type, Upload } from 'lucide-react';
 import { TextStudio } from './TextStudio';
 import type { TextLayer } from '../../posts/textLayers';
 import { MediaThumb, Slide } from './PostMedia';
 import { AssetImage } from '../AssetImage';
 import { frameFromVideo } from '../../db/postMedia';
 import { POST_MEDIA_ACCEPT } from '../../io/postMedia';
+import { plainPageFile } from '../../posts/plainPage';
 import type { PostFormat, PostMedia, PostWorld } from '../../posts/model';
 import type { TakeOutTo } from '../../db/posts';
 
@@ -200,6 +201,8 @@ export function MediaComposer({
   );
 
   const pick = () => input.current?.click();
+  /** A beige paper page to write on, added like a photo. */
+  const addPlainPage = async () => onAdd([await plainPageFile()]);
   const onDrop = (e: DragEvent) => {
     if (!e.dataTransfer.files.length) return;
     e.preventDefault();
@@ -262,6 +265,9 @@ export function MediaComposer({
           <span className="btn-primary mt-2 pointer-events-none">
             <ImagePlus size={16} /> Select from device
           </span>
+        </button>
+        <button type="button" className="btn mx-auto mt-2 flex" disabled={busy} onClick={() => void addPlainPage()}>
+          <FileText size={16} /> Plain page to write on
         </button>
         {fileInput}
       </section>
@@ -428,6 +434,18 @@ export function MediaComposer({
               >
                 <Plus size={20} aria-hidden />
                 <span className="text-[10px]">{busy ? 'Adding…' : 'Add'}</span>
+              </button>
+            </li>
+            <li className={`shrink-0 ${taking ? 'hidden' : ''}`}>
+              <button
+                type="button"
+                onClick={() => void addPlainPage()}
+                disabled={busy}
+                className="flex aspect-[4/5] w-16 flex-col items-center justify-center rounded-lg border-2 border-dashed border-line bg-[#eee3cf]/60 text-ink-2 hover:border-accent/60 hover:text-ink sm:w-20"
+                aria-label="Add a plain page to write on"
+              >
+                <FileText size={18} aria-hidden />
+                <span className="text-[10px]">Plain page</span>
               </button>
             </li>
           </ul>

@@ -245,6 +245,11 @@ export async function setEntrySpace(entryId: string, space: BookEntry['space']):
   await db.entries.update(entryId, { space, updatedAt: Date.now() });
 }
 
+/** Sets a piece on a photo in one book, or (undefined) back on the page. */
+export async function setEntryPhoto(entryId: string, photo: BookEntry['photo']): Promise<void> {
+  await db.entries.update(entryId, { photo, updatedAt: Date.now() });
+}
+
 // ---- writing a book page by page ------------------------------------------
 
 /** What kind of piece a new page in this book starts as. */

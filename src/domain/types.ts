@@ -1,3 +1,4 @@
+import type { TextLayer } from '../posts/textLayers';
 // Core data model. Content is independent from structure: books, collections
 // and relationships only ever *reference* content by id.
 
@@ -341,6 +342,18 @@ export interface BookEntry extends Syncable {
   order: number;
   /** Writing/drawing space after this piece in this book (default: automatic). */
   space?: EntrySpace;
+  /** In this book, the piece is set on a photo (a page of its own, edge to edge). */
+  photo?: EntryPhoto;
+}
+
+/**
+ * A photo behind a piece's page in one book, with the words placed on it. The words that
+ * show the piece itself are linked to it (`bind`), so the piece still exists only once.
+ */
+export interface EntryPhoto {
+  /** The picture (asset id): a Gallery photo, or one used in a post. */
+  assetId: string;
+  layers: TextLayer[];
 }
 
 /** 'idea': the idea behind an artwork (from = artwork, to = the note). */

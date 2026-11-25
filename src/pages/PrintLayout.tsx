@@ -8,6 +8,7 @@ import { updateBook } from '../db/books';
 import { bookCss, bookHtml } from '../print/render';
 import { resolveDesign } from '../print/design';
 import { usePagedPreview } from '../print/usePagedPreview';
+import { usePhotoPages } from '../print/usePhotoPages';
 import { DesignPanel } from '../components/print/DesignPanel';
 import { dataChecks, layoutChecks, measureLayout, type LayoutFindings } from '../print/preflight';
 import { PreflightPanel } from '../components/print/PreflightPanel';
@@ -39,7 +40,11 @@ export function PrintLayout() {
       assets: new Map(assets.map((a) => [a.id, a])),
     };
   }, [lib, book, design, assets]);
-  const source = useMemo(() => (input ? { html: `<div class="yb-root">${bookHtml(input)}</div>`, css: bookCss(input.design) } : null), [input]);
+  const photoPages = usePhotoPages(input);
+  const source = useMemo(
+    () => (input && photoPages ? { html: `<div class="yb-root">${bookHtml({ ...input, photoPages })}</div>`, css: bookCss(input.design) } : null),
+    [input, photoPages],
+  );
 
   const { pages, progress, rendering, error } = usePagedPreview(stage, source?.html ?? '', source?.css ?? '');
 
