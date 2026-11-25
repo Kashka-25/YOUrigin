@@ -25,6 +25,8 @@ import { displayTitle } from '../domain/text';
 import { ContentsList } from '../components/book/ContentsList';
 import { PublishingChecklist } from '../components/book/PublishingChecklist';
 import { ArtGrid } from '../components/art/ArtGrid';
+import { RestingBox } from '../components/book/RestingBox';
+import { projectIdsOfWork } from '../db/resting';
 import { BookOpen, ChevronDown, FileText, Loader2, Maximize2 } from 'lucide-react';
 
 export function BookBuilder() {
@@ -61,6 +63,9 @@ export function BookBuilder() {
   const isSetList = kind === 'setlist';
   const parentProject = lib.projects.find((project) => (book.projectIds ?? []).includes(project.id));
   const homeProject = lib.projects.find((project) => project.id === book.id) ?? parentProject;
+  // Where a piece set to rest goes: the Projects this Work belongs to.
+  const restIds = projectIdsOfWork(book, lib.projects);
+  const restProjects = lib.projects.filter((project) => restIds.includes(project.id));
   const projectMaterialIds = isSetList && parentProject
     ? new Set(lib.items
       .filter((item) => !item.deletedAt && !item.archived && ['song', 'idea', 'fragment', 'poem'].includes(item.type) && (item.projectIds ?? []).includes(parentProject.id))
@@ -187,9 +192,12 @@ export function BookBuilder() {
           sectionProgress={progress.sections}
           numbered={PROJECT_KIND_META[kind].numbered}
           traySlot={trayIds.length >= 2 ? <StructureSuggest bookId={book.id} contentIds={trayIds} entries={entries} /> : null}
+          canRest={restProjects.length > 0}
           shelf={<MaterialShelf bookId={book.id} bookTitle={book.title} items={lib.items} bookContentIds={contentIds} ctx={lib.ctx} scopeContentIds={projectMaterialIds} scopeLabel={parentProject?.title} />}
         />
       </div>
+
+      <RestingBox className="mt-8" projects={restProjects} works={lib.books} contentById={lib.contentById} preferWorkId={book.id} />
 
       {editOpen && <BookSettings book={book} onClose={() => setEditOpen(false)} />}
     </div>

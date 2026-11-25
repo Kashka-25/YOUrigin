@@ -14,7 +14,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Pencil, Plus, Trash2, X, Check } from 'lucide-react';
+import { GripVertical, Moon, Pencil, Plus, Trash2, X, Check } from 'lucide-react';
 import type { BookEntry, ContentItem, Section } from '../../domain/types';
 import type { SectionProgress } from '../../domain/progress';
 import { displayTitle } from '../../domain/text';
@@ -24,6 +24,8 @@ import { chapterTagNotice } from '../../db/chapterTags';
 import { useToast } from '../Toast';
 import { StatusBadge } from '../ui';
 import { useConfirm } from '../Modal';
+import { useToast } from '../Toast';
+import { placeFromRest, restEntry } from '../../db/resting';
 import { collision, TRAY, type DragData } from './dnd';
 
 interface Props {
@@ -36,6 +38,8 @@ interface Props {
   traySlot?: ReactNode;
   /** Show each piece's place in its section (track 1, 2…). */
   numbered?: boolean;
+  /** The Work belongs to a Project, so a piece can be set to rest there instead of removed. */
+  canRest?: boolean;
 }
 
 /** Pure helper mirroring db.moveEntry, used for instant (optimistic) feedback. */
@@ -48,7 +52,7 @@ function applyMove(entries: BookEntry[], entryId: string, sectionId: string | nu
   return entries.map((e) => reordered.get(e.id) ?? e);
 }
 
-export function StructureBoard({ bookId, sections, entries, contentById, sectionProgress, shelf, traySlot, numbered = false }: Props) {
+export function StructureBoard({ bookId, sections, entries, contentById, sectionProgress, shelf, traySlot, numbered = false, canRest = false }: Props) {
   const confirm = useConfirm();
   const toast = useToast();
   // Local mirrors give instant feedback; the live query brings them back in sync.
@@ -117,6 +121,28 @@ export function StructureBoard({ bookId, sections, entries, contentById, section
     return null;
   })();
 
+  /** Out of the Work, into the Project's Resting box (undo puts it back where it was). */
+  const rest = async (entryId: string) => {
+    const entry = live.find((e) => e.id === entryId);
+    const item = entry && contentById.get(entry.contentId);
+    if (!entry || !item) return;
+    const index = entriesOf(entry.sectionId).findIndex((e) => e.id === entryId);
+    setLocalEntries((prev) => prev.filter((e) => e.id !== entryId));
+    try {
+      const projectIds = await restEntry(entryId);
+      toast(`“${displayTitle(item)}” is resting. It stays in the project.`, {
+        undo: async () => {
+          const id = await placeFromRest(projectIds[0], entry.contentId, bookId);
+          if (id) await moveEntry(id, entry.sectionId, index);
+        },
+      });
+    } catch (e) {
+      setLocalEntries(entries);
+      toast(e instanceof Error ? e.message : 'Couldn’t set that piece to rest');
+    }
+  };
+  const onRest = canRest ? (id: string) => void rest(id) : undefined;
+
   const moveTargets = [{ id: TRAY, title: 'Tray' }, ...localSections.map((s) => ({ id: s.id, title: s.title }))];
 
   return (
@@ -130,6 +156,7 @@ export function StructureBoard({ bookId, sections, entries, contentById, section
               contentById={contentById}
               moveTargets={moveTargets}
               onMove={(id, target) => void moveEntry(id, target === TRAY ? null : target, 9999)}
+              onRest={onRest}
             />
           </Zone>
 
@@ -161,6 +188,7 @@ export function StructureBoard({ bookId, sections, entries, contentById, section
                   contentById={contentById}
                   moveTargets={moveTargets}
                   onMove={(id, target) => void moveEntry(id, target === TRAY ? null : target, 9999)}
+                  onRest={onRest}
                 />
               </SortableSection>
             ))}
@@ -284,19 +312,21 @@ function EntryList({
   contentById,
   moveTargets,
   onMove,
+  onRest,
 }: {
   entries: BookEntry[];
   numbered?: boolean;
   contentById: Map<string, ContentItem>;
   moveTargets: { id: string; title: string }[];
   onMove: (entryId: string, target: string) => void;
+  onRest?: (entryId: string) => void;
 }) {
   if (!entries.length) return <p className="px-2 py-3 text-sm text-muted">Drop pieces here.</p>;
   return (
     <SortableContext items={entries.map((e) => 'entry:' + e.id)} strategy={verticalListSortingStrategy}>
       <ul className="space-y-1">
         {entries.map((e, i) => (
-          <EntryRow key={e.id} entry={e} n={numbered ? i + 1 : undefined} item={contentById.get(e.contentId)!} moveTargets={moveTargets} onMove={onMove} />
+          <EntryRow key={e.id} entry={e} n={numbered ? i + 1 : undefined} item={contentById.get(e.contentId)!} moveTargets={moveTargets} onMove={onMove} onRest={onRest} />
         ))}
       </ul>
     </SortableContext>
@@ -309,12 +339,14 @@ function EntryRow({
   item,
   moveTargets,
   onMove,
+  onRest,
 }: {
   entry: BookEntry;
   n?: number;
   item: ContentItem;
   moveTargets: { id: string; title: string }[];
   onMove: (entryId: string, target: string) => void;
+  onRest?: (entryId: string) => void;
 }) {
   const s = useSortable({ id: 'entry:' + entry.id, data: { type: 'entry', entryId: entry.id, sectionId: entry.sectionId } satisfies DragData });
   const current = entry.sectionId ?? TRAY;
@@ -353,7 +385,18 @@ function EntryRow({
           </option>
         ))}
       </select>
-      <button type="button" className="btn-ghost p-1" onClick={() => void removeEntries([entry.id])} aria-label={`Remove “${displayTitle(item)}” from this project`}>
+      {onRest && (
+        <button
+          type="button"
+          className="btn-ghost p-1"
+          onClick={() => onRest(entry.id)}
+          aria-label={`Rest “${displayTitle(item)}”`}
+          title="Rest it: out of this running order, still in the project"
+        >
+          <Moon size={14} />
+        </button>
+      )}
+      <button type="button" className="btn-ghost p-1" onClick={() => void removeEntries([entry.id])} aria-label={`Remove “${displayTitle(item)}” from this ${onRest ? 'work' : 'project'}`}>
         <X size={14} />
       </button>
     </li>

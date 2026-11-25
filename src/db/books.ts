@@ -168,9 +168,11 @@ async function entriesIn(bookId: string, sectionId: string | null): Promise<Book
 /**
  * Adds references to a book. A piece appears at most once per book; if it is
  * already there it is left where it is. Returns the ids of new entries (for undo).
+ * A piece that was resting in the book's Projects has found its place, so it leaves
+ * their Resting box (see resting.ts).
  */
 export async function addToBook(bookId: string, contentIds: string[], sectionId: string | null = null): Promise<string[]> {
-  return db.transaction('rw', db.entries, db.books, async () => {
+  return db.transaction('rw', db.entries, db.books, db.projects, async () => {
     const existing = new Set((await db.entries.where('bookId').equals(bookId).toArray()).map((e) => e.contentId));
     const target = await entriesIn(bookId, sectionId);
     let order = target.reduce((m, e) => Math.max(m, e.order + 1), 0);
@@ -183,6 +185,13 @@ export async function addToBook(bookId: string, contentIds: string[], sectionId:
     }
     await db.entries.bulkAdd(created);
     await touchBook(bookId);
+    const placed = new Set(contentIds);
+    const book = await db.books.get(bookId);
+    for (const projectId of new Set([bookId, ...(book?.projectIds ?? [])])) {
+      const project = await db.projects.get(projectId);
+      if (!project?.resting?.some((r) => placed.has(r.contentId))) continue;
+      await db.projects.update(projectId, { resting: project.resting.filter((r) => !placed.has(r.contentId)), updatedAt: now });
+    }
     return created.map((e) => e.id);
   });
 }
