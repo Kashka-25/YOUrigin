@@ -95,7 +95,11 @@ export function ContentsList({ bookId, currentId, compact = false }: { bookId: s
           if (only && !shown.length) return null;
           return (
             <section key={section.id}>
-              <h3 className={`eyebrow border-b border-line pb-1.5 text-accent ${compact ? 'text-[10px]' : ''}`}>{section.title}</h3>
+              <h3 className={`eyebrow flex items-center gap-2 border-b border-line pb-1.5 text-accent ${compact ? 'text-[10px]' : ''}`}>
+                {section.status && section.status !== 'none' && <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${DOT[section.status]}`} title={STATUS_META[section.status].meaning} aria-hidden />}
+                {section.title}
+                {section.status && section.status !== 'none' && <span className="sr-only">{STATUS_META[section.status].label}</span>}
+              </h3>
               {items.length === 0 ? (
                 <p className="py-1.5 text-sm text-muted">No pieces yet.</p>
               ) : (

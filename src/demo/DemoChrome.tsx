@@ -86,10 +86,10 @@ function JourneyGuide() {
   );
 }
 
-/** Stage view is full screen for performing, with its own controls: the badge would sit over the words. */
-const STAGE = /^\/projects\/[^/]+\/stage\/?$/;
+/** Stage view and the clean writing page are full screen, with their own controls: the badge would sit over them. */
+const STAGE = /^\/projects\/[^/]+\/(stage|book\/[^/]+)\/?$/;
 
-/** A small badge on every screen but Stage view: it's a demo, on example data, with Reset and a way back.
+/** A small badge on every screen but Stage view and the writing page: it's a demo, on example data, with Reset and a way back.
  *  Phones: just above the bottom dock. Laptops: in the top bar, on the right. */
 export function DemoBar() {
   const { pathname } = useLocation();

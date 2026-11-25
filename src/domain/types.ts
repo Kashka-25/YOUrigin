@@ -327,6 +327,8 @@ export interface Section extends Syncable {
   notes: string;
   /** Optional artwork shown on the section's opening page (asset id). */
   imageAssetId?: string;
+  /** The chapter's own traffic light (missing = no colour). */
+  status?: Status;
 }
 
 /** A reference from a book (and optionally a section) to a content item.
