@@ -280,6 +280,34 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 /**
+ * A small copy of the picture as it fills a slide of this shape (width ÷ height), cropped
+ * from the centre just as it shows: the pixels the quiet-space finder reads.
+ */
+export async function pictureSample(pictureUrl: string, aspect: number, width = 96): Promise<{ data: Uint8ClampedArray; width: number; height: number }> {
+  const W = width;
+  const H = Math.max(1, Math.round(width / aspect));
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const g = canvas.getContext('2d', { willReadFrequently: true });
+  if (!g) throw new Error('This browser can’t read pictures.');
+  const img = await loadImage(pictureUrl);
+  const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+  g.drawImage(img, (W - img.naturalWidth * scale) / 2, (H - img.naturalHeight * scale) / 2, img.naturalWidth * scale, img.naturalHeight * scale);
+  return { data: g.getImageData(0, 0, W, H).data, width: W, height: H };
+}
+
+/** How much of a slide of this shape a layer takes: its box width, its words' width and its height. */
+export async function layerExtent(l: TextLayer, aspect: number): Promise<{ boxW: number; textW: number; h: number }> {
+  await loadLayerFonts([l]);
+  const W = 1080;
+  const H = W / aspect;
+  const lay = layoutLayer(l, W, H, measurer(l, ctx()));
+  const textW = Math.min(lay.box.width, Math.max(0, ...lay.widths) + 2 * lay.pad);
+  return { boxW: lay.box.width / W, textW: textW / W, h: lay.box.height / H };
+}
+
+/**
  * The finished slide as a picture for Instagram: the photo filling a 1080-wide 4:5
  * (or 9:16) frame, as it shows in YOUrigin, with the words drawn on top.
  */

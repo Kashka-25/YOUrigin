@@ -160,6 +160,8 @@ On any picture slide in a post, **Add text** opens a small studio: add text boxe
 
 The words are stored on the slide (`PostMedia.text`, fractions of the slide, so they sync encrypted and look the same everywhere) and show in the editor, Preview and the grid. **Save picture** draws the slide at 1080 wide (4:5, or 9:16 for Reels and Stories) with the words burned in: on the phone it opens the share sheet (save to gallery or straight to Instagram); on the laptop it downloads. Words stay in place when Claude's redrawn pictures are imported with "Update pictures". Text sits on pictures only, not on videos.
 
+**Place in quiet space.** The wind button on the toolbar moves the chosen words into the calmest part of the photo (open sky, a plain wall, still water), keeping clear of sharp edges and other words. If a name mark ("Cassidy Rae") is on the picture, it moves too and sits under the line, lined up the same way. Tap again for another quiet place, each one somewhere different. When the place is light and the words are cream (or dark and the words are ink), it offers to switch to dark ink or cream; nothing changes colour unless you tap it. It all runs on the device, from a small copy of the picture, and the words can still be dragged anywhere afterwards.
+
 **Plain page.** Beside **Add** in a post's slides (and on an empty post), **Plain page** adds a sheet of warm beige paper with a faint grain to write on. It's a picture like any other, so **Add text** puts a poem on it; a dark ink look reads well. Alternating these with photo poems breaks up a feed the way a poetry book breaks up its photographs.
 
 ### Poems on photos in a book
