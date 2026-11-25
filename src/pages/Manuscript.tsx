@@ -1,12 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Printer, Type } from 'lucide-react';
+import { ArrowLeft, PenLine, Printer, Type } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { orderedBook } from '../io/export';
 import { EmptyState, Spinner, StatusBadge } from '../components/ui';
-import { AssetImage } from '../components/AssetImage';
 import { displayTitle } from '../domain/text';
 import type { Status } from '../domain/types';
+import { ReadingPiece } from '../components/book/ReadingPiece';
+import { resolveDesign } from '../print/design';
+import { pageAspect } from '../print/photoPages';
+
+const EDIT_KEY = 'yourigin.read.editing';
+function rememberedEditing(): boolean {
+  try {
+    return localStorage.getItem(EDIT_KEY) === 'on';
+  } catch {
+    return false;
+  }
+}
 
 const STATUS_DOT: Record<Status, string> = { none: 'border border-line bg-transparent', seed: 'bg-seed', developing: 'bg-developing', polished: 'bg-polished' };
 
@@ -23,6 +34,16 @@ export function Manuscript() {
   const [params] = useSearchParams();
   const [size, setSize] = useState(1);
   const [showStatus, setShowStatus] = useState(false);
+  // Edit as you read: titles and words change right where they sit, saving as you go.
+  const [editing, setEditingState] = useState(rememberedEditing);
+  const setEditing = (on: boolean) => {
+    setEditingState(on);
+    try {
+      localStorage.setItem(EDIT_KEY, on ? 'on' : 'off');
+    } catch {
+      /* private mode */
+    }
+  };
 
   const data = useMemo(() => {
     if (!lib || !id) return null;
@@ -33,7 +54,8 @@ export function Manuscript() {
       lib.entries.filter((e) => e.bookId === id),
       lib.contentById,
     );
-    return { book, parts };
+    const entryOf = new Map(lib.entries.filter((e) => e.bookId === id).map((e) => [e.contentId, e]));
+    return { book, parts, entryOf, aspect: pageAspect(resolveDesign(book)) };
   }, [lib, id]);
 
   useEffect(() => {
@@ -42,7 +64,7 @@ export function Manuscript() {
 
   if (!lib) return <Spinner />;
   if (!data) return <EmptyState title="Project not found" />;
-  const { book, parts } = data;
+  const { book, parts, entryOf, aspect } = data;
   const nonEmpty = parts.filter((p) => p.items.length);
 
   return (
@@ -52,6 +74,15 @@ export function Manuscript() {
           <ArrowLeft size={16} /> Builder
         </Link>
         <div className="ml-auto flex items-center gap-1">
+          <button
+            type="button"
+            className={editing ? 'btn-primary min-h-9 px-3' : 'btn min-h-9 px-3'}
+            aria-pressed={editing}
+            onClick={() => setEditing(!editing)}
+            title="Change titles and words right where they sit, saving as you go"
+          >
+            <PenLine size={15} /> {editing ? 'Editing' : 'Edit as I read'}
+          </button>
           <label className="mr-2 flex items-center gap-1.5 text-xs text-ink-2">
             <input type="checkbox" checked={showStatus} onChange={(e) => setShowStatus(e.target.checked)} /> Show status
           </label>
@@ -117,7 +148,6 @@ export function Manuscript() {
                     ⁂
                   </p>
                 )}
-                {item.title && <h3 className="mb-5 text-[1.4em] leading-snug font-normal">{item.title}</h3>}
                 {showStatus && (
                   <p className="no-print mb-3">
                     <Link to={`/item/${item.id}`}>
@@ -125,8 +155,7 @@ export function Manuscript() {
                     </Link>
                   </p>
                 )}
-                {item.type === 'image' && item.assetId && <AssetImage id={item.assetId} alt={item.title} className="mx-auto my-4 max-h-[80dvh] max-w-full" />}
-                <div className={`writing ${item.type === 'prompt' ? 'italic' : ''} ${item.type === 'image' ? 'text-center text-[0.85em] italic' : ''}`}>{item.body}</div>
+                <ReadingPiece item={item} entry={entryOf.get(item.id)} editing={editing} aspect={aspect} />
               </div>
             ))}
           </section>
