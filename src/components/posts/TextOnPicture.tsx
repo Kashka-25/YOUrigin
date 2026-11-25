@@ -5,7 +5,7 @@ import '@fontsource-variable/playfair-display/wght.css';
 import '@fontsource-variable/playfair-display/wght-italic.css';
 import '@fontsource-variable/josefin-sans/wght.css';
 import '@fontsource-variable/caveat/wght.css';
-import { clamp, cssFont, HIGHLIGHT, layoutLayer, TEXT_FONTS, UNDERLINE, withOpacity, type TextLayer } from '../../posts/textLayers';
+import { clamp, cssFont, fontStyle, HIGHLIGHT, layoutLayer, TEXT_FONTS, UNDERLINE, withOpacity, type TextLayer } from '../../posts/textLayers';
 
 let measureCtx: CanvasRenderingContext2D | null = null;
 function ctx(): CanvasRenderingContext2D | null {
@@ -191,7 +191,7 @@ export function TextOnPicture({
                   className="absolute inset-0 resize-none overflow-hidden border-0 bg-black/25 outline-none"
                   style={{
                     padding: lay.pad,
-                    font: cssFont(l, lay.px),
+                    ...fontStyle(l, lay.px),
                     lineHeight: `${lay.lh}px`,
                     letterSpacing: track ? `${track}px` : undefined,
                     textAlign: l.align,
@@ -231,7 +231,7 @@ export function TextOnPicture({
                       height: m.asc + m.desc,
                       lineHeight: `${m.asc + m.desc}px`,
                       whiteSpace: 'pre',
-                      font: cssFont(l, lay.px),
+                      ...fontStyle(l, lay.px),
                       letterSpacing: track ? `${track}px` : undefined,
                       color: l.colour,
                       textShadow: l.shadow ? `0 ${lay.px * 0.04}px ${lay.px * 0.18}px rgba(0,0,0,.55)` : undefined,

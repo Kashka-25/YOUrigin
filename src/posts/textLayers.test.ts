@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOX_PAD, LINE_HEIGHT, layoutLayer, lookFor, lookOf, newTextLayer, readableOn, wrapLines } from './textLayers';
+import { BOX_PAD, LINE_HEIGHT, TEXT_LOOKS, layoutLayer, lookFor, lookOf, newTextLayer, readableOn, wrapLines } from './textLayers';
 
 // Every character is 1 unit wide (scaled by px), so widths are easy to reason about.
 const mono = (s: string, px = 1) => s.length * px;
@@ -60,6 +60,14 @@ describe('looks', () => {
     delete older.underline;
     delete older.highlight;
     expect(lookOf(older)).toMatchObject({ underline: false, highlight: null });
+  });
+  it('Whisper comes in cream and ink, and leaves the side the words sit on alone', () => {
+    expect(lookFor('whisper')).toMatchObject({ font: 'cormorant', italic: true, weight: 500, size: 0.05, w: 0.64, colour: '#f6efe2', shadow: true, backing: null });
+    expect(lookFor('whisper-ink')).toMatchObject({ font: 'cormorant', colour: '#2b2520', shadow: false });
+    expect(lookFor('whisper')).not.toHaveProperty('align');
+    expect(lookFor('mark')).toMatchObject({ font: 'cinzel', caps: true, tracking: 0.28, size: 0.019, colour: '#d4a85a' });
+    expect(lookFor('mark-ink').colour).toBe('#7d5a22');
+    for (const id of ['mark', 'mark-ink']) expect(TEXT_LOOKS.find((l) => l.id === id)?.text).toBe('Cassidy Rae');
   });
   it('picks readable words for a box colour', () => {
     expect(readableOn('#f6efe2')).toBe('#1a1410');

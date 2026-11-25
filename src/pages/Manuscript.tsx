@@ -1,16 +1,18 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ChevronLeft, ChevronRight, List, Printer, Type } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, List, PenLine, Printer, Type } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
 import { orderedBook } from '../io/export';
 import { EmptyState, Spinner, StatusBadge } from '../components/ui';
-import { AssetImage } from '../components/AssetImage';
+import { ReadingPiece } from '../components/book/ReadingPiece';
+import { resolveDesign } from '../print/design';
+import { pageAspect } from '../print/photoPages';
 import { PageFlowToggle } from '../components/book/PageFlowToggle';
 import { readingPages, type ReadingPage, type ReadingPart } from '../domain/readingPages';
 import { keyTurn, prefersReducedMotion, usePageFlow } from '../hooks/usePageFlow';
 import { projectKind } from '../domain/constants';
 import { displayTitle } from '../domain/text';
-import type { Book, ContentItem, Section, Status } from '../domain/types';
+import type { Book, BookEntry, ContentItem, Section, Status } from '../domain/types';
 import { glossaryPath } from './BookGlossary';
 
 const STATUS_DOT: Record<Status, string> = { none: 'border border-line bg-transparent', seed: 'bg-seed', developing: 'bg-developing', polished: 'bg-polished' };
@@ -20,9 +22,18 @@ function jump(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+const EDIT_KEY = 'yourigin.read.editing';
+function rememberedEditing(): boolean {
+  try {
+    return localStorage.getItem(EDIT_KEY) === 'on';
+  } catch {
+    return false;
+  }
+}
+
 const SIZES = ['text-[1.05rem]', 'text-[1.2rem]', 'text-[1.35rem]'];
 
-type Look = { size: string; showStatus: boolean };
+type Look = { size: string; showStatus: boolean; editing: boolean; aspect: number; entryOf: Map<string, BookEntry> };
 
 /**
  * Read: the book as a reader meets it. In Pages (the default on a new device) one
@@ -35,6 +46,16 @@ export function Manuscript() {
   const [size, setSize] = useState(1);
   const [showStatus, setShowStatus] = useState(false);
   const [flow, setFlow] = usePageFlow();
+  // Edit as you read: titles and words change right where they sit, saving as you go.
+  const [editing, setEditingState] = useState(rememberedEditing);
+  const setEditing = (on: boolean) => {
+    setEditingState(on);
+    try {
+      localStorage.setItem(EDIT_KEY, on ? 'on' : 'off');
+    } catch {
+      /* private mode */
+    }
+  };
 
   const data = useMemo(() => {
     if (!lib || !id) return null;
@@ -45,7 +66,8 @@ export function Manuscript() {
       lib.entries.filter((e) => e.bookId === id),
       lib.contentById,
     );
-    return { book, parts };
+    const entryOf = new Map(lib.entries.filter((e) => e.bookId === id).map((e) => [e.contentId, e]));
+    return { book, parts, entryOf, aspect: pageAspect(resolveDesign(book)) };
   }, [lib, id]);
 
   const printing = !!params.get('print');
@@ -55,9 +77,9 @@ export function Manuscript() {
 
   if (!lib) return <Spinner />;
   if (!data) return <EmptyState title="Project not found" />;
-  const { book, parts } = data;
+  const { book, parts, entryOf, aspect } = data;
   const paged = flow === 'pages' && !printing;
-  const look = { size: SIZES[size], showStatus };
+  const look = { size: SIZES[size], showStatus, editing, aspect, entryOf };
 
   const toolbar = (
     <div className={`no-print z-20 flex items-center gap-1 border-b border-line bg-card/95 px-2 py-2 backdrop-blur ${paged ? '' : 'sticky top-0'}`}>
@@ -70,6 +92,16 @@ export function Manuscript() {
         </Link>
       )}
       <div className="ml-auto flex items-center gap-1">
+        <button
+          type="button"
+          className={editing ? 'btn-primary min-h-9 px-3' : 'btn min-h-9 px-3'}
+          aria-pressed={editing}
+          aria-label="Edit as I read"
+          onClick={() => setEditing(!editing)}
+          title="Change titles and words right where they sit, saving as you go"
+        >
+          <PenLine size={15} /> <span className="hidden sm:inline">{editing ? 'Editing' : 'Edit as I read'}</span>
+        </button>
         <PageFlowToggle value={flow} onChange={setFlow} />
         <label className="mx-1 flex items-center gap-1.5 text-xs text-ink-2" title="Show how finished each piece is">
           <input type="checkbox" checked={showStatus} onChange={(e) => setShowStatus(e.target.checked)} aria-label="Show status" />
@@ -92,7 +124,7 @@ export function Manuscript() {
         <PagedBook book={book} parts={parts} look={look} />
         {/* Printing always gives the whole book, top to bottom. */}
         <div className="hidden print:block">
-          <ScrollBook book={book} parts={parts} look={look} />
+          <ScrollBook book={book} parts={parts} look={{ ...look, editing: false }} />
         </div>
       </div>
     );
@@ -139,19 +171,17 @@ function Contents({ parts, showStatus, onChapter, onPiece }: { parts: ReadingPar
   );
 }
 
-function Piece({ item, showStatus }: { item: ContentItem; showStatus: boolean }) {
+function Piece({ item, look }: { item: ContentItem; look: Look }) {
   return (
     <>
-      {item.title && <h3 className="mb-5 text-[1.4em] leading-snug font-normal">{item.title}</h3>}
-      {showStatus && (
+      {look.showStatus && (
         <p className="no-print mb-3">
           <Link to={`/item/${item.id}`}>
             <StatusBadge status={item.status} />
           </Link>
         </p>
       )}
-      {item.type === 'image' && item.assetId && <AssetImage id={item.assetId} alt={item.title} className="mx-auto my-4 max-h-[70dvh] max-w-full" />}
-      <div className={`writing ${item.type === 'prompt' ? 'italic' : ''} ${item.type === 'image' ? 'text-center text-[0.85em] italic' : ''}`}>{item.body}</div>
+      <ReadingPiece item={item} entry={look.entryOf.get(item.id)} editing={look.editing} aspect={look.aspect} />
     </>
   );
 }
@@ -191,7 +221,7 @@ function ScrollBook({ book, parts, look }: { book: Book; parts: ReadingPart[]; l
                   ⁂
                 </p>
               )}
-              <Piece item={item} showStatus={look.showStatus} />
+              <Piece item={item} look={look} />
             </div>
           ))}
         </section>
@@ -319,7 +349,7 @@ function PagedBook({ book, parts, look }: { book: Book; parts: ReadingPart[]; lo
                     {p.section.title}
                   </p>
                   <div className="manuscript-piece">
-                    <Piece item={p.item} showStatus={look.showStatus} />
+                    <Piece item={p.item} look={look} />
                   </div>
                 </>
               )}
