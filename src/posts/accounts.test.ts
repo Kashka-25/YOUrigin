@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_ACCOUNTS, MAIN_ACCOUNT, POETRY_ACCOUNT, accountLabel, accountOf, cleanHandle, isPoemIdea, mergeAccounts } from './accounts';
+import { DEFAULT_ACCOUNTS, FIRST_ACCOUNTS, MAIN_ACCOUNT, POETRY_ACCOUNT, accountLabel, accountOf, canRemoveAccount, cleanHandle, isPoemIdea, mergeAccounts } from './accounts';
 import { newPost } from './model';
 
 describe('post accounts', () => {
@@ -8,23 +8,33 @@ describe('post accounts', () => {
     expect(accountOf(newPost({ account: POETRY_ACCOUNT }))).toBe(POETRY_ACCOUNT);
   });
 
-  it('starts with @_freethedream_ and a Poetry account waiting for its name', () => {
-    const [main, poetry] = mergeAccounts([]);
-    expect(main).toMatchObject({ id: MAIN_ACCOUNT, handle: '_freethedream_' });
-    expect(poetry).toMatchObject({ id: POETRY_ACCOUNT, name: 'Poetry', handle: '' });
+  it('starts with one unnamed account anyone can make theirs, which cannot be removed', () => {
+    expect(mergeAccounts([])).toEqual([expect.objectContaining({ id: MAIN_ACCOUNT, name: 'My account', handle: '' })]);
+    expect(canRemoveAccount(MAIN_ACCOUNT)).toBe(false);
+    expect(canRemoveAccount(POETRY_ACCOUNT)).toBe(true);
+  });
+
+  it('an account posts belong to always shows, even with no saved row', () => {
+    const all = mergeAccounts([], [MAIN_ACCOUNT, POETRY_ACCOUNT, 'gone']);
+    expect(all.map((a) => [a.id, a.name])).toEqual([
+      [MAIN_ACCOUNT, 'My account'],
+      [POETRY_ACCOUNT, 'Poetry'],
+      ['gone', 'Other account'],
+    ]);
+    expect(mergeAccounts(FIRST_ACCOUNTS, [POETRY_ACCOUNT])).toHaveLength(2);
   });
 
   it('a saved edit replaces the starting account instead of adding a second one', () => {
-    const named = { ...DEFAULT_ACCOUNTS[1], name: 'Quiet lines', handle: 'quiet.lines', updatedAt: 5 };
+    const named = { ...FIRST_ACCOUNTS[1], name: 'Quiet lines', handle: 'quiet.lines', updatedAt: 5 };
     const extra = { id: 'x', name: 'Music', handle: '', createdAt: 100, updatedAt: 100 };
-    const all = mergeAccounts([extra, named]);
+    const all = mergeAccounts([extra, named, FIRST_ACCOUNTS[0]]);
     expect(all.map((a) => a.id)).toEqual([MAIN_ACCOUNT, POETRY_ACCOUNT, 'x']);
     expect(all[1].name).toBe('Quiet lines');
   });
 
   it('labels by @handle, or by name until there is one', () => {
-    expect(accountLabel(DEFAULT_ACCOUNTS[0])).toBe('@_freethedream_');
-    expect(accountLabel(DEFAULT_ACCOUNTS[1])).toBe('Poetry');
+    expect(accountLabel(FIRST_ACCOUNTS[0])).toBe('@_freethedream_');
+    expect(accountLabel(DEFAULT_ACCOUNTS[0])).toBe('My account');
   });
 
   it('cleans a handle the way Instagram allows', () => {

@@ -21,13 +21,13 @@ import type {
 import type { Portfolio } from '../portfolio/model';
 import type { Post } from '../posts/model';
 import type { TextStyle } from '../posts/textLayers';
-import type { PostAccount } from '../posts/accounts';
+import { FIRST_ACCOUNTS, type PostAccount } from '../posts/accounts';
 import { BUILT_IN_FAMILIES, BUILT_IN_TEMPLATES } from '../domain/constants';
-import { installChangeTracking } from '../sync/tracking';
+import { installChangeTracking, untracked } from '../sync/tracking';
 import { DEMO, DEMO_DB_NAME } from '../demo/mode';
 import { appOutbox, isSyncEnabled } from '../sync/runtime';
 
-export const SCHEMA_VERSION = 10;
+export const SCHEMA_VERSION = 11;
 
 /**
  * One-time, non-destructive migration: each existing standalone Work gets a
@@ -153,6 +153,18 @@ export class YOUriginDB extends Dexie {
     // v10: Instagram accounts posts belong to (names and handles; synced). Posts gain an optional
     // `account`; ones without it belong to the main account, so no post needs rewriting.
     this.version(10).stores({ postAccounts: 'id, updatedAt' });
+    // v11: new devices start with one unnamed account instead of Cassidy's two. A device that
+    // already has posts keeps the two it started with (@_freethedream_ and Poetry) as saved
+    // rows. Not recorded for sync: every such device keeps its own, and an edit made elsewhere
+    // (which does sync) is never overwritten by this.
+    this.version(11)
+      .stores({})
+      .upgrade(async (tx) => {
+        untracked(tx);
+        if (!(await tx.table('posts').count())) return;
+        const saved = tx.table('postAccounts') as Table<PostAccount, string>;
+        for (const a of FIRST_ACCOUNTS) if (!(await saved.get(a.id))) await saved.add(a);
+      });
   }
 }
 

@@ -801,6 +801,13 @@ export function Posts() {
     rememberShownAccount(id);
     setAccountChoice(id);
   };
+  // Once the remembered account is gone, new posts go to the main one too.
+  useEffect(() => {
+    if (account !== accountChoice) {
+      rememberShownAccount(account);
+      setAccountChoice(account);
+    }
+  }, [account, accountChoice]);
   const posts = allPosts?.filter((p) => accountOf(p) === account);
   const counts: Record<string, number> = {};
   for (const p of allPosts ?? []) counts[accountOf(p)] = (counts[accountOf(p)] ?? 0) + 1;

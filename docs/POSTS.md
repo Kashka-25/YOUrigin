@@ -26,7 +26,9 @@ Posted times are placeholders until real insights are in (`WEEK_PLAN` in `src/po
 
 Each post belongs to one Instagram account. The row of @ buttons at the top of Posts picks the account, and every view (Week, Month, Grid, Board, Ideas) then shows only that account's posts, so each account has its own profile grid. New posts, ideas and imported drafts go on the account being shown. Gallery is the shared picture library, so it doesn't change.
 
-- It starts with **@_freethedream_** (colour travel, creation, music, talking heads) and **Poetry** (black-and-white photos with a Whisper line). The pencil beside the buttons renames an account, sets its @handle, or adds another. Names and handles sync to every device.
+- A new device starts with one account, **My account**, with no handle yet. The pencil beside the buttons renames an account, sets its @handle, adds another, or removes one. Names and handles sync to every device.
+- Cassidy's devices keep the two accounts they started with: **@_freethedream_** (colour travel, creation, music, talking heads) and **Poetry** (black-and-white photos with a Whisper line).
+- Removing an account moves all its posts (set-aside ones too) to the main account first, so nothing is lost. The main account can be renamed but not removed. An account that still has posts always shows, even if it was removed on another device.
 - Move a post from the editor (**Account** row), or select several on the Board or in Ideas and choose **Or move to account**.
 - In the Grid, **Ideas** shows posts that have no date yet ahead of the planned ones, marked **No date**, to preview how the account could look. It is on at first for every account except the main one.
 - Posts from before accounts existed belong to the main account. A one-time banner offers to move posts whose notes start with “Poem idea:” to Poetry; nothing moves until you tap Move.
