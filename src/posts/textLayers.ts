@@ -162,6 +162,14 @@ export function cssFont(l: Pick<TextLayer, 'font' | 'weight' | 'italic'>, px: nu
   return `${l.italic ? 'italic ' : ''}${l.weight} ${px}px "${TEXT_FONTS[l.font].family}"`;
 }
 
+/**
+ * The same font as separate style properties, for elements that also set a line height
+ * (the `font` shorthand would reset it, and React warns about mixing the two).
+ */
+export function fontStyle(l: Pick<TextLayer, 'font' | 'weight' | 'italic'>, px: number) {
+  return { fontStyle: l.italic ? 'italic' : 'normal', fontWeight: l.weight, fontSize: `${px}px`, fontFamily: `"${TEXT_FONTS[l.font].family}"` } as const;
+}
+
 export function shownText(l: Pick<TextLayer, 'text' | 'caps'>): string {
   return l.caps ? l.text.toLocaleUpperCase() : l.text;
 }

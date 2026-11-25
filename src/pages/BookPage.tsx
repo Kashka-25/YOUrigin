@@ -13,6 +13,9 @@ import type { ContentItem, Highlight } from '../domain/types';
 import { AutoTextarea } from '../components/AutoTextarea';
 import { AssetImage } from '../components/AssetImage';
 import { StatusDot } from '../components/book/StatusDot';
+import { PhotoPage } from '../components/book/PhotoPage';
+import { resolveDesign } from '../print/design';
+import { pageAspect } from '../print/photoPages';
 import { EmptyState, SaveIndicator, Spinner } from '../components/ui';
 import { glossaryPath, pagePath, useBookPages } from './BookGlossary';
 
@@ -39,6 +42,7 @@ export function BookPage() {
 
 function PageEditor({ item, data }: { item: ContentItem; data: NonNullable<ReturnType<typeof useBookPages>> }) {
   const nav = useNavigate();
+  const lib = useLibrary();
   const location = useLocation();
   const { book, flat } = data;
   const at = flat.findIndex((p) => p.item.id === item.id);
@@ -120,6 +124,8 @@ function PageEditor({ item, data }: { item: ContentItem; data: NonNullable<Retur
   });
 
   const chapter = here ? (here.section?.title ?? 'Not in a chapter yet') : 'Not in this book';
+  // Set on a photo in this book: the page shows the photo, and the words can be typed on it.
+  const photo = lib?.entries.find((e) => e.bookId === book.id && e.contentId === item.id)?.photo;
 
   return (
     <div className="min-h-dvh bg-card text-ink">
@@ -164,6 +170,22 @@ function PageEditor({ item, data }: { item: ContentItem; data: NonNullable<Retur
           />
         </div>
         {item.type === 'image' && item.assetId && <AssetImage id={item.assetId} alt={title} className="mt-6 max-h-[70dvh] w-auto max-w-full rounded-xl" />}
+        {photo && item.type !== 'image' && (
+          <figure className="mt-6">
+            <PhotoPage
+              photo={photo}
+              title={title}
+              body={body}
+              aspect={pageAspect(resolveDesign(book))}
+              onChange={(patch) => {
+                if (patch.body !== undefined) changeBody(patch.body);
+                if (patch.title !== undefined) changeTitle(patch.title);
+              }}
+              onTyping={(on) => !on && void flush()}
+            />
+            <figcaption className="mt-2 text-center text-xs text-muted">On a photo in this book. Tap the words to type on it, or write below.</figcaption>
+          </figure>
+        )}
         <label htmlFor="page-words" className="sr-only">
           Words
         </label>
