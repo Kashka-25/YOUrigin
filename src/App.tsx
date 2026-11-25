@@ -41,6 +41,9 @@ const PrintLayout = lazy(() => import('./pages/PrintLayout').then((m) => ({ defa
 
 const Workspace = lazy(() => import('./pages/Workspace').then((m) => ({ default: m.Workspace })));
 
+const BookGlossary = lazy(() => import('./pages/BookGlossary').then((m) => ({ default: m.BookGlossary })));
+const BookPage = lazy(() => import('./pages/BookPage').then((m) => ({ default: m.BookPage })));
+
 const CoverDesigner = lazy(() => import('./pages/CoverDesigner').then((m) => ({ default: m.CoverDesigner })));
 
 /** One creative workspace per Project, so open pieces and pages never carry over. */
@@ -133,6 +136,9 @@ export default function App() {
             <Routes>
               {/* Manuscript mode is deliberately outside the app chrome: it should feel like a book. */}
               <Route path="/projects/:id/read" element={<Manuscript />} />
+              {/* Writing a book page by page: a front glossary and one clean page at a time. */}
+              <Route path="/projects/:id/book" element={<Suspense fallback={<Spinner />}><BookGlossary /></Suspense>} />
+              <Route path="/projects/:id/book/:pieceId" element={<Suspense fallback={<Spinner />}><BookPage /></Suspense>} />
               <Route
                 path="/projects/:id/print"
                 element={<PrintRoute />}

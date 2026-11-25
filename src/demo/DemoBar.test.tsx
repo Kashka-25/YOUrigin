@@ -25,4 +25,12 @@ describe('DemoBar', () => {
     at('/projects/abc/stage');
     expect(screen.queryByRole('region', { name: 'Demo' })).toBeNull();
   });
+
+  it('stays off the clean writing page, but shows on the glossary', () => {
+    at('/projects/abc/book/p1');
+    expect(screen.queryByRole('region', { name: 'Demo' })).toBeNull();
+    cleanup();
+    at('/projects/abc/book');
+    expect(screen.getByRole('region', { name: 'Demo' })).toBeTruthy();
+  });
 });

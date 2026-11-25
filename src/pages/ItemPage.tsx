@@ -212,6 +212,11 @@ function Editor({ item }: { item: ContentItem }) {
         )}
         <div className="flex items-center gap-2">
           <SaveIndicator state={state} />
+          {order && at >= 0 && (
+            <Link to={`/projects/${order.book.id}/book/${item.id}`} className="btn-ghost text-xs" onClick={() => void flush()} title="Write this page in the clean view, with the book's glossary">
+              <List size={15} /> Clean page
+            </Link>
+          )}
           <button type="button" className="btn-ghost text-xs" onClick={() => setFocus(true)} title="Hide the bars while you write">
             <Maximize2 size={15} /> Focus
           </button>

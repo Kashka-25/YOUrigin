@@ -59,7 +59,7 @@ export const STATUS_META: Record<
 > = {
   none: { label: 'No colour', short: 'None', colour: 'muted', symbol: '○', meaning: 'No traffic light on this piece.' },
   seed: { label: 'Red', short: 'Just begun', colour: 'seed', symbol: '●', meaning: 'Red: just begun.' },
-  developing: { label: 'Amber', short: 'Taking shape', colour: 'developing', symbol: '●', meaning: 'Amber: taking shape.' },
+  developing: { label: 'Orange', short: 'Taking shape', colour: 'developing', symbol: '●', meaning: 'Orange: taking shape.' },
   polished: { label: 'Green', short: 'Ready', colour: 'polished', symbol: '●', meaning: 'Green: ready, or close enough to share.' },
 };
 

@@ -1,5 +1,6 @@
 import { db } from './db';
-import type { Book, BookEntry, BookType, ProjectKind } from '../domain/types';
+import type { Book, BookEntry, BookType, ContentItem, ContentType, ProjectKind, Status } from '../domain/types';
+import { createContent } from './content';
 import { newId } from '../domain/text';
 import { COVER_COLOURS, PROJECT_KIND_META } from '../domain/constants';
 import { acknowledgementsTemplate, copyrightTemplate, dedicationTemplate } from '../print/design';
@@ -242,4 +243,38 @@ export async function templateFromBook(bookId: string, name: string): Promise<st
 /** Writing/drawing space after a piece in one book (undefined = automatic). */
 export async function setEntrySpace(entryId: string, space: BookEntry['space']): Promise<void> {
   await db.entries.update(entryId, { space, updatedAt: Date.now() });
+}
+
+// ---- writing a book page by page ------------------------------------------
+
+/** What kind of piece a new page in this book starts as. */
+function pageType(book: Book, neighbour?: ContentItem): ContentType {
+  if (neighbour && neighbour.type !== 'image') return neighbour.type;
+  return book.type === 'poetry' ? 'poem' : book.type === 'journal' ? 'reflection' : 'note';
+}
+
+/**
+ * Adds a blank page to a book in one step: a new piece in the Library, placed in
+ * `sectionId` straight after `afterContentId` (or at the end of the chapter).
+ * It starts with no colour and belongs to the same Projects as the book.
+ * Returns the new piece's id.
+ */
+export async function addPage(bookId: string, sectionId: string | null, afterContentId?: string | null): Promise<string> {
+  const book = await db.books.get(bookId);
+  if (!book) throw new Error('Book not found');
+  const inChapter = await entriesIn(bookId, sectionId);
+  const afterAt = afterContentId ? inChapter.findIndex((e) => e.contentId === afterContentId) : -1;
+  const neighbourId = afterAt >= 0 ? inChapter[afterAt].contentId : inChapter.at(-1)?.contentId;
+  const neighbour = neighbourId ? await db.content.get(neighbourId) : undefined;
+  const id = await createContent({ title: '', body: '', type: pageType(book, neighbour), status: 'none' });
+  const projectIds = [...new Set(book.projectIds ?? [])];
+  if (projectIds.length) await db.content.update(id, { projectIds });
+  const [entryId] = await addToBook(bookId, [id], sectionId);
+  if (entryId && afterAt >= 0) await moveEntry(entryId, sectionId, afterAt + 1);
+  return id;
+}
+
+/** A chapter's own traffic light ('none' takes it away). */
+export async function setSectionStatus(id: string, status: Status): Promise<void> {
+  await db.sections.update(id, { status, updatedAt: Date.now() });
 }
