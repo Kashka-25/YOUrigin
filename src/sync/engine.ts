@@ -163,7 +163,7 @@ export class SyncEngine {
       }
     }
 
-    await this.resolveClashes(puts);
+    await this.resolveClashes(puts, deletes);
     await this.preserveOverwrittenWording(puts.get('content') ?? [], unpushedLocalEdit);
 
     await runRemote(this.db, [...SYNC_TABLES], async () => {
@@ -177,8 +177,12 @@ export class SyncEngine {
         try {
           await this.db.table(tbl).bulkPut(recs);
         } catch {
-          // A uniqueness clash we could not resolve: apply what we can, one by one.
-          for (const r of recs) await this.db.table(tbl).put(r).catch(() => undefined);
+          // A uniqueness clash: apply them one by one. A record can clash only until another
+          // in this batch moves out of its way (a piece placed back in a book, a renamed tag),
+          // so the ones that failed get a second try once the rest are in.
+          const failed: Rec[] = [];
+          for (const r of recs) await this.db.table(tbl).put(r).catch(() => failed.push(r));
+          for (const r of failed) await this.db.table(tbl).put(r).catch(() => undefined);
         }
       }
     });
@@ -189,14 +193,23 @@ export class SyncEngine {
    * "same" thing offline with different ids, the lower id wins on both devices:
    * the losing local record is merged away with normal (synced) writes, and a
    * losing incoming record is dropped — its own device will merge it later.
+   *
+   * A local record that this same batch deletes, or moves elsewhere, is not a clash: it is
+   * on its way out. That is what happens when a piece is taken out of a book (or set to
+   * rest) and later placed back: its old place is deleted and a new one, with a new id,
+   * takes over. Treating the old place as a rival used to drop the new one about half the
+   * time, so the piece vanished from the book on the other device.
    */
-  private async resolveClashes(puts: Map<SyncTable, Rec[]>): Promise<void> {
+  private async resolveClashes(puts: Map<SyncTable, Rec[]>, deletes: Map<SyncTable, string[]>): Promise<void> {
+    /** Whether `local` is leaving in this batch: deleted, or arriving changed so it no longer matches. */
+    const leaving = (tbl: SyncTable, local: Rec, stillMatches: (incoming: Rec) => boolean) =>
+      (deletes.get(tbl) ?? []).includes(local.id) || (puts.get(tbl) ?? []).some((r) => r.id === local.id && !stillMatches(r));
     const tags = puts.get('tags');
     if (tags?.length) {
       const keep: Rec[] = [];
       for (const t of tags) {
         const local = (await this.db.table('tags').where('name').equals(String(t.name)).first()) as Rec | undefined;
-        if (!local || local.id === t.id) keep.push(t);
+        if (!local || local.id === t.id || leaving('tags', local, (r) => r.name === t.name)) keep.push(t);
         else if (t.id < local.id) {
           await this.mergeTag(local.id, t.id);
           keep.push(t);
@@ -213,7 +226,7 @@ export class SyncEngine {
           .where('[bookId+contentId]')
           .equals([String(e.bookId), String(e.contentId)])
           .first()) as Rec | undefined;
-        if (!local || local.id === e.id) keep.push(e);
+        if (!local || local.id === e.id || leaving('entries', local, (r) => r.bookId === e.bookId && r.contentId === e.contentId)) keep.push(e);
         else if (e.id < local.id) {
           await this.db.table('entries').delete(local.id);
           keep.push(e);
