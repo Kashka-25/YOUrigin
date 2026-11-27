@@ -339,3 +339,15 @@ html[data-focus] .chrome { display: none !important; }
     radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--project-colour, var(--gold)) 38%, transparent), transparent 70%),
     color-mix(in srgb, var(--project-colour, var(--gold)) 22%, var(--paper-2));
 }
+
+/* Books: a gentle sideways page turn, and pages that snap like a book. */
+@keyframes page-in-next { from { opacity: .35; transform: translateX(36px); } to { opacity: 1; transform: none; } }
+@keyframes page-in-prev { from { opacity: .35; transform: translateX(-36px); } to { opacity: 1; transform: none; } }
+.page-turn-next { animation: page-in-next .28s cubic-bezier(.2, .7, .2, 1); }
+.page-turn-prev { animation: page-in-prev .28s cubic-bezier(.2, .7, .2, 1); }
+.book-pages { scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; }
+.book-pages::-webkit-scrollbar { display: none; }
+.book-pages > * { scroll-snap-align: start; scroll-snap-stop: always; }
+@media (prefers-reduced-motion: reduce) {
+  .page-turn-next, .page-turn-prev { animation: none; }
+}
