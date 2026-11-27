@@ -21,7 +21,6 @@ import { displayTitle } from '../../domain/text';
 import { TYPE_LABEL } from '../../domain/constants';
 import { addChapter, deleteSection, insertIntoSection, moveEntry, removeEntries, renameChapter, reorderSections } from '../../db/books';
 import { chapterTagNotice } from '../../db/chapterTags';
-import { useToast } from '../Toast';
 import { StatusBadge } from '../ui';
 import { useConfirm } from '../Modal';
 import { useToast } from '../Toast';
