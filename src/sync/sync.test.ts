@@ -136,6 +136,63 @@ describe('two-device sync', () => {
     expect(await b.db.sections.where('bookId').equals(bookId).count()).toBe(0);
   });
 
+  // A piece set to rest (or taken out of a book) and placed back gets a new place with a new
+  // id. Whichever way the two ids sort, the other device must end up with the piece in the book.
+  for (const [label, oldId, newPlace] of [
+    ['new id sorts after the old one', '00000000-old', 'ffffffff-new'],
+    ['new id sorts before the old one', 'ffffffff-old', '00000000-new'],
+  ] as const) {
+    it(`a piece rested and placed back stays in the book on the other device (${label})`, async () => {
+      const server = new FakeServer();
+      const { key } = await createKeyInfo('pass phrase one');
+      const laptop = await device('laptop', server, key);
+      const phone = await device('phone', server, key);
+      const bookId = newId();
+      const p = piece('salt on the window');
+      const staying = piece('the other poem');
+      await laptop.db.content.bulkAdd([p, staying]);
+      await laptop.db.entries.bulkAdd([
+        { id: oldId, bookId, sectionId: null, contentId: p.id, order: 0, createdAt: 1, updatedAt: 1 },
+        { id: newId(), bookId, sectionId: null, contentId: staying.id, order: 1, createdAt: 1, updatedAt: 1 },
+      ]);
+      await laptop.engine.syncOnce();
+      await phone.engine.syncOnce();
+      expect(await phone.db.entries.where('bookId').equals(bookId).count()).toBe(2);
+
+      // On the laptop, while the phone is away: rest it, then place it back.
+      await laptop.db.entries.delete(oldId);
+      await laptop.db.entries.add({ id: newPlace, bookId, sectionId: null, contentId: p.id, order: 2, createdAt: 5, updatedAt: 5 });
+      await laptop.engine.syncOnce();
+      await phone.engine.syncOnce();
+
+      const onPhone = await phone.db.entries.where('bookId').equals(bookId).toArray();
+      expect(onPhone.map((e) => e.id).sort()).toEqual([newPlace, onPhone.find((e) => e.contentId === staying.id)!.id].sort());
+      expect(onPhone.some((e) => e.contentId === p.id)).toBe(true);
+      expect(phone.outbox.size).toBe(0);
+    });
+  }
+
+  it('a piece moved to another book on one device and replaced there on the other does not clash', async () => {
+    // The phone has entry X for (book A, piece). The laptop moves X to book B and adds a new
+    // entry Y for (book A, piece) in the same sync: both must arrive.
+    const server = new FakeServer();
+    const { key } = await createKeyInfo('pass phrase one');
+    const laptop = await device('laptop', server, key);
+    const phone = await device('phone', server, key);
+    const [bookA, bookB] = [newId(), newId()];
+    const p = piece('tide');
+    await laptop.db.content.add(p);
+    await laptop.db.entries.add({ id: 'ffff-x', bookId: bookA, sectionId: null, contentId: p.id, order: 0, createdAt: 1, updatedAt: 1 });
+    await laptop.engine.syncOnce();
+    await phone.engine.syncOnce();
+    await laptop.db.entries.update('ffff-x', { bookId: bookB, updatedAt: 5 });
+    await laptop.db.entries.add({ id: '0000-y', bookId: bookA, sectionId: null, contentId: p.id, order: 0, createdAt: 5, updatedAt: 5 });
+    await laptop.engine.syncOnce();
+    await phone.engine.syncOnce();
+    expect((await phone.db.entries.get('ffff-x'))?.bookId).toBe(bookB);
+    expect((await phone.db.entries.get('0000-y'))?.bookId).toBe(bookA);
+  });
+
   it('keeps the newer version when both devices edited offline', async () => {
     const server = new FakeServer();
     const { key } = await createKeyInfo('pass phrase one');
