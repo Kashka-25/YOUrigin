@@ -99,12 +99,19 @@ export function BookBuilder() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        {/* Workspace and publishing first: everything to write, read and print is one tap from the top. */}
+        <div className="flex flex-wrap items-center gap-2">
           {isBook && <Link to={`/projects/${book.id}/book`} className="btn-primary" title="The book's glossary: every chapter and page, one tap to write">
             <List size={16} /> Glossary
           </Link>}
           {!isSetList && <Link to={`/projects/${book.id}/write`} className={isBook ? 'btn' : 'btn-primary'} title="Open your writing workspace">
             <PenLine size={16} /> Write
+          </Link>}
+          {!isSetList && <Link to={`/projects/${book.id}/read`} className="btn" title="Read it as a book">
+            <BookOpenText size={16} /> Read
+          </Link>}
+          {isBook && <Link to={`/projects/${book.id}/print`} className="btn" title="Page size, type and a print-ready PDF">
+            <LayoutTemplate size={16} /> Design & print
           </Link>}
           {(isSetList || kind === 'album') && <Link to={`/projects/${book.id}/stage`} className={isSetList ? 'btn-primary' : 'btn'} title="Songs one at a time in large type, for performing">
             <Mic2 size={16} /> Stage view
@@ -114,45 +121,13 @@ export function BookBuilder() {
               More <ChevronDown size={15} className="transition-transform group-open:rotate-180" />
             </summary>
             <div className="absolute right-0 z-20 mt-2 grid min-w-48 gap-1 rounded-2xl border border-line bg-card p-2 shadow-lg">
-              {isBook && <Link to={`/projects/${book.id}/print`} className="btn-ghost justify-start"><LayoutTemplate size={15} /> Design & print</Link>}
               {isBook && <Link to={`/projects/${book.id}/cover`} className="btn-ghost justify-start"><BookImage size={15} /> Cover design</Link>}
-              {!isSetList && <Link to={`/projects/${book.id}/read`} className="btn-ghost justify-start"><BookOpenText size={15} /> Read</Link>}
               <ExportMenu book={book} />
               <button type="button" className="btn-ghost justify-start" onClick={() => setEditOpen(true)}><Settings2 size={15} /> Workspace settings</button>
             </div>
           </details>
         </div>
       </header>
-
-      {!isSetList && (
-      <details className="group mt-6 rounded-2xl border border-line bg-card">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
-          <span className="font-serif text-lg">Project progress</span>
-          <ChevronDown size={18} className="text-muted transition-transform group-open:rotate-180" aria-hidden />
-        </summary>
-        <div className="px-4 pb-4">
-          <BookDashboard progress={progress} />
-        </div>
-      </details>
-      )}
-
-      {!isSetList && (
-      <details className="group mt-4 rounded-2xl border border-line bg-card">
-        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
-          <span className="font-serif text-xl">Contents</span>
-          <span className="text-sm text-muted">· {progress.counts.total} pieces, colour-coded by status</span>
-          <ChevronDown size={18} className="ml-auto text-muted transition-transform group-open:rotate-180" aria-hidden />
-        </summary>
-        <div className="px-4 pb-4">
-          <div className="mb-3 flex justify-end">
-            <Link to={`/projects/${book.id}/contents`} className="btn-ghost px-2 py-1 text-xs">
-              <Maximize2 size={13} /> Open as a page
-            </Link>
-          </div>
-          <ContentsList bookId={book.id} compact />
-        </div>
-      </details>
-      )}
 
       {isBook && <PublishingChecklist book={book} />}
 
@@ -198,6 +173,36 @@ export function BookBuilder() {
       </div>
 
       <RestingBox className="mt-8" projects={restProjects} works={lib.books} contentById={lib.contentById} preferWorkId={book.id} />
+
+      {!isSetList && (
+      <details className="group mt-8 rounded-2xl border border-line bg-card">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
+          <span className="font-serif text-lg">Project progress</span>
+          <ChevronDown size={18} className="text-muted transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
+        <div className="px-4 pb-4">
+          <BookDashboard progress={progress} />
+        </div>
+      </details>
+      )}
+
+      {!isSetList && (
+      <details className="group mt-4 rounded-2xl border border-line bg-card">
+        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
+          <span className="font-serif text-xl">Contents</span>
+          <span className="text-sm text-muted">· {progress.counts.total} pieces, colour-coded by status</span>
+          <ChevronDown size={18} className="ml-auto text-muted transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
+        <div className="px-4 pb-4">
+          <div className="mb-3 flex justify-end">
+            <Link to={`/projects/${book.id}/contents`} className="btn-ghost px-2 py-1 text-xs">
+              <Maximize2 size={13} /> Open as a page
+            </Link>
+          </div>
+          <ContentsList bookId={book.id} compact />
+        </div>
+      </details>
+      )}
 
       {editOpen && <BookSettings book={book} onClose={() => setEditOpen(false)} />}
     </div>

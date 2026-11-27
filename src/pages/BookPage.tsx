@@ -17,11 +17,15 @@ import { PhotoPage } from '../components/book/PhotoPage';
 import { resolveDesign } from '../print/design';
 import { pageAspect } from '../print/photoPages';
 import { EmptyState, SaveIndicator, Spinner } from '../components/ui';
+import { PageFlowToggle } from '../components/book/PageFlowToggle';
+import { keyTurn, usePageFlow, useSwipe } from '../hooks/usePageFlow';
 import { glossaryPath, pagePath, useBookPages } from './BookGlossary';
 
 /**
  * The clean writing view: one page of a book at a time, its title and its words.
  * The glossary, Previous / Next and a new page are always one tap away.
+ * In Pages (the default) a swipe or an arrow key turns sideways to the next page;
+ * in Scroll the page simply runs down. Typing never turns a page.
  */
 export function BookPage() {
   const { id, pieceId } = useParams();
@@ -53,6 +57,8 @@ function PageEditor({ item, data }: { item: ContentItem; data: NonNullable<Retur
   const [title, setTitle] = useState(item.title);
   const [body, setBody] = useState(item.body);
   const [adding, setAdding] = useState(false);
+  const [flow, setFlow] = usePageFlow();
+  const turning = flow === 'pages' ? (location.state as { turn?: 'next' | 'prev' } | null)?.turn : undefined;
   // Highlighter marks made in the full editor keep to their words while writing here.
   const marks = useRef<Highlight[]>(item.highlights ?? []);
   const latest = useRef({ title, body });
@@ -110,14 +116,21 @@ function PageEditor({ item, data }: { item: ContentItem; data: NonNullable<Retur
     }
   };
 
-  // Alt + ← / → turn the page on a keyboard.
+  const turn = (dir: 'next' | 'prev') => {
+    const to = dir === 'next' ? next : prev;
+    if (to) go(pagePath(book.id, to.id), { turn: dir });
+  };
+  const swipe = useSwipe(turn, flow === 'pages');
+
+  // Alt + ← / → turn the page on a keyboard; in Pages a plain arrow does too,
+  // unless the cursor is in the title or the words.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!e.altKey || e.ctrlKey || e.metaKey) return;
-      const to = e.key === 'ArrowLeft' ? prev : e.key === 'ArrowRight' ? next : null;
-      if (!to) return;
+      if (flow !== 'pages' && !e.altKey) return;
+      const dir = keyTurn(e);
+      if (!dir || !(dir === 'next' ? next : prev)) return;
       e.preventDefault();
-      go(pagePath(book.id, to.id));
+      turn(dir);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -128,9 +141,9 @@ function PageEditor({ item, data }: { item: ContentItem; data: NonNullable<Retur
   const photo = lib?.entries.find((e) => e.bookId === book.id && e.contentId === item.id)?.photo;
 
   return (
-    <div className="min-h-dvh bg-card text-ink">
+    <div className="min-h-dvh overflow-x-hidden bg-card text-ink" {...swipe}>
       <header className="sticky top-0 z-20 flex items-center gap-1 border-b border-line/70 bg-card/95 px-2 py-1.5 backdrop-blur">
-        <button type="button" className="btn-ghost" onClick={() => go(glossaryPath(book.id))}>
+        <button type="button" className="btn-ghost px-2" onClick={() => go(glossaryPath(book.id))}>
           <List size={16} /> Glossary
         </button>
         <span className="min-w-0 flex-1 truncate text-center text-xs text-muted">
@@ -140,12 +153,13 @@ function PageEditor({ item, data }: { item: ContentItem; data: NonNullable<Retur
         <span className="hidden sm:inline">
           <SaveIndicator state={state} />
         </span>
+        <PageFlowToggle value={flow} onChange={setFlow} />
         <button type="button" className="btn-ghost" disabled={adding} onClick={() => void newPage()} title="Add a blank page after this one, in the same chapter">
-          <Plus size={16} /> New page
+          <Plus size={16} /> New<span className="hidden sm:inline"> page</span>
         </button>
       </header>
 
-      <main className="mx-auto max-w-[38rem] px-5 pt-10 pb-40">
+      <main className={`mx-auto max-w-[38rem] px-5 pt-10 pb-40 ${turning ? `page-turn-${turning}` : ''}`}>
         <div className="flex items-center gap-1">
           <span className="-ml-2">
             <StatusDot value={item.status} what={displayTitle(item)} size="lg" onChange={(s) => void updateContent(item.id, { status: s })} />
@@ -210,7 +224,7 @@ function PageEditor({ item, data }: { item: ContentItem; data: NonNullable<Retur
       <nav aria-label="Turn the page" className="fixed inset-x-0 bottom-0 z-20 border-t border-line/70 bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
         <div className="mx-auto flex max-w-[38rem] items-center gap-1 px-2 py-1.5">
           {prev ? (
-            <button type="button" className="btn-ghost min-w-0 flex-1 justify-start px-2" onClick={() => go(pagePath(book.id, prev.id))} title={displayTitle(prev)}>
+            <button type="button" className="btn-ghost min-w-0 flex-1 justify-start px-2" onClick={() => turn('prev')} title={displayTitle(prev)}>
               <ChevronLeft size={18} className="shrink-0" />
               <span className="truncate">{displayTitle(prev)}</span>
             </button>
@@ -221,7 +235,7 @@ function PageEditor({ item, data }: { item: ContentItem; data: NonNullable<Retur
             <List size={18} />
           </button>
           {next ? (
-            <button type="button" className="btn-ghost min-w-0 flex-1 justify-end px-2" onClick={() => go(pagePath(book.id, next.id))} title={displayTitle(next)}>
+            <button type="button" className="btn-ghost min-w-0 flex-1 justify-end px-2" onClick={() => turn('next')} title={displayTitle(next)}>
               <span className="truncate">{displayTitle(next)}</span>
               <ChevronRight size={18} className="shrink-0" />
             </button>

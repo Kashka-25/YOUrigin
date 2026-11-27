@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { UniversePanel } from '../components/UniversePanel';
+import { publishingChecklist } from '../print/checklist';
+import { resolveDesign } from '../print/design';
 import { CoverPicture } from '../components/CoverPicture';
-import { BookOpen, ChevronDown, ChevronRight, FolderInput, Link2, Plus, Search, Trash2, Unlink, Upload } from 'lucide-react';
+import { BookOpen, BookOpenText, ChevronDown, ClipboardCheck, ChevronRight, LayoutTemplate, List, PenLine, FolderInput, Link2, Plus, Search, Trash2, Unlink, Upload } from 'lucide-react';
 import { useLibrary } from '../hooks/useLibrary';
-import { CONTENT_TYPES, DEFAULT_PROJECT_COLOUR, PROJECT_CATEGORIES, PROJECT_KIND_META, PROJECT_STATUS_META, TYPE_LABEL, projectKind } from '../domain/constants';
-import type { ContentType, ProjectColour, ProjectStatus } from '../domain/types';
+import { CONTENT_TYPES, DEFAULT_PROJECT_COLOUR, PROJECT_CATEGORIES, PROJECT_STATUS_META, TYPE_LABEL, projectKind } from '../domain/constants';
+import type { Book, ContentType, ProjectColour, ProjectStatus } from '../domain/types';
 import { ProjectColourPicker, projectColourStyle } from '../components/ProjectColourPicker';
 import { removeAssetIfUnused } from '../db/assets';
 import { CoverPicker } from '../components/CoverPicker';
@@ -266,13 +268,30 @@ export function ProjectHome() {
           <button type="button" className="btn-ghost mt-2 px-2 py-1 text-xs text-muted" onClick={() => void removeThisProject()} title="Delete" aria-label={`Delete ${project.title}`}><Trash2 size={14} /></button>
         </div>
         <p className="mt-2 text-sm text-ink-2" aria-label="What is in here">{breakdown(counts.notes, counts.branches, counts.chapters)}{counts.branches > 0 ? ' (notes include those in its branches)' : ''}</p>
+        {/* Workspace and publishing sit at the top, so writing, reading and printing are one tap away. */}
+        <WorkspaceBar lib={lib} workspace={workspace} onOpen={() => void openWorkspace()} />
         {project.description && <p className="mt-3 max-w-2xl font-serif text-lg leading-relaxed text-ink-2">{project.description}</p>}
         <CoverPicture assetId={project.coverAssetId} colour={project.colour} seed={project.id} className="mt-6 aspect-[16/5] w-full rounded-2xl border border-line" />
       </header>
 
-      <section className="mt-9" aria-labelledby="creation-branches">
-        <h2 id="creation-branches" className="section-heading mb-3">Branches</h2>
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <details className="group mt-6 rounded-2xl border border-line">
+        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium text-ink hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
+          <BookOpen size={16} className="text-gold" aria-hidden /> Publishing to Creative Universe
+          <ChevronDown size={16} className="ml-auto text-muted transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
+        <div className="px-4 pt-2 pb-5">
+          <UniversePanel key={project.id} project={project} />
+        </div>
+      </details>
+
+      {/* Folded away until wanted, like Tags and the workspace's Contents. */}
+      <details className="group mt-6 rounded-2xl border border-line bg-card">
+        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
+          <h2 id="creation-branches" className="font-serif text-xl">Branches</h2>
+          <span className="text-sm text-muted tabular-nums">· {branches.length}</span>
+          <ChevronDown size={18} className="ml-auto text-muted transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
+        <ul className="grid gap-3 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-3">
           {branches.map((b) => <li key={b.id}><CreationTile lib={lib} project={b} /></li>)}
           <li>
             <button type="button" onClick={() => setAddingBranch(true)} className="flex h-full min-h-28 w-full flex-col items-center justify-center gap-1 rounded-[18px] border border-dashed border-line text-sm text-ink-2 hover:border-gold/60 hover:text-ink">
@@ -280,7 +299,7 @@ export function ProjectHome() {
             </button>
           </li>
         </ul>
-      </section>
+      </details>
 
       <ProjectTagsSection lib={lib} project={project} workspaceId={workspace?.id} />
 
@@ -322,25 +341,6 @@ export function ProjectHome() {
       </section>
 
       <RestingBox className="mt-10" projects={[project]} works={lib.books} contentById={lib.contentById} preferWorkId={workspace?.id} />
-
-      {/* Workspace and Creative Universe: there when needed, folded away otherwise. */}
-      <details className="group mt-10 rounded-2xl border border-line">
-        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium text-ink hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
-          <BookOpen size={16} className="text-gold" aria-hidden /> Workspace & publishing
-          <ChevronDown size={16} className="ml-auto text-muted transition-transform group-open:rotate-180" aria-hidden />
-        </summary>
-        <div className="space-y-6 px-4 pt-2 pb-5">
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="min-w-0 flex-1 text-sm text-ink-2">
-              {workspace
-                ? `A workspace for shaping this into a finished ${PROJECT_KIND_META[projectKind(workspace)].label.toLowerCase()}.`
-                : 'Set up a workspace to shape this into a book, album or set list.'}
-            </p>
-            <button type="button" className="btn" onClick={() => void openWorkspace()}><BookOpen size={15} /> {workspace ? 'Open workspace' : 'Set up workspace'}</button>
-          </div>
-          <UniversePanel key={project.id} project={project} />
-        </div>
-      </details>
 
       <NewCreationDialog open={addingBranch} onClose={() => setAddingBranch(false)} parent={project} />
 
@@ -440,6 +440,50 @@ export function ProjectHome() {
       </Modal>
 
       <ImportDialog open={importingNotes} onClose={() => setImportingNotes(false)} projectId={id} projectTitle={project.title} initialType={isMusic ? 'song' : 'auto'} />
+    </div>
+  );
+}
+
+/**
+ * The way into this Creation's workspace and publishing, right under its name: one row
+ * to write and shape it, one to get it ready to publish.
+ */
+function WorkspaceBar({ lib, workspace, onOpen }: { lib: Lib; workspace: Book | undefined; onOpen: () => void }) {
+  if (!workspace)
+    return (
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button type="button" className="btn-primary" onClick={onOpen}><BookOpen size={15} /> Set up workspace</button>
+        <span className="text-sm text-muted">to shape this into a book, album or set list.</span>
+      </div>
+    );
+  const kind = projectKind(workspace);
+  const isBook = kind === 'book';
+  const base = '/projects/' + workspace.id;
+  const ready = isBook
+    ? publishingChecklist(
+        workspace,
+        resolveDesign(workspace),
+        lib.sections.filter((s) => s.bookId === workspace.id),
+        lib.entries.filter((e) => e.bookId === workspace.id),
+        lib.contentById,
+      ).ready
+    : null;
+  return (
+    <div className="mt-4 space-y-2">
+      <nav aria-label="Workspace" className="flex flex-wrap items-center gap-2">
+        {isBook && <Link to={base + '/book'} className="btn-primary" title="Every chapter and page, one tap to write"><List size={15} /> Glossary</Link>}
+        {kind !== 'setlist' && <Link to={base + '/write'} className="btn" title="Your writing workspace"><PenLine size={15} /> Write</Link>}
+        <Link to={base} className={isBook ? 'btn' : 'btn-primary'} title="Arrange chapters and pieces"><BookOpen size={15} /> Builder</Link>
+        {kind !== 'setlist' && <Link to={base + '/read'} className="btn" title="Read it as a book"><BookOpenText size={15} /> Read</Link>}
+      </nav>
+      {ready && (
+        <nav aria-label="Publishing" className="flex flex-wrap items-center gap-2">
+          <Link to={base} className="btn" title="What the book still needs before publishing, at the top of the Builder">
+            <ClipboardCheck size={15} /> Ready to publish <span className="text-muted tabular-nums">· {ready.done} of {ready.of}</span>
+          </Link>
+          <Link to={base + '/print'} className="btn" title="Page size, type and a print-ready PDF"><LayoutTemplate size={15} /> Design & print</Link>
+        </nav>
+      )}
     </div>
   );
 }
