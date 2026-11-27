@@ -19,7 +19,8 @@ import type { BookEntry, ContentItem, Section } from '../../domain/types';
 import type { SectionProgress } from '../../domain/progress';
 import { displayTitle } from '../../domain/text';
 import { TYPE_LABEL } from '../../domain/constants';
-import { addSection, deleteSection, insertIntoSection, moveEntry, removeEntries, renameSection, reorderSections } from '../../db/books';
+import { addChapter, deleteSection, insertIntoSection, moveEntry, removeEntries, renameChapter, reorderSections } from '../../db/books';
+import { chapterTagNotice } from '../../db/chapterTags';
 import { StatusBadge } from '../ui';
 import { useConfirm } from '../Modal';
 import { useToast } from '../Toast';
@@ -164,7 +165,10 @@ export function StructureBoard({ bookId, sections, entries, contentById, section
                 key={s.id}
                 section={s}
                 progress={sectionProgress.find((p) => p.id === s.id)}
-                onRename={(t) => void renameSection(s.id, t)}
+                onRename={async (t) => {
+                  const notice = chapterTagNotice(await renameChapter(s.id, t));
+                  if (notice) toast(notice);
+                }}
                 onDelete={async () => {
                   const n = entriesOf(s.id).length;
                   const ok = await confirm({
@@ -193,7 +197,8 @@ export function StructureBoard({ bookId, sections, entries, contentById, section
             className="flex gap-2"
             onSubmit={async (e) => {
               e.preventDefault();
-              await addSection(bookId, newSection);
+              const notice = chapterTagNotice((await addChapter(bookId, newSection)).tag);
+              if (notice) toast(notice);
               setNewSection('');
             }}
           >

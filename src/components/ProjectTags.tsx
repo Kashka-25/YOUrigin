@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import type { useLibrary } from '../hooks/useLibrary';
 import type { Project } from '../domain/types';
 import { linkTagToProject, setProjectTagChapter, unlinkProjectTag } from '../db/projectTags';
@@ -33,42 +33,49 @@ export function ProjectTagsSection({ lib, project, workspaceId }: { lib: Lib; pr
   };
 
   return (
-    <section className="mt-10" aria-labelledby="creation-tags">
-      <h2 id="creation-tags" className="section-heading">Tags</h2>
-      <p className="mt-1 mb-3 max-w-2xl text-sm text-ink-2">
-        Tag a note with one of these, in Capture or anywhere, and it joins {project.title}
-        {workspaceId ? (chapters.length ? ', in the chapter you choose (or the tray, to place later)' : ', in its workspace tray to place later') : ''}. Taking the tag off never takes the note out.
-      </p>
-      <div className="panel space-y-2 p-4">
-        {mine.length > 0 && (
-          <ul className="space-y-2">
-            {mine.map((t) => (
-              <li key={t.id} className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-paper-2 px-2.5 py-1 text-sm font-medium text-ink">#{t.name}</span>
-                {chapters.length > 0 && (
-                  <select
-                    className="input w-auto py-1 text-sm"
-                    aria-label={`Where #${t.name} places notes`}
-                    value={t.sectionId && chapters.some((c) => c.id === t.sectionId) ? t.sectionId : ''}
-                    onChange={(e) => void setProjectTagChapter(t.id, e.target.value || null)}
-                  >
-                    <option value="">Tray (place later)</option>
-                    {chapters.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.title}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                <button type="button" className="btn-ghost ml-auto p-2 text-muted" onClick={() => void remove(t.id, t.name)} aria-label={`Stop #${t.name} filing notes here`} title="Stop filing notes here (notes already here stay)">
-                  <X size={15} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <TagInput value={mine.map((t) => t.name)} onAdd={(n) => void add(n)} onRemove={() => {}} showChips={false} placeholder={mine.length ? 'Add another tag…' : 'Add a tag, e.g. poetry'} />
+    // Folded away until wanted, like the workspace's Project progress and Contents.
+    <details className="group mt-4 rounded-2xl border border-line bg-card">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl px-4 py-3 hover:bg-paper-2 [&::-webkit-details-marker]:hidden">
+        <h2 id="creation-tags" className="font-serif text-xl">Tags</h2>
+        <span className="text-sm text-muted tabular-nums">· {mine.length}</span>
+        <ChevronDown size={18} className="ml-auto text-muted transition-transform group-open:rotate-180" aria-hidden />
+      </summary>
+      <div className="px-4 pb-4">
+        <p className="mb-3 max-w-2xl text-sm text-ink-2">
+          Tag a note with one of these, in Capture or anywhere, and it joins {project.title}
+          {workspaceId ? (chapters.length ? ', in the chapter you choose (or the tray, to place later)' : ', in its workspace tray to place later') : ''}. Taking the tag off never takes the note out.
+        </p>
+        <div className="panel space-y-2 p-4">
+          {mine.length > 0 && (
+            <ul className="space-y-2">
+              {mine.map((t) => (
+                <li key={t.id} className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-paper-2 px-2.5 py-1 text-sm font-medium text-ink">#{t.name}</span>
+                  {chapters.length > 0 && (
+                    <select
+                      className="input w-auto py-1 text-sm"
+                      aria-label={`Where #${t.name} places notes`}
+                      value={t.sectionId && chapters.some((c) => c.id === t.sectionId) ? t.sectionId : ''}
+                      onChange={(e) => void setProjectTagChapter(t.id, e.target.value || null)}
+                    >
+                      <option value="">Tray (place later)</option>
+                      {chapters.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.title}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <button type="button" className="btn-ghost ml-auto p-2 text-muted" onClick={() => void remove(t.id, t.name)} aria-label={`Stop #${t.name} filing notes here`} title="Stop filing notes here (notes already here stay)">
+                    <X size={15} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <TagInput value={mine.map((t) => t.name)} onAdd={(n) => void add(n)} onRemove={() => {}} showChips={false} placeholder={mine.length ? 'Add another tag…' : 'Add a tag, e.g. poetry'} />
+        </div>
       </div>
-    </section>
+    </details>
   );
 }

@@ -1,4 +1,5 @@
 import { db } from './db';
+import { followChapterRename, tagChapter, type ChapterTag } from './chapterTags';
 import type { Book, BookEntry, BookType, ContentItem, ContentType, ProjectKind, Status } from '../domain/types';
 import { createContent } from './content';
 import { newId } from '../domain/text';
@@ -111,17 +112,30 @@ async function touchBook(bookId: string) {
 // ---- sections --------------------------------------------------------------
 
 export async function addSection(bookId: string, title: string): Promise<string> {
+  return (await addChapter(bookId, title)).id;
+}
+
+/** A new chapter, with its linked tag when the book belongs to a Creation (see chapterTags). */
+export async function addChapter(bookId: string, title: string): Promise<{ id: string; tag: ChapterTag | null }> {
   const id = newId();
   const now = Date.now();
   const existing = await db.sections.where('bookId').equals(bookId).toArray();
   const order = existing.reduce((m, s) => Math.max(m, s.order + 1), 0);
   await db.sections.add({ id, bookId, title: title.trim() || 'New section', order, notes: '', createdAt: now, updatedAt: now });
   await touchBook(bookId);
-  return id;
+  return { id, tag: await tagChapter(id) };
 }
 
 export async function renameSection(id: string, title: string): Promise<void> {
+  await renameChapter(id, title);
+}
+
+/** Renames a chapter; its linked tag follows, unless that tag was renamed by hand. */
+export async function renameChapter(id: string, title: string): Promise<ChapterTag | null> {
+  const before = await db.sections.get(id);
+  if (!before) return null;
   await db.sections.update(id, { title: title.trim() || 'Untitled section', updatedAt: Date.now() });
+  return followChapterRename(id, before.title);
 }
 
 /** Pieces in a removed section go back to the book's tray rather than vanish. */
